@@ -480,7 +480,9 @@ export class PlayerSystem {
     }
 
     for (const prop of this.refs.props) {
-      const d = distance2D(pos.x, pos.z, prop.pos.x, prop.pos.z);
+      const px = prop.type === 'crate' ? prop.body.position.x : prop.pos.x;
+      const pz = prop.type === 'crate' ? prop.body.position.z : prop.pos.z;
+      const d = distance2D(pos.x, pos.z, px, pz);
       if (d < GAME_CONFIG.interactRadius && 1 > bestPriority) {
         bestPriority = 1;
         best = {
