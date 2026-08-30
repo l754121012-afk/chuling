@@ -51,6 +51,7 @@ export class GhostSystem {
     this._caught = false;
     this._visualStage = null;
     this._flameTime = 0;
+    this._hiddenTimer = 0;
 
     events.on('noise', payload => this._onNoise(payload));
   }
@@ -64,7 +65,7 @@ export class GhostSystem {
       position: { x: pos.x, y: 1.2, z: pos.z },
       mass: 20,
       group: GROUPS.GHOST,
-      mask: GROUPS.WORLD | GROUPS.PROP,
+      mask: GROUPS.WORLD,
       fixedRotation: true,
       gravityScale: 0
     });
@@ -107,6 +108,18 @@ export class GhostSystem {
     }
 
     this._catchOrSlap(playerPos);
+
+    if (this.game.hiding) {
+      this._hiddenTimer += dt;
+      if (this._hiddenTimer > 2.5) {
+        this._lastSeen = null;
+        this._lastNoise = null;
+        this._searchTimer = 0;
+        this._waypoint = this._pointAwayFromLocker();
+      }
+    } else {
+      this._hiddenTimer = 0;
+    }
   }
 
   _applyStageVisual(stage, dt) {
@@ -217,6 +230,15 @@ export class GhostSystem {
     };
   }
 
+  _pointAwayFromLocker() {
+    const locker = this.scene.refs?.locker;
+    for (let i = 0; i < 8; i++) {
+      const p = this._randomClassroomPoint();
+      if (!locker || distance2D(p.x, p.z, locker.pos.x, locker.pos.z) > 3) return p;
+    }
+    return this._randomClassroomPoint();
+  }
+
   _goTo(target, speed, dt) {
     const b = this.pawn.body.position;
     const dx = target.x - b.x;
@@ -267,6 +289,7 @@ export class GhostSystem {
 
   _onNoise({ pos, radius }) {
     if (!this.game.isPlaying() || this.game.phase !== 'investigate') return;
+    if (this.game.hiding) return;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, pos.x, pos.z);
     if (dist > radius) return;
@@ -303,6 +326,8 @@ export class GhostSystem {
     }
     this.audio?.play('slap');
     this.events.emit('toast', { text: '它扇了你一巴掌！体力-25', ms: 1800 });
+    this.events.emit('player.hurt');
+    this.events.emit('camera.shake', { amount: 0.32 });
     this._speak('别在教室里乱跑！', 1800);
   }
 

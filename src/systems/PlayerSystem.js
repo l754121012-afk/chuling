@@ -25,6 +25,14 @@ export class PlayerSystem {
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
     this.poseTimer = 0;
+    this.aiming = false;
+    this._comboReady = false;
+    this._lastEquipped = null;
+    this._hurtFlash = 0;
+    events.on('player.hurt', () => {
+      this.playPose('hurt', 0.7);
+      this._hurtFlash = 0.6;
+    });
   }
 
   createPawn() {
@@ -105,13 +113,27 @@ export class PlayerSystem {
     lerpRot(parts.armL, 'z', target.armL.z);
     lerpRot(parts.body, 'x', target.body);
     lerpRot(parts.head, 'x', target.head);
+
+    const mats = this.pawn.mesh.userData.materials;
+    if (mats) {
+      if (this._hurtFlash > 0) {
+        this._hurtFlash -= dt;
+        mats.bodyMat.emissive.setHex(0x8f2f24);
+        mats.bodyMat.emissiveIntensity = Math.min(0.8, this._hurtFlash * 2);
+      } else if (mats.bodyMat.emissiveIntensity !== 0) {
+        mats.bodyMat.emissive.setHex(0x000000);
+        mats.bodyMat.emissiveIntensity = 0;
+      }
+    }
   }
 
   _poseTarget() {
     const poses = {
       idle: { armR: { x: -0.55, z: -0.15 }, armL: { x: 0.25, z: -0.45 }, body: 0, head: 0 },
       use: { armR: { x: -1.15, z: -0.45 }, armL: { x: 0.3, z: -0.5 }, body: 0.08, head: -0.08 },
-      interact: { armR: { x: -0.95, z: -0.3 }, armL: { x: -1.0, z: -0.75 }, body: 0.3, head: 0.25 }
+      interact: { armR: { x: -0.95, z: -0.3 }, armL: { x: -1.0, z: -0.75 }, body: 0.3, head: 0.25 },
+      aim: { armR: { x: -0.9, z: -0.3 }, armL: { x: 0.3, z: -0.5 }, body: 0.05, head: -0.05 },
+      hurt: { armR: { x: 1.1, z: -0.2 }, armL: { x: 1.2, z: -0.8 }, body: -0.28, head: -0.35 }
     };
     return poses[this.pose] || poses.idle;
   }
@@ -304,21 +326,74 @@ export class PlayerSystem {
   }
 
   _handleItemControls() {
-    if (this.input.consumeClick() && !this.game.notebookOpen && !this.game.hiding) {
+    const def = this.game.equippedDef();
+    if (!def) return;
+    if (this._lastEquipped !== this.game.equipped) {
+      this._lastEquipped = this.game.equipped;
+      this.aiming = false;
+      this._comboReady = false;
+      this.events.emit('aim.changed', { aiming: false, combo: false });
+    }
+
+    const click = this.input.consumeClick() || this.input.justPressed('KeyF');
+    const usable = !this.game.notebookOpen && !this.game.hiding;
+
+    if (def.type === 'throw') {
+      if (this.input.justRightPressed()) {
+        this.aiming = !this.aiming;
+        if (!this.aiming) this._comboReady = false;
+        this.audio?.play('click');
+        this.events.emit('aim.changed', { aiming: this.aiming, combo: this._comboReady });
+      }
+      if (click && usable) {
+        if (this.aiming) {
+          this.aiming = false;
+          const combo = this._comboReady;
+          this._comboReady = false;
+          this.playPose('use', 0.45);
+          this.events.emit('aim.changed', { aiming: false, combo: false });
+          if (combo) this.items.comboSlingshot();
+          else this.items.useEquipped();
+        } else {
+          this.aiming = true;
+          this.playPose('aim', 0.2);
+          this.audio?.play('click');
+          this.events.emit('aim.changed', { aiming: true, combo: this._comboReady });
+          this.events.emit('toast', { text: '瞄准中，再次左键或按 F 射出', ms: 1500 });
+        }
+      }
+    } else if (click && usable) {
       this.playPose('use', 0.45);
       this.items.useEquipped();
     }
+
     if (this.input.justPressed('KeyC')) {
-      this.playPose('use', 0.5);
-      this.items.comboSlingshot();
+      if (def.type === 'throw' && this.game.hasItem('pen') && this.game.hasItem('rubber')) {
+        this.aiming = true;
+        this._comboReady = true;
+        this.playPose('aim', 0.2);
+        this.events.emit('aim.changed', { aiming: true, combo: true });
+        this.events.emit('toast', { text: '自制弹弓已装填，左键或 F 射出', ms: 1500 });
+      } else if (def.type !== 'throw') {
+        this.items.comboSlingshot();
+      }
     }
+
     if (this.input.justPressed('KeyQ')) {
       this._cycleItem();
+      this.aiming = false;
+      this._comboReady = false;
+      this.events.emit('aim.changed', { aiming: false, combo: false });
     }
     for (let i = 0; i < this._itemCycle.length; i++) {
       if (this.input.justPressed(`Digit${i + 1}`)) {
         const id = this._itemCycle[i];
-        if (this.game.hasItem(id)) this.game.equipped = id;
+        if (this.game.hasItem(id)) {
+          this.game.equipped = id;
+          this.aiming = false;
+          this._comboReady = false;
+          this.events.emit('aim.changed', { aiming: false, combo: false });
+        }
       }
     }
   }

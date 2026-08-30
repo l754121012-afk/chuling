@@ -92,6 +92,7 @@ items.spawnPickups();
 const settlement = new SettlementSystem();
 
 events.on('audio', p => audio.play(p.name));
+events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
 events.on('game.start', () => {
   game.reset();
   game.phase = 'investigate';
@@ -182,7 +183,7 @@ function tick() {
 
   if (input.justPressed('Tab')) ui.toggleNotebook();
   ui.sync(game);
-  cameraSys.update(input, player.getPos());
+  cameraSys.update(input, player.getPos(), dt);
   physics.step(dt);
   renderer.render(scene, camera);
   input.update();

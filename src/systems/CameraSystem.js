@@ -9,11 +9,13 @@ export class CameraSystem {
     this.pitch = 0.42;
     this.dist = 5.4;
     this.raycaster = new THREE.Raycaster();
+    this.raycaster.camera = camera;
     this._faded = new Map();
     this._fadeHold = new Map();
+    this.shake = 0;
   }
 
-  update(input, targetPos) {
+  update(input, targetPos, dt = 1 / 60) {
     this.yaw -= input.look.x * 0.005;
     this.pitch = clamp(this.pitch + input.look.y * 0.004, -0.15, 1.15);
     this.dist = clamp(this.dist + input.zoom * 0.012, 2.6, 9.5);
@@ -24,8 +26,17 @@ export class CameraSystem {
       targetPos.z + Math.cos(this.yaw) * Math.cos(this.pitch) * this.dist
     );
     this.camera.position.lerp(cp, lerp(0.18, 0.5, Math.min(1, this.dist / 6)));
+    if (this.shake > 0.001) {
+      this.camera.position.x += (Math.random() - 0.5) * this.shake * 0.24;
+      this.camera.position.y += (Math.random() - 0.5) * this.shake * 0.24;
+    }
     this.camera.lookAt(targetPos.x, targetPos.y + 1.25, targetPos.z);
     this._updateOcclusion(targetPos);
+    this.shake = Math.max(0, this.shake - dt * 0.8);
+  }
+
+  addShake(amount) {
+    this.shake = Math.min(0.5, this.shake + amount);
   }
 
   _updateOcclusion(targetPos) {
@@ -83,6 +94,7 @@ export class CameraSystem {
 
   _canFade(mesh) {
     if (this._faded.has(mesh)) return true;
+    if (mesh.isSprite) return false;
     if (!mesh.visible || !mesh.material || Array.isArray(mesh.material)) return false;
     if (mesh.material.type !== 'MeshStandardMaterial' || mesh.material.transparent) return false;
     if (mesh.geometry?.type === 'PlaneGeometry' || mesh.geometry?.type === 'CircleGeometry') return false;

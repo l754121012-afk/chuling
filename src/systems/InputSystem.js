@@ -8,6 +8,8 @@ export class InputSystem {
     this.edgeLook = { x: 0, y: 0 };
     this.clicked = false;
     this._down = false;
+    this._rightDown = false;
+    this._rightPressed = false;
     this._lastX = null;
     this._lastY = null;
     this.locked = false;
@@ -53,6 +55,11 @@ export class InputSystem {
   }
 
   _onMouseDown(e) {
+    if (e.button === 2) {
+      this._rightDown = true;
+      this._rightPressed = true;
+      return;
+    }
     if (e.button !== 0) return;
     if (this.allowLock && !this.locked) {
       this._requestLock();
@@ -84,6 +91,10 @@ export class InputSystem {
   }
 
   _onMouseUp(e) {
+    if (e.button === 2) {
+      this._rightDown = false;
+      return;
+    }
     if (e.button !== 0) return;
     if (this._ignoreClick) {
       this._ignoreClick = false;
@@ -132,6 +143,16 @@ export class InputSystem {
     return this.keys.has(code);
   }
 
+  isRightDown() {
+    return this._rightDown;
+  }
+
+  justRightPressed() {
+    if (!this._rightPressed) return false;
+    this._rightPressed = false;
+    return true;
+  }
+
   justPressed(code) {
     if (!this._pressed.has(code)) return false;
     this._pressed.delete(code);
@@ -146,8 +167,8 @@ export class InputSystem {
 
   update() {
     if (!this.locked) {
-      this.look.x = this.edgeLook.x * 4;
-      this.look.y = this.edgeLook.y * 4;
+      this.look.x = this.edgeLook.x * 2.7;
+      this.look.y = this.edgeLook.y * 2.7;
     } else {
       this.look.x = 0;
       this.look.y = 0;

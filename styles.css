@@ -285,6 +285,85 @@ canvas {
   opacity: 0.85;
 }
 
+#crosshair.aiming {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid #ffe08a;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 12px rgba(255, 224, 138, 0.7);
+}
+
+#crosshair.aiming::before,
+#crosshair.aiming::after {
+  content: "";
+  position: absolute;
+  background: #ffe08a;
+}
+
+#crosshair.aiming::before {
+  left: 50%;
+  top: -13px;
+  width: 2px;
+  height: 11px;
+  transform: translateX(-50%);
+}
+
+#crosshair.aiming::after {
+  left: 50%;
+  bottom: -13px;
+  width: 2px;
+  height: 11px;
+  transform: translateX(-50%);
+}
+
+#crosshair.aiming .tick-x::before,
+#crosshair.aiming .tick-x::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 11px;
+  height: 2px;
+  background: #ffe08a;
+}
+
+#crosshair.aiming .tick-x::before {
+  left: -13px;
+}
+
+#crosshair.aiming .tick-x::after {
+  right: -13px;
+}
+
+#crosshair.combo {
+  border-color: #c08bff;
+  box-shadow: 0 0 14px rgba(192, 139, 255, 0.8);
+}
+
+#crosshair.combo::before,
+#crosshair.combo::after,
+#crosshair.combo .tick-x::before,
+#crosshair.combo .tick-x::after {
+  background: #c08bff;
+}
+
+#item-hint {
+  position: absolute;
+  bottom: 112px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(520px, 90vw);
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(24, 27, 33, 0.85);
+  color: #ffe08a;
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 #prompt {
   position: absolute;
   bottom: 34%;
@@ -616,6 +695,17 @@ canvas {
   #stamina-wrap {
     bottom: 96px;
     width: 140px;
+  }
+
+  #item-hint {
+    bottom: 84px;
+    left: auto;
+    right: 14px;
+    transform: none;
+    max-width: 210px;
+    text-align: right;
+    white-space: normal;
+    line-height: 1.4;
   }
 
   .start-card {

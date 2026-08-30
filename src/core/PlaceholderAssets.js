@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PALETTE } from '../config/palette.js';
+import { ITEM_DEFS } from '../config/items.js';
 
 const matCache = new Map();
 
@@ -88,6 +89,20 @@ function faceTexture(kind) {
   return canvasTexture(canvas);
 }
 
+function iconTexture(char, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 128);
+  ctx.fillStyle = color;
+  ctx.font = 'bold 76px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(char, 64, 70);
+  return canvasTexture(canvas);
+}
+
 function makeItemShape(id) {
   const group = new THREE.Group();
   const mat = material(PALETTE[id] || PALETTE.ink, 0.75, 0.15);
@@ -136,6 +151,35 @@ export function makeItemMesh(id) {
   return mesh;
 }
 
+export function makeItemMarker(id) {
+  const group = new THREE.Group();
+  const def = ITEM_DEFS[id] || {};
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.3, 0.37, 24),
+    new THREE.MeshBasicMaterial({
+      color: '#ffe08a',
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.03;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: iconTexture(def.icon || '?', '#ffe08a'),
+      transparent: true,
+      depthWrite: false
+    })
+  );
+  sprite.position.y = 0.62;
+  sprite.scale.set(0.48, 0.48, 1);
+  group.add(ring, sprite);
+  group.userData.marker = { ring, sprite, t: 0 };
+  return group;
+}
+
 function limbMesh(from, to, radius, mat) {
   const a = new THREE.Vector3(from[0], from[1], from[2]);
   const b = new THREE.Vector3(to[0], to[1], to[2]);
@@ -148,14 +192,14 @@ function limbMesh(from, to, radius, mat) {
 
 export function makePlayerMesh() {
   const group = new THREE.Group();
-  const bodyMat = material(PALETTE.player, 0.7, 0.05);
-  const skinMat = material(PALETTE.playerSkin, 0.8, 0);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: PALETTE.player, roughness: 0.7, metalness: 0.05 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: PALETTE.playerSkin, roughness: 0.8, metalness: 0 });
   const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.8, 12), bodyMat);
   body.position.y = 0.85;
 
   const legL = limbMesh([-0.13, 0.62, 0], [-0.13, 0.08, 0], 0.09, bodyMat);
   const legR = limbMesh([0.13, 0.62, 0], [0.13, 0.08, 0], 0.09, bodyMat);
-  const footMat = material(PALETTE.ink, 0.75, 0.1);
+  const footMat = new THREE.MeshStandardMaterial({ color: PALETTE.ink, roughness: 0.75, metalness: 0.1 });
   const footL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.09, 0.26), footMat);
   footL.position.set(-0.13, 0.045, 0.03);
   const footR = footL.clone();
@@ -186,7 +230,8 @@ export function makePlayerMesh() {
     new THREE.MeshBasicMaterial({ map: faceTexture('player'), transparent: true })
   );
   face.position.set(0, 1.58, 0.27);
-  const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.22), material(PALETTE.wallTrim, 0.85));
+  const backpackMat = new THREE.MeshStandardMaterial({ color: PALETTE.wallTrim, roughness: 0.85 });
+  const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.22), backpackMat);
   backpack.position.set(0, 0.9, -0.36);
 
   armLGroup.rotation.z = -0.45;
@@ -201,6 +246,7 @@ export function makePlayerMesh() {
     armR: armRGroup,
     handSlot
   };
+  group.userData.materials = { bodyMat, skinMat, footMat, backpackMat };
   group.userData.handSlot = handSlot;
   group.userData.assetKey = 'player';
   return group;

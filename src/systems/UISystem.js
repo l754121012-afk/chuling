@@ -38,7 +38,9 @@ export class UISystem {
       loseLine: document.getElementById('lose-line'),
       vignette: document.getElementById('danger-vignette'),
       warning: document.getElementById('ghost-warning'),
-      warningLabel: document.getElementById('warn-label')
+      warningLabel: document.getElementById('warn-label'),
+      crosshair: document.getElementById('crosshair'),
+      itemHint: document.getElementById('item-hint')
     };
     this._buildInventory();
 
@@ -118,6 +120,16 @@ export class UISystem {
       slot.classList.toggle('empty', count <= 0);
       slot.classList.toggle('selected', game.equipped === id && count > 0);
     });
+
+    const def = ITEM_DEFS[game.equipped];
+    if (def) {
+      const usage = def.type === 'throw'
+        ? '右键/左键瞄准，再点左键或 F 射出'
+        : def.type === 'seal'
+          ? '找到弱点，靠近鬼背后左键封印'
+          : '左键在脚下放置陷阱';
+      this.el.itemHint.textContent = `${def.name}：${usage}`;
+    }
   }
 
   _objectiveText(game) {
@@ -208,6 +220,10 @@ export class UISystem {
       this.el.vignette.classList.toggle('active', p.danger > 0.05);
       this.el.warning.classList.toggle('active', p.danger > 0.2);
       this.el.warningLabel.textContent = p.label;
+    });
+    this.events.on('aim.changed', p => {
+      this.el.crosshair.classList.toggle('aiming', !!p.aiming);
+      this.el.crosshair.classList.toggle('combo', !!p.combo);
     });
   }
 }

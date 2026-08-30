@@ -5,6 +5,7 @@ import { ITEM_DEFS, COMBO_DEFS } from '../config/items.js';
 import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
 import {
   makeItemMesh,
+  makeItemMarker,
   makeTrapMesh,
   makeGluePuddleMesh
 } from '../core/PlaceholderAssets.js';
@@ -37,6 +38,10 @@ export class ItemSystem {
       const mesh = makeItemMesh(s.id);
       mesh.position.set(s.x, s.y || 1.0, s.z);
       mesh.rotation.y = rand(0, Math.PI * 2);
+      const marker = makeItemMarker(s.id);
+      marker.position.set(0, 0.08, 0);
+      mesh.add(marker);
+      mesh.userData.marker = marker.userData.marker;
       this.scene.group.add(mesh);
       this.pickups.push({
         id: s.id,
@@ -315,6 +320,10 @@ export class ItemSystem {
       const mesh = makeItemMesh(p.id);
       mesh.position.set(p.pos.x, 0.06, p.pos.z);
       mesh.rotation.y = rand(0, Math.PI * 2);
+      const marker = makeItemMarker(p.id);
+      marker.position.set(0, 0.08, 0);
+      mesh.add(marker);
+      mesh.userData.marker = marker.userData.marker;
       this.scene.group.add(mesh);
       this.pickups.push({
         id: p.id,
@@ -351,6 +360,17 @@ export class ItemSystem {
           this.events.emit('toast', { text: '你踩到自己的胶水了！', ms: 1400 });
         }
       }
+    }
+
+    for (const pickup of this.pickups) {
+      if (pickup.picked || !pickup.mesh.userData.marker) continue;
+      const marker = pickup.mesh.userData.marker;
+      marker.t += dt;
+      const pulse = 1 + Math.sin(marker.t * 3) * 0.08;
+      marker.ring.scale.setScalar(pulse);
+      marker.ring.material.opacity = 0.6 + Math.sin(marker.t * 2.4) * 0.3;
+      marker.sprite.material.opacity = 0.7 + Math.sin(marker.t * 2) * 0.25;
+      marker.sprite.position.y = 0.62 + Math.sin(marker.t * 2) * 0.06;
     }
   }
 }

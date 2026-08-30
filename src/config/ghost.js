@@ -23,9 +23,9 @@ export const GHOST_CONFIG = {
     break: 12,
     sprintNear: 0.5,
     slap: 8,
-    clueRead: -4,
-    quiet: -1.5,
-    hide: -6
+    clueRead: 4,
+    quiet: 1.5,
+    hide: 8
   }
 };
 
