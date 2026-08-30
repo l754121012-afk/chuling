@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>除灵实习生 Phase 0</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.min.js",
+        "cannon-es": "./vendor/cannon-es.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud" class="hidden">
+      <div id="phone" class="phone">
+        <div class="phone-head">
+          <span>安心手机</span>
+          <span class="phone-time">08:41</span>
+        </div>
+        <div class="phone-screen">
+          <div class="rage-row">
+            <span class="rage-caption">恶灵暴怒值</span>
+            <span id="stage-label">恶灵：冷静</span>
+          </div>
+          <div class="rage-segments" id="rage-segments">
+            <span class="rage-seg"></span>
+            <span class="rage-seg"></span>
+            <span class="rage-seg"></span>
+            <span class="rage-seg"></span>
+            <span class="rage-seg"></span>
+          </div>
+          <div class="battery-row">
+            <span>手机电量</span>
+            <div class="battery-shell"><div id="battery-bar"></div></div>
+          </div>
+        </div>
+        <div id="objective" class="objective">调查教室：找到黑板和纸条两条线索</div>
+      </div>
+
+      <div id="stamina-wrap">
+        <span>体力</span>
+        <div class="stamina-shell"><div id="stamina-bar"></div></div>
+      </div>
+
+      <div id="inventory"></div>
+
+      <div id="crosshair"></div>
+      <div id="prompt"></div>
+      <div id="speech"></div>
+      <div id="toast"></div>
+
+      <button id="mute-btn" type="button" title="静音">♪</button>
+      <div id="hint">WASD 移动 · 拖拽视角 · 左键使用道具 · E 互动 · Tab 手机</div>
+    </div>
+
+    <div id="notebook" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span>实习笔记</span>
+          <button type="button" class="notebook-close">×</button>
+        </div>
+        <div id="notebook-list"></div>
+      </div>
+    </div>
+
+    <div id="screen-start">
+      <div class="start-card">
+        <div class="start-stamp">PHASE 0</div>
+        <h1>除灵实习生</h1>
+        <p class="start-line">百元店文具，打白工除灵，干完这一单就跑路。</p>
+        <div class="start-controls">
+          <span>WASD 移动</span>
+          <span>Shift 奔跑</span>
+          <span>拖拽视角</span>
+          <span>左键 使用道具</span>
+          <span>E 互动</span>
+          <span>Q 切换道具</span>
+          <span>C 自制弹弓</span>
+          <span>Tab 实习笔记</span>
+        </div>
+        <button id="start-btn" type="button">开始实习</button>
+        <p class="start-note">先找两条线索：黑板上写了什么，桌上的纸条又说了什么。</p>
+      </div>
+    </div>
+
+    <div id="screen-win" class="screen hidden">
+      <div class="modal-card end-card">
+        <h2>跑出来了！</h2>
+        <div id="settlement-rows"></div>
+        <div class="settle-total">到手 <span id="settlement-total"></span></div>
+        <p id="settlement-line"></p>
+        <button id="restart-win" type="button">再干一单</button>
+      </div>
+    </div>
+
+    <div id="screen-lose" class="screen hidden">
+      <div class="modal-card end-card lose-card">
+        <h2>被鬼抓住了</h2>
+        <div id="lose-rows"></div>
+        <div class="settle-total">结算 <span id="lose-total"></span></div>
+        <p id="lose-line"></p>
+        <button id="restart-lose" type="button">再试一次</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+export const GAME_CONFIG = {
+  title: '除灵实习生 Phase 0',
+  baseSalary: 100000,
+  escapeTime: 45,
+  staminaMax: 100,
+  staminaDrainPerSecond: 18,
+  staminaRegenPerSecond: 10,
+  staminaMinToSprint: 8,
+  walkSpeed: 2.6,
+  sprintSpeed: 5.0,
+  throwCooldown: 0.35,
+  interactRadius: 2.2,
+  pickupRadius: 2.0,
+  noiseRunRadius: 9,
+  noiseThrowRadius: 12,
+  noiseBreakRadius: 16,
+  quietDecay: 1.5,
+  hideDecay: 6,
+  slapCooldown: 2.5,
+  batteryDrainPerSecond: 0.35,
+  batteryDrainPerClue: 6,
+  phoneOpenDrainPerSecond: 3
+};

@@ -1,0 +1,318 @@
+import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
+import { GAME_CONFIG } from '../config/game.js';
+import { ITEM_DEFS, COMBO_DEFS } from '../config/items.js';
+import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
+import {
+  makeItemMesh,
+  makeTrapMesh,
+  makeGluePuddleMesh
+} from '../core/PlaceholderAssets.js';
+import { distance2D, nowSec, rand, choice } from '../core/Utils.js';
+
+export class ItemSystem {
+  constructor({ scene, physics, events, game, rage, ghost, camera, audio, playerPos }) {
+    this.scene = scene;
+    this.physics = physics;
+    this.events = events;
+    this.game = game;
+    this.rage = rage;
+    this.ghost = ghost;
+    this.camera = camera;
+    this.audio = audio;
+    this.playerPos = playerPos;
+    this.pickups = [];
+    this.projectiles = [];
+    this.pendingPickups = [];
+    this.zones = [];
+    this._removeQueue = [];
+    this.cooldown = 0;
+  }
+
+  spawnPickups() {
+    for (const s of this.scene.refs.itemSpawns) {
+      const mesh = makeItemMesh(s.id);
+      mesh.position.set(s.x, s.y || 1.0, s.z);
+      mesh.rotation.y = rand(0, Math.PI * 2);
+      this.scene.group.add(mesh);
+      this.pickups.push({
+        id: s.id,
+        mesh,
+        pos: { x: s.x, z: s.z },
+        picked: false
+      });
+    }
+  }
+
+  pickup(pickup) {
+    if (pickup.picked || !this.game.isPlaying()) return;
+    pickup.picked = true;
+    this.scene.group.remove(pickup.mesh);
+    this.game.addItem(pickup.id, 1);
+    const def = ITEM_DEFS[pickup.id];
+    this.events.emit('item.picked', { id: pickup.id, def });
+    this.audio?.play('paper');
+    this.events.emit('toast', { text: `${def.name} 到手了`, ms: 1300 });
+  }
+
+  useEquipped() {
+    if (!this.game.isPlaying() || this.game.notebookOpen || this.cooldown > 0) return;
+    const def = this.game.equippedDef();
+    if (!def) return;
+    if (def.type === 'throw') {
+      this._throwItem(def, null);
+    } else if (def.type === 'seal') {
+      this._useStapler();
+    } else if (def.type === 'trap') {
+      this._placeTrap();
+    }
+    this.cooldown = GAME_CONFIG.throwCooldown;
+  }
+
+  comboSlingshot() {
+    if (!this.game.isPlaying() || this.cooldown > 0) return;
+    if (!this.game.hasItem('pen') || !this.game.hasItem('rubber')) {
+      this.events.emit('toast', { text: '需要圆珠笔+橡皮筋', ms: 1500 });
+      return;
+    }
+    this.game.consumeItem('rubber');
+    this.game.usedItems.push('rubber');
+    this._throwItem(ITEM_DEFS.pen, COMBO_DEFS.slingshot);
+    this.cooldown = GAME_CONFIG.throwCooldown;
+  }
+
+  _throwItem(def, combo) {
+    if (!this.game.consumeItem(def.id, 1)) return;
+    if (combo) {
+      this.game.usedItems.push(def.id);
+      this.events.emit('toast', { text: `${combo.name}！飞出去了！`, ms: 1400 });
+    } else {
+      this.game.usedItems.push(def.id);
+    }
+
+    const dir = new THREE.Vector3();
+    this.camera.getWorldDirection(dir);
+    dir.y = Math.max(-0.1, dir.y);
+    dir.normalize();
+    const origin = this.playerPos();
+    const start = new THREE.Vector3(
+      origin.x + dir.x * 1.1,
+      origin.y + 1.35 + dir.y * 1.1,
+      origin.z + dir.z * 1.1
+    );
+
+    const mesh = makeItemMesh(def.id);
+    mesh.position.copy(start);
+    this.scene.group.add(mesh);
+
+    const body = makeBody({
+      shape: new CANNON.Sphere(0.12),
+      position: start,
+      mass: def.mass || 0.1,
+      group: GROUPS.ITEM,
+      mask: GROUPS.WORLD | GROUPS.GHOST | GROUPS.PROP,
+      fixedRotation: false
+    });
+    body.linearDamping = 0.05;
+    body.angularDamping = 0.02;
+    this.physics.add(body);
+
+    const speed = combo?.speed || def.speed;
+    body.velocity.set(dir.x * speed, dir.y * speed + 0.8, dir.z * speed);
+    body.angularVelocity.set(rand(-12, 12), rand(-12, 12), rand(-12, 12));
+
+    const proj = {
+      id: def.id,
+      def,
+      combo,
+      mesh,
+      body,
+      impacted: false,
+      ttl: 9
+    };
+    body.addEventListener('collide', ev => this._onProjectileHit(proj, ev));
+    this.projectiles.push(proj);
+    this.audio?.play('whoosh');
+    this.events.emit('noise', {
+      pos: origin,
+      radius: GAME_CONFIG.noiseThrowRadius
+    });
+  }
+
+  _onProjectileHit(proj, ev) {
+    if (proj.impacted) return;
+    const other = ev.body;
+    if (other === proj.body) return;
+    proj.impacted = true;
+    const hitPos = { x: proj.body.position.x, z: proj.body.position.z };
+
+    if ((other.collisionFilterGroup & GROUPS.GHOST) !== 0) {
+      this._hitGhost(proj, hitPos);
+      return;
+    }
+    this._hitWorld(proj, hitPos);
+  }
+
+  _hitGhost(proj, hitPos) {
+    if (proj.def.id === 'glue') {
+      this.game.slowedUntil = nowSec() + (proj.def.slow || 3);
+      this.rage.add(proj.def.rage, 'glue');
+      this.audio?.play('splat');
+      this.events.emit('toast', { text: '胶水糊了它一脸！速度变慢了', ms: 1800 });
+      this.ghost._speak('黏糊糊的！！', 1600);
+      this._removeProjectile(proj);
+      return;
+    }
+    this.ghost.damage(proj.def.damage || 1, proj.def);
+    this.events.emit('toast', {
+      text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,
+      ms: 1300
+    });
+    this._removeProjectile(proj);
+  }
+
+  _hitWorld(proj, hitPos) {
+    if (proj.def.id === 'glue') {
+      this._createGluePuddle(hitPos);
+      this._removeProjectile(proj);
+      return;
+    }
+    if (proj.def.id === 'scissors' && Math.random() < 0.55) {
+      this._removeProjectile(proj);
+      this.events.emit('toast', { text: '剪刀插进天花板了！', ms: 1800 });
+      this.audio?.play('hit');
+      return;
+    }
+    this._schedulePickup(proj.def.id, hitPos, 0.65);
+    this._removeProjectile(proj);
+  }
+
+  _removeProjectile(proj) {
+    const idx = this.projectiles.indexOf(proj);
+    if (idx >= 0) this.projectiles.splice(idx, 1);
+    this._removeQueue.push(proj);
+  }
+
+  _processRemovals() {
+    for (const proj of this._removeQueue) {
+      if (proj.body.world) this.physics.remove(proj.body);
+      this.scene.group.remove(proj.mesh);
+    }
+    this._removeQueue.length = 0;
+  }
+
+  _schedulePickup(id, pos, delay) {
+    this.pendingPickups.push({
+      id,
+      pos: { x: pos.x, z: pos.z },
+      at: nowSec() + delay
+    });
+  }
+
+  _createGluePuddle(pos) {
+    const mesh = makeGluePuddleMesh();
+    mesh.position.set(pos.x, 0.02, pos.z);
+    this.scene.group.add(mesh);
+    this.zones.push({
+      type: 'glue',
+      mesh,
+      pos: { x: pos.x, z: pos.z },
+      radius: 0.75,
+      until: nowSec() + 10,
+      used: false
+    });
+    this.audio?.play('splat');
+  }
+
+  _placeTrap() {
+    if (!this.game.consumeItem('tape')) return;
+    this.game.usedItems.push('tape');
+    const p = this.playerPos();
+    const mesh = makeTrapMesh();
+    mesh.position.set(p.x, 0.02, p.z);
+    this.scene.group.add(mesh);
+    this.zones.push({
+      type: 'trap',
+      mesh,
+      pos: { x: p.x, z: p.z },
+      radius: 0.9,
+      until: nowSec() + 60,
+      used: false
+    });
+    this.events.emit('toast', { text: '修正带陷阱画好了！', ms: 1500 });
+    this.audio?.play('click');
+  }
+
+  _useStapler() {
+    const result = this.ghost.sealAttempt();
+    if (result === 'miss') {
+      this.events.emit('toast', { text: '太远了，够不着。', ms: 1200 });
+    }
+  }
+
+  giveItem(id, n = 1) {
+    this.game.addItem(id, n);
+    this.events.emit('item.picked', { id, def: ITEM_DEFS[id] });
+  }
+
+  update(dt, playerPos, ghostPos) {
+    this.cooldown = Math.max(0, this.cooldown - dt);
+    this._processRemovals();
+
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const proj = this.projectiles[i];
+      proj.ttl -= dt;
+      syncMeshToBody(proj.mesh, proj.body);
+      if (proj.ttl <= 0) {
+        if (!proj.impacted && proj.def.id !== 'scissors') {
+          this._schedulePickup(proj.def.id, { x: proj.body.position.x, z: proj.body.position.z }, 0.2);
+        }
+        this._removeProjectile(proj);
+      }
+    }
+
+    for (let i = this.pendingPickups.length - 1; i >= 0; i--) {
+      const p = this.pendingPickups[i];
+      if (nowSec() < p.at) continue;
+      const mesh = makeItemMesh(p.id);
+      mesh.position.set(p.pos.x, 1.0, p.pos.z);
+      mesh.rotation.y = rand(0, Math.PI * 2);
+      this.scene.group.add(mesh);
+      this.pickups.push({
+        id: p.id,
+        mesh,
+        pos: { x: p.pos.x, z: p.pos.z },
+        picked: false
+      });
+      this.pendingPickups.splice(i, 1);
+    }
+
+    for (let i = this.zones.length - 1; i >= 0; i--) {
+      const zone = this.zones[i];
+      if (nowSec() > zone.until || zone.used) {
+        this.scene.group.remove(zone.mesh);
+        this.zones.splice(i, 1);
+        continue;
+      }
+      const ghostDist = distance2D(ghostPos.x, ghostPos.z, zone.pos.x, zone.pos.z);
+      const playerDist = distance2D(playerPos.x, playerPos.z, zone.pos.x, zone.pos.z);
+      if (zone.type === 'trap' && ghostDist < zone.radius && !zone.used) {
+        zone.used = true;
+        this.game.stunnedUntil = nowSec() + 3.2;
+        this.rage.add(3, 'trap');
+        this.audio?.play('splat');
+        this.events.emit('toast', { text: '鬼被修正带黏住了！', ms: 1800 });
+        this.ghost._speak('这是什么？！', 1600);
+      }
+      if (zone.type === 'glue') {
+        if (ghostDist < zone.radius) {
+          this.game.slowedUntil = nowSec() + 1.8;
+        }
+        if (playerDist < zone.radius * 0.85) {
+          this.game.stickyUntil = nowSec() + 1.4;
+          this.events.emit('toast', { text: '你踩到自己的胶水了！', ms: 1400 });
+        }
+      }
+    }
+  }
+}
