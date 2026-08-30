@@ -33,6 +33,7 @@ export class PlayerSystem {
     this._hideRestorePos = null;
     this._hideRestoreType = null;
     this._hideRestoreMask = null;
+    this.crouching = false;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -100,6 +101,7 @@ export class PlayerSystem {
       this.pawn.mesh.rotation.y = Math.atan2(body.velocity.x, body.velocity.z);
     }
     this._updatePose(dt);
+    this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
     if (this.game.hiding) {
       this.pawn.mesh.visible = false;
     } else if (nowSec() < this.game.invincibleUntil) {
@@ -193,8 +195,9 @@ export class PlayerSystem {
     const sprint = this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight');
     const canSprint = sprint && this.game.stamina > GAME_CONFIG.staminaMinToSprint;
     const sticky = this.game.stickyUntil > nowSec();
+    this.crouching = this.input.isDown('KeyX') || this.input.isDown('ControlLeft');
     const baseSpeed = canSprint ? GAME_CONFIG.sprintSpeed : GAME_CONFIG.walkSpeed;
-    const speed = baseSpeed * (sticky ? 0.6 : 1);
+    const speed = baseSpeed * (sticky ? 0.6 : 1) * (this.crouching ? 0.55 : 1);
 
     body.velocity.set(dirX * speed, body.velocity.y, dirZ * speed);
     body.wakeUp();
@@ -209,6 +212,27 @@ export class PlayerSystem {
         radius: GAME_CONFIG.noiseRunRadius
       });
       this._noiseTimer = 0.5;
+    }
+
+    if (len > 0 && this._noiseTimer <= 0) this._checkClutter();
+  }
+
+  isCrouching() {
+    return this.crouching;
+  }
+
+  _checkClutter() {
+    const pos = this.getPos();
+    for (const c of this.scene.refs?.clutter || []) {
+      if (c.used) continue;
+      const d = distance2D(pos.x, pos.z, c.x, c.z);
+      if (d < 0.9) {
+        c.used = true;
+        this.rage.add(2, 'clutter');
+        this.events.emit('noise', { pos: { x: c.x, z: c.z }, radius: 9 });
+        this.events.emit('toast', { text: '踢到杂物了！', ms: 1200 });
+        this.audio?.play('hit');
+      }
     }
   }
 
@@ -309,7 +333,7 @@ export class PlayerSystem {
         best = {
           type: 'prop',
           prop,
-          label: prop.type === 'bookshelf' ? '推倒书架' : '踢垃圾桶'
+          label: prop.type === 'bookshelf' ? '推倒书架' : prop.type === 'trash' ? '踢垃圾桶' : '碰倒盆栽'
         };
       }
     }
@@ -379,11 +403,13 @@ export class PlayerSystem {
         new CANNON.Vec3(prop.body.position.x, 0.4, prop.body.position.z)
       );
       prop.body.angularVelocity.set(rand(-2, 2), 0.6, rand(-1.5, 1.5));
+      prop.body.collisionFilterGroup = GROUPS.WORLD;
+      prop.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM;
       this.rage.add(12, 'break');
       this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius });
       this.events.emit('toast', { text: '书架倒了！赔偿 8000 円！', ms: 2200 });
       this.audio?.play('hit');
-    } else {
+    } else if (prop.type === 'trash') {
       if (!prop.used) {
         prop.used = true;
         this.game.damages.push('trash');
@@ -396,6 +422,20 @@ export class PlayerSystem {
       this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius });
       this.events.emit('toast', { text: '垃圾桶飞出去了！', ms: 1600 });
       this.audio?.play('slap');
+    } else if (prop.type === 'plant') {
+      if (!prop.used) {
+        prop.used = true;
+        this.game.damages.push('plant');
+      }
+      prop.body.applyImpulse(
+        new CANNON.Vec3(rand(-3, 3), 3, rand(-3, 3)),
+        new CANNON.Vec3(prop.body.position.x, 0.4, prop.body.position.z)
+      );
+      prop.body.angularVelocity.set(rand(-3, 3), 0.5, rand(-2, 2));
+      this.rage.add(4, 'break');
+      this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius });
+      this.events.emit('toast', { text: '盆栽倒了！赔偿 2000 円！', ms: 1800 });
+      this.audio?.play('hit');
     }
   }
 

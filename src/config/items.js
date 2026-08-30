@@ -28,6 +28,11 @@ export const ITEM_DEFS = {
     id: 'rubber', name: '橡皮筋', icon: '◯', type: 'throw',
     count: 3, damage: 5, rage: 3, speed: 24, mass: 0.03,
     desc: '弹得快，威力小。', cost: 100
+  },
+  eraser: {
+    id: 'eraser', name: '黑板擦', icon: '▦', type: 'throw',
+    count: 1, damage: 3, rage: 5, speed: 18, mass: 0.2,
+    knockback: 8, desc: '打中会把鬼拍退一截。', cost: 350
   }
 };
 

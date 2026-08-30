@@ -139,6 +139,11 @@ function makeItemShape(id) {
   } else if (id === 'rubber') {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.012, 8, 18), mat);
     group.add(ring);
+  } else if (id === 'eraser') {
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.16), mat);
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.2), dark);
+    handle.position.y = 0.06;
+    group.add(pad, handle);
   } else {
     group.add(new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.12), mat));
   }
@@ -367,12 +372,12 @@ export function makePropMesh(type) {
       group.add(shelf);
     }
   } else if (type === 'lockers') {
-    const box = new THREE.Mesh(new THREE.BoxGeometry(1.55, 2.0, 0.55), material('#5d7d8a', 0.65, 0.2));
-    box.position.y = 1.0;
-    const line = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.9, 0.56), material('#31434a'));
-    line.position.y = 1.0;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(1.55, 1.7, 0.55), material('#5d7d8a', 0.65, 0.2));
+    box.position.y = 0.85;
+    const line = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.6, 0.56), material('#31434a'));
+    line.position.y = 0.85;
     const handle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.24, 0.08), material('#31434a'));
-    handle.position.set(0.55, 1.35, 0.3);
+    handle.position.set(0.55, 1.2, 0.3);
     group.add(box, line, handle);
   } else if (type === 'trashCan') {
     const can = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.72, 12), material('#6f8f5f', 0.75));

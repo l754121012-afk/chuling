@@ -58,6 +58,10 @@ export class AudioSystem {
     else if (name === 'gate') {
       this._tone(t, 520, 0.12, 'square', 0.14);
       this._tone(t + 0.12, 780, 0.16, 'square', 0.14);
+    } else if (name === 'phone') {
+      this._tone(t, 780, 0.16, 'square', 0.12);
+      this._tone(t + 0.22, 980, 0.16, 'square', 0.12);
+      this._tone(t + 0.44, 780, 0.16, 'square', 0.12);
     } else if (name === 'win') {
       [523, 659, 784, 1046].forEach((f, i) => this._tone(t + i * 0.11, f, 0.18, 'triangle', 0.18));
     } else if (name === 'lose') {

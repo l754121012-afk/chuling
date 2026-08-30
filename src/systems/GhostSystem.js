@@ -40,6 +40,7 @@ export class GhostSystem {
     this.pawn = null;
     this.playerPos = () => ({ x: 0, y: 0, z: 0 });
     this.playerBody = null;
+    this.playerCrouching = null;
     this._waypoint = null;
     this._lastNoise = null;
     this._lastSeen = null;
@@ -59,6 +60,9 @@ export class GhostSystem {
     this._dashDirZ = 0;
     this._dashSpeed = 0;
     this._dashFlash = 0;
+    this._knockbackTimer = 0;
+    this._knockbackVX = 0;
+    this._knockbackVZ = 0;
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
@@ -134,6 +138,9 @@ export class GhostSystem {
         this.game.escapeTimer -= dt;
         if (this.game.escapeTimer <= 0) this._catchPlayer();
       }
+    } else if (this._knockbackTimer > 0) {
+      this._knockbackTimer -= dt;
+      this.pawn.body.velocity.set(this._knockbackVX, 2, this._knockbackVZ);
     } else if (this._dashTimer > 0) {
       this._dashTimer -= dt;
       this._setVelocity(this._dashDirX * this._dashSpeed, this._dashDirZ * this._dashSpeed, dt);
@@ -194,6 +201,12 @@ export class GhostSystem {
     this._dashFlash = 0.3;
     this.audio?.play('whoosh');
     this.events.emit('toast', { text: '鬼突然加速了！', ms: 1100 });
+  }
+
+  knockback(vx, vz, duration = 0.45) {
+    this._knockbackVX = vx;
+    this._knockbackVZ = vz;
+    this._knockbackTimer = duration;
   }
 
   _applyStageVisual(stage, dt) {
@@ -350,9 +363,11 @@ export class GhostSystem {
 
   _canSee(playerPos, stage) {
     if (this.game.hiding) return false;
+    if (playerPos.y > 1.1) return false;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > stage.viewDist) return false;
+    if (this.playerCrouching?.() && dist > 1.8) return false;
 
     const dx = playerPos.x - b.x;
     const dz = playerPos.z - b.z;
@@ -389,6 +404,7 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this.game.hiding) return;
+    if (playerPos.y > 1.1) return;
     if (nowSec() < this.game.weakUntil) return;
     if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;

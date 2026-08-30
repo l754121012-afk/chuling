@@ -27,6 +27,8 @@ export class SchoolScene {
       locker: null,
       clues: [],
       props: [],
+      pillars: [],
+      clutter: [],
       itemSpawns: LEVEL_CONFIG.itemSpawns.map(s => ({ ...s }))
     };
 
@@ -42,9 +44,9 @@ export class SchoolScene {
   }
 
   _addFloor() {
-    this._box(26, 0.4, 20, { x: 0, y: -0.2, z: 4 }, PALETTE.floor);
+    this._box(36, 0.4, 30, { x: 0, y: -0.2, z: 5 }, PALETTE.floor);
     const darkFloor = new THREE.Mesh(
-      new THREE.PlaneGeometry(10, 9),
+      new THREE.PlaneGeometry(18, 14),
       new THREE.MeshStandardMaterial({ color: PALETTE.floorDark, roughness: 0.95 })
     );
     darkFloor.rotation.x = -Math.PI / 2;
@@ -56,18 +58,15 @@ export class SchoolScene {
     const wallColor = PALETTE.wall;
     const wallTrim = PALETTE.wallTrim;
 
-    this._box(14, 3.5, 0.25, { x: 0, y: 1.75, z: -5 }, wallColor);
-    this._box(0.25, 3.5, 8.5, { x: 7, y: 1.75, z: -1 }, wallColor);
-    this._box(0.25, 3.5, 8.5, { x: -7, y: 1.75, z: -1 }, wallColor);
-    this._box(5.5, 3.5, 0.25, { x: -4.25, y: 1.75, z: 3 }, wallColor);
-    this._box(5.5, 3.5, 0.25, { x: 4.25, y: 1.75, z: 3 }, wallColor);
-    this._box(0.25, 3.5, 8.5, { x: -3, y: 1.75, z: 7 }, wallColor);
-    this._box(0.25, 3.5, 8.5, { x: 3, y: 1.75, z: 7 }, wallColor);
-    this._box(6, 3.5, 0.25, { x: 0, y: 1.75, z: 11 }, wallColor);
-    this._box(3, 0.7, 0.25, { x: 0, y: 3.15, z: 3 }, wallTrim);
-
-    const base = this._box(14, 0.22, 0.3, { x: 0, y: 0.11, z: -4.88 }, wallTrim);
-    base.mesh.visible = false;
+    this._box(18, 3.5, 0.25, { x: 0, y: 1.75, z: -6 }, wallColor);
+    this._box(0.25, 3.5, 10.5, { x: 9, y: 1.75, z: -1 }, wallColor);
+    this._box(0.25, 3.5, 10.5, { x: -9, y: 1.75, z: -1 }, wallColor);
+    this._box(7, 3.5, 0.25, { x: -5.5, y: 1.75, z: 4 }, wallColor);
+    this._box(7, 3.5, 0.25, { x: 5.5, y: 1.75, z: 4 }, wallColor);
+    this._box(0.25, 3.5, 12.5, { x: -3.5, y: 1.75, z: 10 }, wallColor);
+    this._box(0.25, 3.5, 12.5, { x: 3.5, y: 1.75, z: 10 }, wallColor);
+    this._box(7, 3.5, 0.25, { x: 0, y: 1.75, z: 16 }, wallColor);
+    this._box(4, 0.7, 0.25, { x: 0, y: 3.15, z: 4 }, wallTrim);
   }
 
   _addProps(refs) {
@@ -77,23 +76,38 @@ export class SchoolScene {
       mesh.rotation.y = desk.rotY;
       this.group.add(mesh);
       const body = makeBody({
-        shape: new CANNON.Box(v3(0.4, 0.38, 0.28)),
-        position: { x: desk.x, y: 0.38, z: desk.z },
-        group: GROUPS.WORLD,
+        shape: new CANNON.Box(v3(0.4, 0.05, 0.28)),
+        position: { x: desk.x, y: 0.76, z: desk.z },
+        group: GROUPS.PROP,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       this.physics.add(body);
     }
 
+    const platform = LEVEL_CONFIG.platform;
+    const platformMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(platform.w, platform.h, platform.d),
+      material('#b9926a', 0.9)
+    );
+    platformMesh.position.set(platform.x, platform.h / 2, platform.z);
+    this.group.add(platformMesh);
+    const platformBody = makeBody({
+      shape: new CANNON.Box(v3(platform.w / 2, platform.h / 2, platform.d / 2)),
+      position: { x: platform.x, y: platform.h / 2, z: platform.z },
+      group: GROUPS.WORLD,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+    });
+    this.physics.add(platformBody);
+
     const teacher = LEVEL_CONFIG.teacherDesk;
     const teacherMesh = makePropMesh('teacherDesk');
-    teacherMesh.position.set(teacher.x, 0, teacher.z);
+    teacherMesh.position.set(teacher.x, 1.0, teacher.z);
     teacherMesh.rotation.y = teacher.rotY;
     this.group.add(teacherMesh);
     const teacherBody = makeBody({
       shape: new CANNON.Box(v3(0.58, 0.48, 0.33)),
-      position: { x: teacher.x, y: 0.48, z: teacher.z },
-      group: GROUPS.WORLD,
+      position: { x: teacher.x, y: 1.48, z: teacher.z },
+      group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(teacherBody);
@@ -130,17 +144,33 @@ export class SchoolScene {
     lockerMesh.rotation.y = lockerPos.rotY;
     this.group.add(lockerMesh);
     const lockerBody = makeBody({
-      shape: new CANNON.Box(v3(0.78, 1.0, 0.28)),
-      position: { x: lockerPos.x, y: 1.0, z: lockerPos.z },
-      group: GROUPS.WORLD,
+      shape: new CANNON.Box(v3(0.78, 0.85, 0.28)),
+      position: { x: lockerPos.x, y: 0.85, z: lockerPos.z },
+      group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(lockerBody);
     refs.locker = {
       mesh: lockerMesh,
       body: lockerBody,
-      pos: { x: lockerPos.x, z: lockerPos.z }
+      pos: { x: lockerPos.x, z: lockerPos.z },
+      topY: 1.7
     };
+
+    const step = LEVEL_CONFIG.lockerStep;
+    const stepMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(step.w, step.h, step.d),
+      material('#7c644d', 0.9)
+    );
+    stepMesh.position.set(step.x, step.h / 2, step.z);
+    this.group.add(stepMesh);
+    const stepBody = makeBody({
+      shape: new CANNON.Box(v3(step.w / 2, step.h / 2, step.d / 2)),
+      position: { x: step.x, y: step.h / 2, z: step.z },
+      group: GROUPS.WORLD,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+    });
+    this.physics.add(stepBody);
 
     const trash = LEVEL_CONFIG.trashCan;
     const trashMesh = makePropMesh('trashCan');
@@ -165,6 +195,67 @@ export class SchoolScene {
       used: false,
       offsetY: 0.36
     });
+
+    for (const pillar of LEVEL_CONFIG.pillars) {
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(pillar.r, pillar.r, 3, 14),
+        material('#8a7f6d', 0.85)
+      );
+      mesh.position.set(pillar.x, 1.5, pillar.z);
+      this.group.add(mesh);
+      const body = makeBody({
+        shape: new CANNON.Cylinder(pillar.r, pillar.r, 3, 14),
+        position: { x: pillar.x, y: 1.5, z: pillar.z },
+        group: GROUPS.WORLD,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      this.physics.add(body);
+      refs.pillars.push({ mesh, body, pos: { x: pillar.x, z: pillar.z } });
+    }
+
+    const plant = LEVEL_CONFIG.plant;
+    const plantMesh = new THREE.Group();
+    const pot = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.2, 0.7, 10),
+      material('#a0522d', 0.8)
+    );
+    pot.position.y = 0.35;
+    const leaves = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 10, 8),
+      material('#4d7c4d', 0.8)
+    );
+    leaves.position.y = 0.9;
+    plantMesh.add(pot, leaves);
+    plantMesh.position.set(plant.x, 0, plant.z);
+    this.group.add(plantMesh);
+    const plantBody = makeBody({
+      shape: new CANNON.Cylinder(0.25, 0.2, 0.8, 10),
+      position: { x: plant.x, y: 0.4, z: plant.z },
+      mass: 8,
+      group: GROUPS.PROP,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+    });
+    this.physics.add(plantBody);
+    refs.props.push({
+      type: 'plant',
+      mesh: plantMesh,
+      body: plantBody,
+      pos: { x: plant.x, z: plant.z },
+      cost: 2000,
+      used: false,
+      offsetY: 0.4
+    });
+
+    for (const c of LEVEL_CONFIG.clutter) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, 0.08, 0.3),
+        material('#f4efe4', 0.9)
+      );
+      mesh.position.set(c.x, 0.04, c.z);
+      mesh.rotation.y = Math.random() * Math.PI;
+      this.group.add(mesh);
+      refs.clutter.push({ x: c.x, z: c.z, used: false });
+    }
   }
 
   _addClues(refs) {
@@ -176,8 +267,8 @@ export class SchoolScene {
     const boardBody = makeBody({
       shape: new CANNON.Box(v3(2.2, 0.62, 0.05)),
       position: { x: board.x, y: board.y, z: board.z },
-      group: GROUPS.WORLD,
-      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST
+      group: GROUPS.PROP,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP
     });
     this.physics.add(boardBody);
     refs.clues.push({
@@ -196,8 +287,8 @@ export class SchoolScene {
     const noteBody = makeBody({
       shape: new CANNON.Box(v3(0.36, 0.25, 0.02)),
       position: { x: note.x, y: note.y, z: note.z },
-      group: GROUPS.WORLD,
-      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST
+      group: GROUPS.PROP,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP
     });
     this.physics.add(noteBody);
     refs.clues.push({
@@ -262,23 +353,23 @@ export class SchoolScene {
   _addLights() {
     this.group.add(new THREE.HemisphereLight('#f7f3ea', '#2b3245', 0.95));
     const sun = new THREE.DirectionalLight('#fff4dc', 1.25);
-    sun.position.set(5, 10, 4);
+    sun.position.set(6, 12, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.camera.left = -12;
-    sun.shadow.camera.right = 12;
-    sun.shadow.camera.top = 12;
-    sun.shadow.camera.bottom = -8;
+    sun.shadow.camera.left = -16;
+    sun.shadow.camera.right = 16;
+    sun.shadow.camera.top = 16;
+    sun.shadow.camera.bottom = -12;
     this.group.add(sun);
 
     const flicker = [
-      { x: -5, z: -3.5, color: '#ffe9c4' },
-      { x: 4, z: -2, color: '#ffd9a0' },
-      { x: -2, z: 2.2, color: '#d9f0ff' },
-      { x: 0, z: 6, color: '#ffe9c4' }
+      { x: -6, z: -4, color: '#ffe9c4' },
+      { x: 5, z: -3, color: '#ffd9a0' },
+      { x: -3, z: 2, color: '#d9f0ff' },
+      { x: 0, z: 8, color: '#ffe9c4' }
     ];
     for (const f of flicker) {
-      const light = new THREE.PointLight(f.color, 0.7, 11, 1.8);
+      const light = new THREE.PointLight(f.color, 0.7, 13, 1.8);
       light.position.set(f.x, 2.7, f.z);
       this.group.add(light);
       this.flickerLights.push(light);

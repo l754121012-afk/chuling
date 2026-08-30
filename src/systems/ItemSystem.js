@@ -254,6 +254,20 @@ export class ItemSystem {
       this._removeProjectile(proj);
       return;
     }
+    if (proj.def.id === 'eraser') {
+      const gb = this.ghost.pawn.body;
+      const dx = gb.position.x - hitPos.x;
+      const dz = gb.position.z - hitPos.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const power = proj.def.knockback || 8;
+      this.ghost.knockback((dx / len) * power, (dz / len) * power, 0.45);
+      this.ghost.damage(proj.def.damage || 1, proj.def);
+      this.audio?.play('hit');
+      this.events.emit('toast', { text: '黑板擦把它拍退了！', ms: 1500 });
+      this.events.emit('camera.shake', { amount: 0.25 });
+      this._removeProjectile(proj);
+      return;
+    }
     this.ghost.damage(proj.def.damage || 1, proj.def);
     this.events.emit('toast', {
       text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,
@@ -286,8 +300,8 @@ export class ItemSystem {
 
   _processRemovals() {
     for (const proj of this._removeQueue) {
-      if (proj.body.world) this.physics.remove(proj.body);
-      this.scene.group.remove(proj.mesh);
+      if (proj.body?.world) this.physics.remove(proj.body);
+      if (proj.mesh) this.scene.group.remove(proj.mesh);
     }
     this._removeQueue.length = 0;
   }

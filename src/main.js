@@ -84,19 +84,35 @@ const items = new ItemSystem({
 player.items = items;
 player.clues = clues;
 ghost.playerPos = () => player.getPos();
+ghost.playerCrouching = () => player.crouching;
 ghost.playerBody = player.createPawn().body;
 items.playerHand = player.pawn.mesh.userData.handSlot;
 ghost.createPawn(refs.ghostSpawn);
 items.spawnPickups();
 
 const settlement = new SettlementSystem();
+let phoneRang = false;
 
 events.on('audio', p => audio.play(p.name));
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
+events.on('ghost.stage', p => {
+  if (
+    !phoneRang &&
+    game.phase === 'investigate' &&
+    game.hasClue('blackboard') &&
+    (p.stage.id === 'annoyed' || p.stage.id === 'angry')
+  ) {
+    phoneRang = true;
+    audio.play('phone');
+    events.emit('toast', { text: '电话响了！主管催你干活，鬼也听见了！', ms: 2200 });
+    events.emit('noise', { pos: { x: 7.2, z: -4.4 }, radius: 14 });
+  }
+});
 events.on('game.start', () => {
   game.reset();
   game.phase = 'investigate';
   input.allowLock = true;
+  phoneRang = false;
   player.resetHiding();
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
