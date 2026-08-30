@@ -228,7 +228,8 @@ export class ItemSystem {
     this.audio?.play('whoosh');
     this.events.emit('noise', {
       pos: origin,
-      radius: GAME_CONFIG.noiseThrowRadius
+      radius: GAME_CONFIG.noiseThrowRadius,
+      rage: 3
     });
   }
 
@@ -308,7 +309,7 @@ export class ItemSystem {
       return;
     }
     this.ghost.damage(proj.def.damage || 1, proj.def);
-    this.events.emit('noise', { pos: hitPos, radius: 10 });
+    this.events.emit('noise', { pos: hitPos, radius: 10, rage: 0 });
     this.events.emit('hitstop', { ms: 50 });
     this.scene.spawnParticles(hitPos, '#ffe08a');
     this.scene.spawnHitRing(hitPos, '#ffe08a');

@@ -12,7 +12,7 @@ export const GAME_CONFIG = {
   throwCooldown: 0.35,
   interactRadius: 2.2,
   pickupRadius: 2.0,
-  noiseRunRadius: 9,
+  noiseRunRadius: 14,
   noiseThrowRadius: 12,
   noiseBreakRadius: 16,
   quietDecay: 1.5,

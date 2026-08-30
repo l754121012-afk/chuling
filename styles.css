@@ -67,7 +67,11 @@ body.playing canvas {
   position: absolute;
   inset: 0;
   z-index: 4;
-  background: #fff;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 52%,
+    var(--flash-color, rgba(255, 255, 255, 0.85)) 100%
+  );
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.08s;

@@ -335,17 +335,21 @@ export class UISystem {
       this.el.crosshair.classList.toggle('combo', !!p.combo);
     });
     this.events.on('phone.flash', () => {
-      this.el.flashOverlay.classList.add('show');
-      clearTimeout(this._flashTimer);
-      this._flashTimer = setTimeout(() => this.el.flashOverlay.classList.remove('show'), 240);
-    });
-    this.events.on('beat.flash', p => {
-      this.el.flashOverlay.style.background = p?.color || '#ff6b6b';
+      this.el.flashOverlay.style.setProperty('--flash-color', 'rgba(255,255,255,0.9)');
       this.el.flashOverlay.classList.add('show');
       clearTimeout(this._flashTimer);
       this._flashTimer = setTimeout(() => {
         this.el.flashOverlay.classList.remove('show');
-        this.el.flashOverlay.style.background = '#fff';
+        this.el.flashOverlay.style.removeProperty('--flash-color');
+      }, 240);
+    });
+    this.events.on('beat.flash', p => {
+      this.el.flashOverlay.style.setProperty('--flash-color', p?.color || '#ff6b6b');
+      this.el.flashOverlay.classList.add('show');
+      clearTimeout(this._flashTimer);
+      this._flashTimer = setTimeout(() => {
+        this.el.flashOverlay.classList.remove('show');
+        this.el.flashOverlay.style.removeProperty('--flash-color');
       }, 340);
     });
   }

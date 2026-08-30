@@ -470,14 +470,14 @@ export class GhostSystem {
     return hitDist >= dist * 0.9;
   }
 
-  _onNoise({ pos, radius }) {
+  _onNoise({ pos, radius, rage }) {
     if (!this.game.isPlaying() || this.game.phase !== 'investigate') return;
     if (this.game.hiding) return;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, pos.x, pos.z);
     if (dist > radius) return;
     const stage = this.game.currentStage();
-    this.rage.add(GHOST_CONFIG.rage.noise, 'noise');
+    if (rage) this.rage.add(rage, 'noise');
     if (!this.game.hiding) this._lastNoise = { x: pos.x, z: pos.z };
     if (stage.id !== 'calm') {
       this._speak(choice(GHOST_CONFIG.speech.annoyed), 1800);

@@ -317,7 +317,8 @@ export class PlayerSystem {
     if (canSprint && len > 0 && this._noiseTimer <= 0) {
       this.events.emit('noise', {
         pos: this.getPos(),
-        radius: GAME_CONFIG.noiseRunRadius
+        radius: GAME_CONFIG.noiseRunRadius,
+        rage: 0
       });
       this._noiseTimer = 0.5;
     }
@@ -348,7 +349,7 @@ export class PlayerSystem {
         c.used = true;
         this.scene.breakClutter(c);
         this.rage.add(2, 'clutter');
-        this.events.emit('noise', { pos: { x: c.x, z: c.z }, radius: 9 });
+        this.events.emit('noise', { pos: { x: c.x, z: c.z }, radius: 9, rage: 0 });
         this.events.emit('toast', { text: '踢到杂物了！', ms: 1200 });
         this.audio?.play('hit');
       }
@@ -384,7 +385,7 @@ export class PlayerSystem {
         this._footprintCooldown = 0.8;
         this.rage.add(6, 'footprint');
         this.game.stamina = Math.max(0, this.game.stamina - 5);
-        this.events.emit('noise', { pos: { x: f.x, z: f.z }, radius: 7 });
+        this.events.emit('noise', { pos: { x: f.x, z: f.z }, radius: 7, rage: 0 });
         this.events.emit('toast', { text: '踩到脚印了！它听见了！', ms: 1500 });
         this.audio?.play('slap');
         this.playPose('hurt', 0.35);
@@ -664,7 +665,7 @@ export class PlayerSystem {
       prop.body.collisionFilterGroup = GROUPS.WORLD;
       prop.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM;
       this.rage.add(12, 'break');
-      this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius });
+      this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius, rage: 0 });
       this.events.emit('toast', { text: '书架倒了！赔偿 8000 円！', ms: 2200 });
       this.audio?.play('hit');
     } else if (prop.type === 'trash') {
@@ -677,7 +678,7 @@ export class PlayerSystem {
         new CANNON.Vec3(prop.body.position.x, 0.5, prop.body.position.z)
       );
       this.rage.add(5, 'noise');
-      this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius });
+      this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius, rage: 0 });
       this.events.emit('toast', { text: '垃圾桶飞出去了！', ms: 1600 });
       this.audio?.play('slap');
     } else if (prop.type === 'plant') {
@@ -691,7 +692,7 @@ export class PlayerSystem {
       );
       prop.body.angularVelocity.set(rand(-3, 3), 0.5, rand(-2, 2));
       this.rage.add(4, 'break');
-      this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius });
+      this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius, rage: 0 });
       this.events.emit('toast', { text: '盆栽倒了！赔偿 2000 円！', ms: 1800 });
       this.audio?.play('hit');
     } else if (prop.type === 'crate') {
@@ -700,7 +701,7 @@ export class PlayerSystem {
         new CANNON.Vec3(prop.body.position.x, 0.4, prop.body.position.z)
       );
       prop.body.angularVelocity.set(rand(-1, 1), 0.3, rand(-1, 1));
-      this.events.emit('noise', { pos: this.getPos(), radius: 6 });
+      this.events.emit('noise', { pos: this.getPos(), radius: 6, rage: 0 });
       this.events.emit('toast', { text: '箱子被推动了！', ms: 1200 });
       this.audio?.play('hit');
     }

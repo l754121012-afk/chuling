@@ -129,7 +129,7 @@ events.on('ghost.stage', p => {
     phoneRang = true;
     audio.play('phone');
     events.emit('toast', { text: '电话响了！主管催你干活，鬼也听见了！', ms: 2200 });
-    events.emit('noise', { pos: { x: 7.2, z: -4.4 }, radius: 14 });
+    events.emit('noise', { pos: { x: 7.2, z: -4.4 }, radius: 14, rage: 5 });
   }
 });
 events.on('game.start', () => {
