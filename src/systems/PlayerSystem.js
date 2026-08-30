@@ -23,6 +23,8 @@ export class PlayerSystem {
     this.rage = rage;
     this.pawn = null;
     this.phoneLight = null;
+    this.ghost = null;
+    this._flashCooldown = 0;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
@@ -39,6 +41,7 @@ export class PlayerSystem {
     this._shortcutUsed = { locker: false, platform: false };
     this._jumpsUsed = 0;
     this._wasFalling = false;
+    this._jumpLock = 0;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -107,6 +110,8 @@ export class PlayerSystem {
     this._checkFootprints(dt);
     this._handleInteractions();
     this._handleItemControls();
+    this._flashCooldown = Math.max(0, this._flashCooldown - dt);
+    if (this.input.justPressed('KeyV')) this._usePhoneFlash();
 
     this._syncPlayerMesh();
     const hSpeed = Math.hypot(body.velocity.x, body.velocity.z);
@@ -220,14 +225,14 @@ export class PlayerSystem {
     body.velocity.set(dirX * speed, body.velocity.y, dirZ * speed);
     body.wakeUp();
 
-    const canJump = this.input.isDown('Space') &&
-      this._jumpsUsed < 2 &&
-      (Math.abs(body.velocity.y) < 0.12 || this._jumpsUsed > 0);
+    this._jumpLock = Math.max(0, this._jumpLock - dt);
+    const canJump = this.input.isDown('Space') && this._jumpsUsed < 2 && this._jumpLock <= 0;
     if (canJump) {
       body.velocity.y = 5.6;
       this._jumpsUsed++;
+      this._jumpLock = 0.18;
     }
-    if (this._wasFalling && body.velocity.y > -0.1) {
+    if (this._wasFalling && body.velocity.y > -0.1 && this._jumpLock <= 0) {
       this._jumpsUsed = 0;
     }
     this._wasFalling = body.velocity.y < -0.2;
@@ -544,6 +549,40 @@ export class PlayerSystem {
           this.events.emit('aim.changed', { aiming: false, combo: false });
         }
       }
+    }
+  }
+
+  _usePhoneFlash() {
+    if (this._flashCooldown > 0) {
+      this.events.emit('toast', { text: '闪光还在冷却', ms: 1200 });
+      return;
+    }
+    if (this.game.battery < 15) {
+      this.events.emit('toast', { text: '电量不足，无法闪光', ms: 1600 });
+      return;
+    }
+    this.game.battery -= 15;
+    this._flashCooldown = 6;
+    this.audio?.play('flash');
+    this.events.emit('phone.flash');
+    this.events.emit('camera.shake', { amount: 0.15 });
+
+    if (!this.ghost) return;
+    const pp = this.getPos();
+    const gp = this.ghost.getPos();
+    const dx = gp.x - pp.x;
+    const dz = gp.z - pp.z;
+    const dist = Math.hypot(dx, dz);
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
+    if (dist < 9 && dot > 0.2) {
+      this.game.stunnedUntil = nowSec() + 2;
+      this.events.emit('toast', { text: '闪光灯！鬼被闪瞎了！', ms: 1800 });
+      this.ghost._speak('眼睛！！', 1500);
+    } else {
+      this.events.emit('toast', { text: '闪光灯亮了，但没照到鬼', ms: 1200 });
     }
   }
 

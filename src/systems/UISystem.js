@@ -8,6 +8,7 @@ export class UISystem {
     this.el = {};
     this._toastTimer = null;
     this._speechTimer = null;
+    this._flashTimer = null;
     this._registerEvents();
   }
 
@@ -42,7 +43,8 @@ export class UISystem {
       crosshair: document.getElementById('crosshair'),
       itemHint: document.getElementById('item-hint'),
       lives: document.getElementById('lives'),
-      sealStatus: document.getElementById('seal-status')
+      sealStatus: document.getElementById('seal-status'),
+      flashOverlay: document.getElementById('flash-overlay')
     };
     this._buildInventory();
 
@@ -262,6 +264,11 @@ export class UISystem {
     this.events.on('aim.changed', p => {
       this.el.crosshair.classList.toggle('aiming', !!p.aiming);
       this.el.crosshair.classList.toggle('combo', !!p.combo);
+    });
+    this.events.on('phone.flash', () => {
+      this.el.flashOverlay.classList.add('show');
+      clearTimeout(this._flashTimer);
+      this._flashTimer = setTimeout(() => this.el.flashOverlay.classList.remove('show'), 240);
     });
   }
 }

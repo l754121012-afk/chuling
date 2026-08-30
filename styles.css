@@ -33,6 +33,11 @@ canvas {
   height: 100%;
 }
 
+body.playing,
+body.playing canvas {
+  cursor: none;
+}
+
 .hidden {
   display: none !important;
 }
@@ -56,6 +61,20 @@ canvas {
 
 #danger-vignette.active {
   opacity: 1;
+}
+
+#flash-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.08s;
+}
+
+#flash-overlay.show {
+  opacity: 0.9;
 }
 
 #ghost-warning {

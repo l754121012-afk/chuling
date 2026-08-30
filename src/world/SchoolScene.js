@@ -408,6 +408,20 @@ export class SchoolScene {
       body.quaternion.setFromEuler(0, yaw, 0);
       this.physics.add(body);
     }
+
+    const landing = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 0.2, 1.4),
+      material('#6b5b4a', 0.8)
+    );
+    landing.position.set(0, 2.5, 3.8);
+    this.group.add(landing);
+    const landingBody = makeBody({
+      shape: new CANNON.Box(v3(1.1, 0.1, 0.7)),
+      position: { x: 0, y: 2.5, z: 3.8 },
+      group: GROUPS.WORLD,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+    });
+    this.physics.add(landingBody);
   }
 
   _addRouteClutter(refs) {

@@ -21,13 +21,13 @@ export const LEVEL_CONFIG = {
   ],
   teacherDesk: { x: 7.2, z: -4.4, rotY: 0.3 },
   bookshelf: { x: -8.4, z: -2.6, rotY: 0.2 },
-  lockers: { x: 8.6, z: -2.6, rotY: -0.3 },
+  lockers: { x: 7.0, z: 1.8, rotY: -0.3 },
   trashCan: { x: 0, z: 2.8 },
   blackboard: { x: 0, z: -5.86, y: 1.85, w: 4.4, h: 1.25 },
   note: { x: 7.2, y: 1.95, z: -4.2 },
   exit: { x: 0, z: 15.5 },
   platform: { x: 7.2, z: -4.4, w: 4.0, h: 1.0, d: 3.2 },
-  lockerStep: { x: 7.8, z: -1.9, w: 1.3, h: 0.85, d: 0.9 },
+  lockerStep: { x: 6.2, z: 1.8, w: 1.3, h: 0.85, d: 0.9 },
   pillars: [
     { x: -4, z: -2.2, r: 0.55 },
     { x: 4, z: -2.2, r: 0.55 },
@@ -37,7 +37,7 @@ export const LEVEL_CONFIG = {
   plant: { x: 8.3, z: 1.6 },
   crates: [
     { x: 5.4, z: -2.8 },
-    { x: 6.5, z: 0.8 }
+    { x: -1.5, z: 2.6 }
   ],
   highCatwalk: [
     { from: { x: 8.2, z: -1.2 }, to: { x: 8.2, z: 3.6 }, y: 2.6 },
@@ -55,7 +55,7 @@ export const LEVEL_CONFIG = {
     { x: 0, z: 2.8, rot: 0.25 },
     { x: -2, z: 1.0, rot: -0.2 },
     { x: 2, z: 1.0, rot: 0.2 },
-    { x: 5, z: 2.6, rot: 0.35 },
+    { x: -4, z: 2.4, rot: 0.35 },
     { x: 0, z: 6.0, rot: 0.1 }
   ],
   clutter: [

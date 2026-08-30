@@ -83,6 +83,7 @@ const items = new ItemSystem({
 
 player.items = items;
 player.clues = clues;
+player.ghost = ghost;
 ghost.playerPos = () => player.getPos();
 ghost.playerCrouching = () => player.crouching;
 ghost.playerBody = player.createPawn().body;
@@ -113,6 +114,7 @@ events.on('game.start', () => {
   game.phase = 'investigate';
   input.allowLock = true;
   phoneRang = false;
+  document.body.classList.add('playing');
   player.resetHiding();
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
@@ -127,6 +129,7 @@ events.on('game.start', () => {
 });
 events.on('game.win', () => {
   game.phase = 'win';
+  document.body.classList.remove('playing');
   input.allowLock = false;
   if (document.pointerLockElement) document.exitPointerLock();
   audio.play('win');
@@ -135,6 +138,7 @@ events.on('game.win', () => {
 });
 events.on('game.lost', () => {
   game.phase = 'lost';
+  document.body.classList.remove('playing');
   input.allowLock = false;
   if (document.pointerLockElement) document.exitPointerLock();
   audio.play('lose');
