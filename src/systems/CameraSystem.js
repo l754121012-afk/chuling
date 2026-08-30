@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { clamp, lerp } from '../core/Utils.js';
+import { clamp, lerp, nowSec } from '../core/Utils.js';
 
 export class CameraSystem {
   constructor(camera, world) {
@@ -10,11 +10,12 @@ export class CameraSystem {
     this.dist = 5.4;
     this.raycaster = new THREE.Raycaster();
     this._faded = new Map();
+    this._fadeHold = new Map();
   }
 
   update(input, targetPos) {
     this.yaw -= input.look.x * 0.005;
-    this.pitch = clamp(this.pitch - input.look.y * 0.004, -0.15, 1.15);
+    this.pitch = clamp(this.pitch + input.look.y * 0.004, -0.15, 1.15);
     this.dist = clamp(this.dist + input.zoom * 0.012, 2.6, 9.5);
 
     const cp = new THREE.Vector3(
@@ -37,14 +38,26 @@ export class CameraSystem {
     this.raycaster.set(from, dir);
     this.raycaster.far = dist;
     const hits = this.raycaster.intersectObjects(this.world.group.children, true);
-    const toFade = new Set();
+    const activeHits = new Set();
+    const now = nowSec();
 
     for (const hit of hits) {
       if (hit.distance >= dist - 0.2) continue;
-      if (this._canFade(hit.object)) toFade.add(hit.object);
+      if (this._canFade(hit.object)) activeHits.add(hit.object);
     }
 
-    for (const mesh of toFade) {
+    // Keep recently occluded meshes transparent for a short moment so edge
+    // jitter or camera lerp doesn't make them blink. Held meshes are not
+    // refreshed, so they still restore once the hold window expires.
+    const keep = new Set();
+    for (const mesh of this._faded.keys()) {
+      if (activeHits.has(mesh)) continue;
+      const lastSeen = this._fadeHold.get(mesh) || 0;
+      if (now - lastSeen < 0.1) keep.add(mesh);
+    }
+
+    for (const mesh of activeHits) {
+      this._fadeHold.set(mesh, now);
       if (this._faded.has(mesh)) continue;
       const original = mesh.material;
       const clone = original.clone();
@@ -57,17 +70,19 @@ export class CameraSystem {
     }
 
     for (const [mesh, original] of this._faded) {
-      if (toFade.has(mesh)) continue;
+      if (activeHits.has(mesh) || keep.has(mesh)) continue;
       if (mesh.material !== original) {
         mesh.material.dispose();
         mesh.material = original;
         original.needsUpdate = true;
       }
       this._faded.delete(mesh);
+      this._fadeHold.delete(mesh);
     }
   }
 
   _canFade(mesh) {
+    if (this._faded.has(mesh)) return true;
     if (!mesh.visible || !mesh.material || Array.isArray(mesh.material)) return false;
     if (mesh.material.type !== 'MeshStandardMaterial' || mesh.material.transparent) return false;
     if (mesh.geometry?.type === 'PlaneGeometry' || mesh.geometry?.type === 'CircleGeometry') return false;
