@@ -114,6 +114,7 @@ events.on('game.start', () => {
   input.allowLock = true;
   phoneRang = false;
   player.resetHiding();
+  player.resetShortcuts();
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
   game.equipped = 'pen';

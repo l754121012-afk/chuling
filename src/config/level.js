@@ -21,13 +21,13 @@ export const LEVEL_CONFIG = {
   ],
   teacherDesk: { x: 7.2, z: -4.4, rotY: 0.3 },
   bookshelf: { x: -8.4, z: -2.6, rotY: 0.2 },
-  lockers: { x: 8.6, z: -4.4, rotY: -0.3 },
+  lockers: { x: 8.6, z: -2.6, rotY: -0.3 },
   trashCan: { x: 0, z: 2.8 },
   blackboard: { x: 0, z: -5.86, y: 1.85, w: 4.4, h: 1.25 },
   note: { x: 7.2, y: 1.95, z: -4.2 },
   exit: { x: 0, z: 15.5 },
-  platform: { x: 7.2, z: -4.4, w: 5.5, h: 1.0, d: 4.0 },
-  lockerStep: { x: 7.8, z: -3.2, w: 1.3, h: 0.85, d: 0.9 },
+  platform: { x: 7.2, z: -4.4, w: 4.0, h: 1.0, d: 3.2 },
+  lockerStep: { x: 7.8, z: -1.9, w: 1.3, h: 0.85, d: 0.9 },
   pillars: [
     { x: -4, z: -2.2, r: 0.55 },
     { x: 4, z: -2.2, r: 0.55 },
@@ -55,6 +55,7 @@ export const LEVEL_CONFIG = {
     { id: 'tape', x: -1.5, y: 0.78, z: 1.0 },
     { id: 'rubber', x: 0, y: 0.78, z: -1.2 },
     { id: 'rubber', x: 1.5, y: 0.78, z: 1.0 },
+    { id: 'chair', x: 4.0, y: 0.45, z: 2.2 },
     { id: 'pen', x: 0, y: 0.06, z: 8.5 }
   ]
 };

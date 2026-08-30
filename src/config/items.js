@@ -33,6 +33,11 @@ export const ITEM_DEFS = {
     id: 'eraser', name: '黑板擦', icon: '▦', type: 'throw',
     count: 1, damage: 3, rage: 5, speed: 18, mass: 0.2,
     knockback: 8, desc: '打中会把鬼拍退一截。', cost: 350
+  },
+  chair: {
+    id: 'chair', name: '椅子', icon: '椅', type: 'throw',
+    count: 1, damage: 18, rage: 10, speed: 11, mass: 3,
+    knockback: 14, stun: 1.0, desc: '重！砸中会把鬼拍飞。', cost: 700
   }
 };
 

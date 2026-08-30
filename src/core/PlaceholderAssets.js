@@ -144,6 +144,18 @@ function makeItemShape(id) {
     const handle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.2), dark);
     handle.position.y = 0.06;
     group.add(pad, handle);
+  } else if (id === 'chair') {
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.42), mat);
+    seat.position.y = 0.25;
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.06), dark);
+    back.position.set(0, 0.52, -0.18);
+    const legMat = dark;
+    for (const [lx, lz] of [[-0.16, -0.16], [0.16, -0.16], [-0.16, 0.16], [0.16, 0.16]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.24, 6), legMat);
+      leg.position.set(lx, 0.12, lz);
+      group.add(leg);
+    }
+    group.add(seat, back);
   } else {
     group.add(new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.12), mat));
   }

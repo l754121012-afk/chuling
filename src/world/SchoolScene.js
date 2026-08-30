@@ -29,6 +29,7 @@ export class SchoolScene {
       props: [],
       pillars: [],
       clutter: [],
+      platform: null,
       itemSpawns: LEVEL_CONFIG.itemSpawns.map(s => ({ ...s }))
     };
 
@@ -98,6 +99,15 @@ export class SchoolScene {
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(platformBody);
+    refs.platform = {
+      x: platform.x,
+      z: platform.z,
+      topY: platform.h,
+      minX: platform.x - platform.w / 2,
+      maxX: platform.x + platform.w / 2,
+      minZ: platform.z - platform.d / 2,
+      maxZ: platform.z + platform.d / 2
+    };
 
     const teacher = LEVEL_CONFIG.teacherDesk;
     const teacherMesh = makePropMesh('teacherDesk');
@@ -171,6 +181,7 @@ export class SchoolScene {
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(stepBody);
+    refs.lockerStep = { x: step.x, z: step.z };
 
     const trash = LEVEL_CONFIG.trashCan;
     const trashMesh = makePropMesh('trashCan');

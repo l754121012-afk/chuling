@@ -268,6 +268,21 @@ export class ItemSystem {
       this._removeProjectile(proj);
       return;
     }
+    if (proj.def.id === 'chair') {
+      const gb = this.ghost.pawn.body;
+      const dx = gb.position.x - hitPos.x;
+      const dz = gb.position.z - hitPos.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const power = proj.def.knockback || 12;
+      this.ghost.knockback((dx / len) * power, (dz / len) * power, 0.7);
+      this.game.stunnedUntil = nowSec() + (proj.def.stun || 1);
+      this.ghost.damage(proj.def.damage || 10, proj.def);
+      this.audio?.play('hit');
+      this.events.emit('toast', { text: '椅子把它砸飞了！', ms: 1500 });
+      this.events.emit('camera.shake', { amount: 0.4 });
+      this._removeProjectile(proj);
+      return;
+    }
     this.ghost.damage(proj.def.damage || 1, proj.def);
     this.events.emit('toast', {
       text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,

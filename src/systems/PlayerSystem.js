@@ -34,6 +34,7 @@ export class PlayerSystem {
     this._hideRestoreType = null;
     this._hideRestoreMask = null;
     this.crouching = false;
+    this._shortcutUsed = { locker: false, platform: false };
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -72,6 +73,10 @@ export class PlayerSystem {
       this._hideRestoreMask = null;
     }
     this._hideRestorePos = null;
+  }
+
+  resetShortcuts() {
+    this._shortcutUsed = { locker: false, platform: false };
   }
 
   getPos() {
@@ -315,14 +320,49 @@ export class PlayerSystem {
       }
     }
 
-    if (this.refs.locker) {
-      const d = distance2D(pos.x, pos.z, this.refs.locker.pos.x, this.refs.locker.pos.z);
-      if (d < GAME_CONFIG.interactRadius && 2 > bestPriority) {
+    const locker = this.refs.locker;
+    if (locker) {
+      const d = distance2D(pos.x, pos.z, locker.pos.x, locker.pos.z);
+      const onTop = pos.y > locker.topY - 0.3 && d < 2.5;
+      if (onTop) {
+        if (this.game.phase === 'escape' && !this._shortcutUsed.locker && 3.4 > bestPriority) {
+          bestPriority = 3.4;
+          best = { type: 'shortcutLocker', label: '柜顶捷径（跳到走廊）' };
+        } else if (2.7 > bestPriority) {
+          bestPriority = 2.7;
+          best = { type: 'descendLocker', label: '从柜顶下来' };
+        }
+      }
+      if (!onTop && this.refs.lockerStep && pos.y < 1.0) {
+        const ds = distance2D(pos.x, pos.z, this.refs.lockerStep.x, this.refs.lockerStep.z);
+        if (ds < 1.6 && 2.7 > bestPriority) {
+          bestPriority = 2.7;
+          best = { type: 'climbLocker', label: '爬上柜顶' };
+        }
+      }
+      if (!onTop && d < GAME_CONFIG.interactRadius && 2 > bestPriority) {
         bestPriority = 2;
         best = {
           type: 'locker',
           label: this.game.hiding ? '从柜子里出来' : '躲进柜子'
         };
+      }
+    }
+
+    const platform = this.refs.platform;
+    if (platform && pos.y < 1.1) {
+      const edgeD = Math.min(
+        distance2D(pos.x, pos.z, platform.minX, platform.z),
+        distance2D(pos.x, pos.z, platform.maxX, platform.z)
+      );
+      if (edgeD < 2.0 && 2.6 > bestPriority) {
+        bestPriority = 2.6;
+        best = { type: 'climbPlatform', label: '登上讲台' };
+      }
+    } else if (platform && pos.y > 1.2) {
+      if (this.game.phase === 'escape' && !this._shortcutUsed.platform && 3.4 > bestPriority) {
+        bestPriority = 3.4;
+        best = { type: 'shortcutPlatform', label: '讲台捷径（翻到走廊）' };
       }
     }
 
@@ -349,6 +389,35 @@ export class PlayerSystem {
       this.events.emit('game.win');
     } else if (target.type === 'clue') {
       this.clues.readClue(target.clue.id);
+    } else if (target.type === 'climbLocker') {
+      const locker = this.refs.locker;
+      this.pawn.body.position.set(locker.pos.x, locker.topY + 0.35, locker.pos.z);
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.audio?.play('click');
+      this.events.emit('toast', { text: '爬上柜顶了！鬼看不到你', ms: 1500 });
+    } else if (target.type === 'descendLocker') {
+      const locker = this.refs.locker;
+      this.pawn.body.position.set(locker.pos.x - 1.2, 0.35, locker.pos.z + 0.6);
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.audio?.play('click');
+    } else if (target.type === 'climbPlatform') {
+      const platform = this.refs.platform;
+      this.pawn.body.position.set(platform.minX + 0.7, platform.topY + 0.35, platform.z);
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.audio?.play('click');
+      this.events.emit('toast', { text: '登上讲台了！', ms: 1200 });
+    } else if (target.type === 'shortcutLocker') {
+      this._shortcutUsed.locker = true;
+      this.pawn.body.position.set(0, 0.35, 8.5);
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.audio?.play('whoosh');
+      this.events.emit('toast', { text: '柜顶捷径！直接跳到走廊！', ms: 1600 });
+    } else if (target.type === 'shortcutPlatform') {
+      this._shortcutUsed.platform = true;
+      this.pawn.body.position.set(0, 0.35, 5.2);
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.audio?.play('whoosh');
+      this.events.emit('toast', { text: '讲台捷径！翻到走廊！', ms: 1600 });
     } else if (target.type === 'locker') {
       this.game.hiding = !this.game.hiding;
       if (this.game.hiding) {
