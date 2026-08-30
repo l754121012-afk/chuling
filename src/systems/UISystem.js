@@ -172,13 +172,26 @@ export class UISystem {
     this._speechTimer = setTimeout(() => this.el.speech.classList.remove('show'), ms);
   }
 
-  showPrompt(text) {
+  showPrompt(p) {
+    const text = typeof p === 'string' ? p : (p?.text || '');
     if (!text) {
       this.el.prompt.textContent = '';
+      this.el.prompt.style.left = '';
+      this.el.prompt.style.top = '';
+      this.el.prompt.style.transform = '';
       this.el.prompt.classList.remove('show');
       return;
     }
     this.el.prompt.textContent = text;
+    if (p && typeof p.x === 'number') {
+      this.el.prompt.style.left = `${p.x}px`;
+      this.el.prompt.style.top = `${p.y}px`;
+      this.el.prompt.style.transform = 'translate(-50%, -110%)';
+    } else {
+      this.el.prompt.style.left = '';
+      this.el.prompt.style.top = '';
+      this.el.prompt.style.transform = '';
+    }
     this.el.prompt.classList.add('show');
   }
 
@@ -254,7 +267,7 @@ export class UISystem {
     this.events.on('escape.start', () => this.sync(this.game));
     this.events.on('toast', p => this.showToast(p.text, p.ms));
     this.events.on('speech', p => this.showSpeech(p.text, p.ms));
-    this.events.on('interact.prompt', p => this.showPrompt(p.text));
+    this.events.on('interact.prompt', p => this.showPrompt(p));
     this.events.on('ghost.visual', p => {
       this.el.vignette.style.setProperty('--danger', String(p.danger));
       this.el.vignette.classList.toggle('active', p.danger > 0.05);

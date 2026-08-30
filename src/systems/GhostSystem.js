@@ -179,6 +179,15 @@ export class GhostSystem {
       this._hiddenTimer = 0;
     }
 
+    const py = playerPos.y;
+    const gy = body.position.y;
+    const heightDiff = py - gy;
+    if (heightDiff > 0.25 && heightDiff < 1.5) {
+      body.position.y += heightDiff * Math.min(1, dt * 2.5);
+    } else if (heightDiff < -0.2) {
+      body.position.y += heightDiff * Math.min(1, dt * 1.2);
+    }
+
     const trying = Math.hypot(body.velocity.x, body.velocity.z) > 0.3;
     const moved = Math.hypot(
       body.position.x - this._lastStuckPos.x,
@@ -385,8 +394,8 @@ export class GhostSystem {
 
   _canSee(playerPos, stage) {
     if (this.game.hiding) return false;
-    if (playerPos.y > 1.1) return false;
     const b = this.pawn.body.position;
+    if (playerPos.y - b.y > 1.5) return false;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > stage.viewDist) return false;
     if (this.playerCrouching?.() && dist > 1.8) return false;
@@ -426,10 +435,10 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this.game.hiding) return;
-    if (playerPos.y > 1.1) return;
     if (nowSec() < this.game.weakUntil) return;
     if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;
+    if (playerPos.y - b.y > 1.5) return;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > 1.15) return;
     const stage = this.game.currentStage();

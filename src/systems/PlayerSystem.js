@@ -42,6 +42,7 @@ export class PlayerSystem {
     this._jumpsUsed = 0;
     this._wasFalling = false;
     this._jumpLock = 0;
+    this._pushTarget = null;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -112,6 +113,16 @@ export class PlayerSystem {
     this._handleItemControls();
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
+
+    if (this._pushTarget) {
+      const pos = this.getPos();
+      const d = distance2D(pos.x, pos.z, this._pushTarget.pos.x, this._pushTarget.pos.z);
+      if (this.input.isDown('KeyE') && d < 3.2) {
+        this._pushCrateContinuous(this._pushTarget);
+      } else {
+        this._pushTarget = null;
+      }
+    }
 
     this._syncPlayerMesh();
     const hSpeed = Math.hypot(body.velocity.x, body.velocity.z);
@@ -226,16 +237,18 @@ export class PlayerSystem {
     body.wakeUp();
 
     this._jumpLock = Math.max(0, this._jumpLock - dt);
-    const canJump = this.input.isDown('Space') && this._jumpsUsed < 2 && this._jumpLock <= 0;
+    const grounded = this._isGrounded();
+    if (grounded) this._jumpsUsed = 0;
+    const canJump = this.input.isDown('Space') &&
+      this._jumpsUsed < 2 &&
+      this._jumpLock <= 0 &&
+      this.game.stamina >= GAME_CONFIG.jumpStaminaCost;
     if (canJump) {
       body.velocity.y = 5.6;
       this._jumpsUsed++;
       this._jumpLock = 0.18;
+      this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.jumpStaminaCost);
     }
-    if (this._wasFalling && body.velocity.y > -0.1 && this._jumpLock <= 0) {
-      this._jumpsUsed = 0;
-    }
-    this._wasFalling = body.velocity.y < -0.2;
 
     if (canSprint && len > 0 && this._noiseTimer <= 0) {
       this.events.emit('noise', {
@@ -250,6 +263,16 @@ export class PlayerSystem {
 
   isCrouching() {
     return this.crouching;
+  }
+
+  _isGrounded() {
+    const b = this.pawn.body.position;
+    const from = new CANNON.Vec3(b.x, b.y, b.z);
+    const to = new CANNON.Vec3(b.x, b.y - 0.75, b.z);
+    const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD | GROUPS.PROP);
+    if (!hit) return false;
+    const hp = hit.hitPointWorld;
+    return Math.hypot(hp.x - from.x, hp.y - from.y, hp.z - from.z) < 0.7;
   }
 
   _checkClutter() {
@@ -308,11 +331,28 @@ export class PlayerSystem {
   _handleInteractions() {
     const target = this.findInteractable();
     if (target) {
-      this.events.emit('interact.prompt', { text: `E  ${target.label}` });
+      const pos = target.pos || { x: 0, y: 1.5, z: 0 };
+      const sp = this._screenPos(pos);
+      this.events.emit('interact.prompt', { text: `E  ${target.label}`, x: sp.x, y: sp.y });
     } else {
       this.events.emit('interact.prompt', { text: '' });
     }
-    if (this.input.justPressed('KeyE') && target) this._doInteract(target);
+    if (this.input.justPressed('KeyE') && target) {
+      if (target.type === 'prop' && target.prop.type === 'crate') {
+        this._pushTarget = target.prop;
+        this._pushCrateOnce(target.prop);
+      } else {
+        this._doInteract(target);
+      }
+    }
+  }
+
+  _screenPos(worldPos) {
+    const v = new THREE.Vector3(worldPos.x, worldPos.y, worldPos.z).project(this.camera.camera);
+    return {
+      x: (v.x * 0.5 + 0.5) * window.innerWidth,
+      y: (-v.y * 0.5 + 0.5) * window.innerHeight
+    };
   }
 
   findInteractable() {
@@ -325,7 +365,12 @@ export class PlayerSystem {
       const d = distance2D(pos.x, pos.z, pickup.pos.x, pickup.pos.z);
       if (d < GAME_CONFIG.pickupRadius && 4 > bestPriority) {
         bestPriority = 4;
-        best = { type: 'item', pickup, label: `捡起${ITEM_DEFS[pickup.id].name}` };
+        best = {
+          type: 'item',
+          pickup,
+          label: `捡起${ITEM_DEFS[pickup.id].name}`,
+          pos: { x: pickup.pos.x, y: (pickup.mesh.position?.y || 0.8) + 0.6, z: pickup.pos.z }
+        };
       }
     }
 
@@ -333,7 +378,7 @@ export class PlayerSystem {
       const d = distance2D(pos.x, pos.z, this.refs.exit.pos.x, this.refs.exit.pos.z);
       if (d < GAME_CONFIG.interactRadius && 3 > bestPriority) {
         bestPriority = 3;
-        best = { type: 'exit', label: '逃出校园' };
+        best = { type: 'exit', label: '逃出校园', pos: { x: this.refs.exit.pos.x, y: 2.6, z: this.refs.exit.pos.z } };
       }
     }
 
@@ -342,7 +387,7 @@ export class PlayerSystem {
       const d = distance2D(pos.x, pos.z, clue.pos.x, clue.pos.z);
       if (d < GAME_CONFIG.interactRadius && 2.5 > bestPriority) {
         bestPriority = 2.5;
-        best = { type: 'clue', clue, label: '查看线索' };
+        best = { type: 'clue', clue, label: '查看线索', pos: { x: clue.pos.x, y: 1.7, z: clue.pos.z } };
       }
     }
 
@@ -352,7 +397,8 @@ export class PlayerSystem {
         bestPriority = 2;
         best = {
           type: 'locker',
-          label: this.game.hiding ? '从柜子里出来' : '躲进柜子'
+          label: this.game.hiding ? '从柜子里出来' : '躲进柜子',
+          pos: { x: this.refs.locker.pos.x, y: 2.2, z: this.refs.locker.pos.z }
         };
       }
     }
@@ -364,7 +410,8 @@ export class PlayerSystem {
         best = {
           type: 'prop',
           prop,
-          label: prop.type === 'bookshelf' ? '推倒书架' : prop.type === 'trash' ? '踢垃圾桶' : prop.type === 'plant' ? '碰倒盆栽' : '推箱子'
+          label: prop.type === 'bookshelf' ? '推倒书架' : prop.type === 'trash' ? '踢垃圾桶' : prop.type === 'plant' ? '碰倒盆栽' : '推箱子（按住持续推）',
+          pos: { x: prop.pos.x, y: prop.type === 'crate' ? 1.1 : prop.type === 'bookshelf' ? 2.0 : 1.0, z: prop.pos.z }
         };
       }
     }
@@ -477,6 +524,25 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '箱子被推动了！', ms: 1200 });
       this.audio?.play('hit');
     }
+  }
+
+  _pushCrateOnce(prop) {
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    prop.body.applyImpulse(
+      new CANNON.Vec3(fwdX * 2.2, 0.2, fwdZ * 2.2),
+      new CANNON.Vec3(prop.body.position.x, 0.4, prop.body.position.z)
+    );
+    this.audio?.play('hit');
+    this.events.emit('toast', { text: '推动箱子', ms: 800 });
+  }
+
+  _pushCrateContinuous(prop) {
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    prop.body.velocity.set(fwdX * 3.5, prop.body.velocity.y, fwdZ * 3.5);
   }
 
   _handleItemControls() {
