@@ -282,9 +282,20 @@ function tick() {
     audio.play('slam');
     events.emit('camera.shake', { amount: 0.35 });
     events.emit('toast', {
-      text: '灯闪了一下……它出现在你身后！快躲起来！',
-      ms: 2600
+      text: '灯闪了一下……它出现在你身后！快躲起来！先找线索，再拿订书机。',
+      ms: 3200
     });
+  }
+  if (
+    game.isPlaying() &&
+    game.firstScareDone &&
+    !game.act3Started &&
+    nowSec() > firstScareAt + 20
+  ) {
+    game.act3Started = true;
+    rage.add(8, 'act3');
+    audio.play('shake');
+    events.emit('toast', { text: '主管：别磨蹭了，它越来越不耐烦！', ms: 2200 });
   }
   input.allowLock = game.isPlaying();
 

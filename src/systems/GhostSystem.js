@@ -451,6 +451,7 @@ export class GhostSystem {
     if (playerPos.y - b.y > 0.8) return false;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > stage.viewDist) return false;
+    if (stage.viewDist > 0 && dist < 3) return true;
     if (this.playerCrouching?.() && dist > 1.8) return false;
 
     const dx = playerPos.x - b.x;

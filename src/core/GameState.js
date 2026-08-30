@@ -36,6 +36,7 @@ export class GameState {
     this.hitstopUntil = 0;
     this.slowmoUntil = 0;
     this.firstScareDone = false;
+    this.act3Started = false;
   }
 
   addItem(id, n = 1) {
