@@ -43,7 +43,10 @@ export class PlayerSystem {
     this._wasFalling = false;
     this._jumpLock = 0;
     this._pushTarget = null;
+    this._pushMove = null;
+    this._pushMoveTimer = 0;
     this._ropeT = 0;
+    this._ropeDirSign = 1;
     this._ladder = null;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
@@ -130,6 +133,8 @@ export class PlayerSystem {
         this._pushCrateContinuous(this._pushTarget);
       } else {
         this._pushTarget = null;
+        this._pushMove = null;
+        this._pushMoveTimer = 0;
       }
     }
 
@@ -219,10 +224,10 @@ export class PlayerSystem {
       const rope = this.refs.rope;
       const speed = 0.55;
       if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) {
-        this._ropeT = Math.min(1, this._ropeT + speed * dt);
+        this._ropeT = Math.min(1, this._ropeT + speed * dt * this._ropeDirSign);
       }
       if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) {
-        this._ropeT = Math.max(0, this._ropeT - speed * dt);
+        this._ropeT = Math.max(0, this._ropeT - speed * dt * this._ropeDirSign);
       }
       body.position.set(
         rope.from.x + (rope.to.x - rope.from.x) * this._ropeT,
@@ -241,6 +246,11 @@ export class PlayerSystem {
       if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) {
         body.position.y = Math.max(0.35, body.position.y - speed * dt);
       }
+      return;
+    }
+    if (this._pushMoveTimer > 0) {
+      this._pushMoveTimer -= dt;
+      if (this._pushMove) body.velocity.set(this._pushMove.vx, body.velocity.y, this._pushMove.vz);
       return;
     }
 
@@ -461,7 +471,11 @@ export class PlayerSystem {
           type: 'prop',
           prop,
           label: prop.type === 'bookshelf' ? '推倒书架' : prop.type === 'trash' ? '踢垃圾桶' : prop.type === 'plant' ? '碰倒盆栽' : '推箱子（按住持续推）',
-          pos: { x: prop.pos.x, y: prop.type === 'crate' ? 1.1 : prop.type === 'bookshelf' ? 2.0 : 1.0, z: prop.pos.z }
+          pos: {
+            x: prop.type === 'crate' ? prop.body.position.x : prop.pos.x,
+            y: prop.type === 'crate' ? 1.1 : prop.type === 'bookshelf' ? 2.0 : 1.0,
+            z: prop.type === 'crate' ? prop.body.position.z : prop.pos.z
+          }
         };
       }
     }
@@ -530,6 +544,14 @@ export class PlayerSystem {
         rope.to.z
       );
       this._ropeT = startD <= endD ? 0 : 1;
+      const ropeDx = rope.to.x - rope.from.x;
+      const ropeDz = rope.to.z - rope.from.z;
+      const ropeLen = Math.hypot(ropeDx, ropeDz) || 1;
+      const yaw = this.camera.yaw;
+      const facingX = -Math.sin(yaw);
+      const facingZ = -Math.cos(yaw);
+      const ropeDir = (ropeDx * facingX + ropeDz * facingZ) / ropeLen;
+      this._ropeDirSign = ropeDir >= 0 ? 1 : -1;
       this.game.ropeClimbing = true;
       this.pawn.body.type = CANNON.Body.KINEMATIC;
       this.pawn.body.collisionFilterMask = 0;
@@ -670,10 +692,14 @@ export class PlayerSystem {
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
     const fwdZ = -Math.cos(yaw);
-    prop.body.applyImpulse(
-      new CANNON.Vec3(fwdX * 2.2, 0.2, fwdZ * 2.2),
-      new CANNON.Vec3(prop.body.position.x, 0.4, prop.body.position.z)
-    );
+    if (!this._crateInFront(prop, fwdX, fwdZ)) {
+      this.events.emit('toast', { text: '需要面向箱子才能推', ms: 1200 });
+      return;
+    }
+    const speed = 2.1;
+    prop.body.velocity.set(fwdX * speed, prop.body.velocity.y, fwdZ * speed);
+    this._pushMove = { vx: fwdX * speed, vz: fwdZ * speed };
+    this._pushMoveTimer = 0.18;
     this.audio?.play('hit');
     this.events.emit('toast', { text: '推动箱子', ms: 800 });
   }
@@ -682,7 +708,23 @@ export class PlayerSystem {
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
     const fwdZ = -Math.cos(yaw);
-    prop.body.velocity.set(fwdX * 3.5, prop.body.velocity.y, fwdZ * 3.5);
+    if (!this._crateInFront(prop, fwdX, fwdZ)) {
+      this._pushTarget = null;
+      return;
+    }
+    const speed = 3.2;
+    prop.body.velocity.set(fwdX * speed, prop.body.velocity.y, fwdZ * speed);
+    this._pushMove = { vx: fwdX * speed, vz: fwdZ * speed };
+    this._pushMoveTimer = 0.12;
+  }
+
+  _crateInFront(prop, fwdX, fwdZ) {
+    const p = this.getPos();
+    const dx = prop.body.position.x - p.x;
+    const dz = prop.body.position.z - p.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const dot = (dx * fwdX + dz * fwdZ) / len;
+    return dot > 0.35 && len < 2.2;
   }
 
   _handleItemControls() {

@@ -465,8 +465,8 @@ export class SchoolScene {
       mesh.rotation.y = yaw;
       this.group.add(mesh);
       const body = makeBody({
-        shape: new CANNON.Box(v3(0.6, 0.5, len / 2 + 0.5)),
-        position: { x: midX, y: seg.y - 0.5, z: midZ },
+        shape: new CANNON.Box(v3(0.6, 0.8, len / 2 + 0.5)),
+        position: { x: midX, y: seg.y - 0.8, z: midZ },
         group: GROUPS.WORLD,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
@@ -482,8 +482,8 @@ export class SchoolScene {
     landing.position.set(0, 3.875, catEndZ);
     this.group.add(landing);
     const landingBody = makeBody({
-      shape: new CANNON.Box(v3(2, 0.5, 2)),
-      position: { x: 0, y: 3.5, z: catEndZ },
+      shape: new CANNON.Box(v3(2, 0.8, 2)),
+      position: { x: 0, y: 3.2, z: catEndZ },
       group: GROUPS.WORLD,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
