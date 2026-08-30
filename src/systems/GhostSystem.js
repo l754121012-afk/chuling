@@ -66,6 +66,9 @@ export class GhostSystem {
     this._stuckTime = 0;
     this._lastStuckPos = { x: 0, z: 0 };
     this._skillCooldown = rand(8, 14);
+    this._ambushUntil = 0;
+    this._ambushActive = false;
+    this._ambushSpeed = 0;
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
@@ -189,35 +192,46 @@ export class GhostSystem {
       body.position.y += heightDiff * Math.min(1, dt * 1.2);
     }
 
-    this._skillCooldown -= dt;
     const stage = this.game.currentStage();
-    if (
+    this._skillCooldown -= dt;
+    if (this._ambushActive) {
+      if (nowSec() < this._ambushUntil) {
+      const p = playerPos;
+      const b = this.pawn.body.position;
+      const dx = p.x - b.x;
+      const dz = p.z - b.z;
+      const len = Math.hypot(dx, dz) || 1;
+      this.pawn.body.velocity.set(
+        (dx / len) * this._ambushSpeed,
+        0,
+        (dz / len) * this._ambushSpeed
+      );
+      } else {
+        this._ambushActive = false;
+        const p = playerPos;
+        const b = this.pawn.body.position;
+        const dx = p.x - b.x;
+        const dz = p.z - b.z;
+        b.x = p.x + dx * 0.1;
+        b.z = p.z + dz * 0.1;
+        this.audio?.play('ghost');
+        this.events.emit('toast', { text: '鬼影突袭！', ms: 1500 });
+        this.events.emit('camera.shake', { amount: 0.35 });
+      }
+    } else if (
       this._skillCooldown <= 0 &&
       (stage.id === 'furious' || stage.id === 'insane') &&
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
       !this.game.ropeClimbing
     ) {
-      this._skillCooldown = rand(10, 16);
-      this.game.lightsOutUntil = nowSec() + 2.5;
-      this.audio?.play('ghost');
-      this.events.emit('toast', { text: '它把灯拍灭了！手机是唯一光源！', ms: 2200 });
-      this.events.emit('camera.shake', { amount: 0.2 });
-      const p = playerPos;
-      const ang = Math.random() * Math.PI * 2;
-      const d = 3.2;
-      body.position.x = clamp(
-        p.x + Math.cos(ang) * d,
-        this.scene.L.classroom.minX + 1,
-        this.scene.L.classroom.maxX - 1
-      );
-      body.position.z = clamp(
-        p.z + Math.sin(ang) * d,
-        this.scene.L.classroom.minZ + 1,
-        this.scene.L.classroom.maxZ - 1
-      );
-      body.position.y = 1.2;
-      body.velocity.set(0, 0, 0);
+      this._skillCooldown = rand(12, 18);
+      this._ambushActive = true;
+      this._ambushUntil = nowSec() + 0.8;
+      const cfg = GHOST_CONFIG.stages.find(s => s.id === stage.id) || GHOST_CONFIG.stages[3];
+      this._ambushSpeed = cfg.speed * 2.2;
+      this.audio?.play('whoosh');
+      this.events.emit('toast', { text: '它消失了……', ms: 1200 });
     }
 
     const trying = Math.hypot(body.velocity.x, body.velocity.z) > 0.3;
@@ -302,6 +316,13 @@ export class GhostSystem {
         parts.aura.material.color.setHex(0x6fa8dc);
         parts.aura.material.opacity = 0.2;
       }
+    }
+    if (this._ambushActive) {
+      parts.ghostMat.transparent = true;
+      parts.ghostMat.opacity = 0.25;
+    } else {
+      parts.ghostMat.transparent = false;
+      parts.ghostMat.opacity = 1;
     }
     this._updateFlames(dt, v.flames);
   }

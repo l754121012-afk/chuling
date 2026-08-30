@@ -218,11 +218,11 @@ export class PlayerSystem {
       body.velocity.set(0, 0, 0);
       const rope = this.refs.rope;
       const speed = 0.55;
-      if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) {
-        this._ropeT = Math.max(0, this._ropeT - speed * dt);
-      }
-      if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) {
+      if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) {
         this._ropeT = Math.min(1, this._ropeT + speed * dt);
+      }
+      if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) {
+        this._ropeT = Math.max(0, this._ropeT - speed * dt);
       }
       body.position.set(
         rope.from.x + (rope.to.x - rope.from.x) * this._ropeT,
@@ -484,7 +484,7 @@ export class PlayerSystem {
         bestPriority = 2.8;
         best = {
           type: 'ropeGrab',
-          label: '抓住绳索（A/D 横移）',
+          label: '抓住绳索（W/S 移动）',
           pos: { x: startD <= endD ? rope.from.x : rope.to.x, y: rope.y + 0.6, z: startD <= endD ? rope.from.z : rope.to.z }
         };
       }
@@ -540,7 +540,7 @@ export class PlayerSystem {
       );
       this.pawn.body.velocity.set(0, 0, 0);
       this.playPose('interact', 0.5);
-      this.events.emit('toast', { text: '抓住绳索：A/D 横向移动', ms: 1800 });
+      this.events.emit('toast', { text: '抓住绳索：W/S 横向移动', ms: 1800 });
     } else if (target.type === 'ropeRelease') {
       this.game.ropeClimbing = false;
       this.pawn.body.type = CANNON.Body.DYNAMIC;
