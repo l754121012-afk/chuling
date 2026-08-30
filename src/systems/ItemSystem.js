@@ -250,6 +250,7 @@ export class ItemSystem {
       this.rage.add(proj.def.rage, 'glue');
       this.audio?.play('splat');
       this.events.emit('toast', { text: '胶水糊了它一脸！速度变慢了', ms: 1800 });
+      this.scene.spawnParticles(hitPos, '#8fd3c7');
       this.ghost._speak('黏糊糊的！！', 1600);
       this._removeProjectile(proj);
       return;
@@ -265,6 +266,7 @@ export class ItemSystem {
       this.audio?.play('hit');
       this.events.emit('toast', { text: '黑板擦把它拍退了！', ms: 1500 });
       this.events.emit('camera.shake', { amount: 0.25 });
+      this.scene.spawnParticles(hitPos, '#cbb68a');
       this._removeProjectile(proj);
       return;
     }
@@ -286,6 +288,7 @@ export class ItemSystem {
     this.ghost.damage(proj.def.damage || 1, proj.def);
     this.events.emit('noise', { pos: hitPos, radius: 10 });
     this.events.emit('hitstop', { ms: 50 });
+    this.scene.spawnParticles(hitPos, '#ffe08a');
     this.events.emit('toast', {
       text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,
       ms: 1300

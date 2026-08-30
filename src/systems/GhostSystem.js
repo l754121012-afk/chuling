@@ -365,7 +365,7 @@ export class GhostSystem {
       this._chase(playerPos, speed, dt);
       return;
     }
-    if (sees && stage.id === 'annoyed') {
+    if (sees && (stage.id === 'annoyed' || stage.id === 'calm')) {
       this._lastNoise = { x: playerPos.x, z: playerPos.z };
     }
 

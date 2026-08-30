@@ -134,6 +134,7 @@ events.on('ghost.stage', p => {
 events.on('game.start', () => {
   game.reset();
   game.phase = 'investigate';
+  game.runStart = nowSec();
   input.allowLock = true;
   if (renderer.domElement.requestPointerLock) {
     try {
@@ -159,20 +160,28 @@ events.on('game.start', () => {
 });
 events.on('game.win', () => {
   game.phase = 'win';
+  game.runTime = Math.round(nowSec() - game.runStart);
   document.body.classList.remove('playing');
   input.allowLock = false;
   if (document.pointerLockElement) document.exitPointerLock();
   audio.play('win');
-  ui.showWin(settlement.calculate(game));
+  const winSettlement = settlement.calculate(game);
+  ui.saveBest(game, winSettlement);
+  ui.showBest();
+  ui.showWin(winSettlement);
   ui.sync(game);
 });
 events.on('game.lost', () => {
   game.phase = 'lost';
+  game.runTime = Math.round(nowSec() - game.runStart);
   document.body.classList.remove('playing');
   input.allowLock = false;
   if (document.pointerLockElement) document.exitPointerLock();
   audio.play('lose');
-  ui.showLose(settlement.calculate(game));
+  const loseSettlement = settlement.calculate(game);
+  ui.saveBest(game, loseSettlement);
+  ui.showBest();
+  ui.showLose(loseSettlement);
   ui.sync(game);
 });
 

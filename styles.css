@@ -672,6 +672,13 @@ body.playing canvas {
   color: #6a7480;
 }
 
+.best-record {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--green);
+  font-weight: 700;
+}
+
 .screen {
   position: fixed;
   inset: 0;

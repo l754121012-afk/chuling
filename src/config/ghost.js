@@ -1,8 +1,8 @@
 export const GHOST_CONFIG = {
   hpMax: 100,
   stages: [
-    { id: 'calm', label: '冷静', min: 0, max: 24, speed: 1.35, viewDist: 0, cone: 0 },
-    { id: 'annoyed', label: '不悦', min: 25, max: 49, speed: 1.8, viewDist: 10, cone: 130 },
+    { id: 'calm', label: '冷静', min: 0, max: 24, speed: 1.35, viewDist: 6, cone: 90 },
+    { id: 'annoyed', label: '不悦', min: 25, max: 49, speed: 1.8, viewDist: 12, cone: 150 },
     { id: 'angry', label: '愤怒', min: 50, max: 74, speed: 2.6, viewDist: 15, cone: 160 },
     { id: 'furious', label: '暴怒', min: 75, max: 94, speed: 3.4, viewDist: 999, cone: 360 },
     { id: 'insane', label: '狂乱', min: 95, max: 100, speed: 4.8, viewDist: 9999, cone: 360 }

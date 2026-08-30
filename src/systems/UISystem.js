@@ -47,7 +47,8 @@ export class UISystem {
       lives: document.getElementById('lives'),
       sealStatus: document.getElementById('seal-status'),
       flashOverlay: document.getElementById('flash-overlay'),
-      fullscreenBtn: document.getElementById('fullscreen-btn')
+      fullscreenBtn: document.getElementById('fullscreen-btn'),
+      bestRecord: document.getElementById('best-record')
     };
     this._buildInventory();
 
@@ -64,6 +65,51 @@ export class UISystem {
       this.el.mute.classList.toggle('muted');
     });
     this.sync(this.game);
+    this.showBest();
+  }
+
+  saveBest(game, settlement) {
+    const rank = { S: 4, A: 3, B: 2, C: 1, D: 0 };
+    const key = 'exorcist_best';
+    let best = { rank: -1, time: null, rating: '-', title: '' };
+    try {
+      best = JSON.parse(localStorage.getItem(key) || 'null') || best;
+    } catch {
+      best = { rank: -1, time: null, rating: '-', title: '' };
+    }
+    let changed = false;
+    if (game.phase === 'win') {
+      const r = rank[settlement.rating] || 0;
+      if (r > best.rank) {
+        best.rank = r;
+        best.rating = settlement.rating;
+        best.title = settlement.title;
+        changed = true;
+      }
+      const t = Math.round(game.runTime);
+      if (best.time === null || t < best.time) {
+        best.time = t;
+        changed = true;
+      }
+    }
+    if (changed) localStorage.setItem(key, JSON.stringify(best));
+  }
+
+  showBest() {
+    const el = this.el.bestRecord;
+    if (!el) return;
+    let best = null;
+    try {
+      best = JSON.parse(localStorage.getItem('exorcist_best') || 'null');
+    } catch {
+      best = null;
+    }
+    if (!best || (best.rank < 0 && best.time === null)) {
+      el.textContent = '最佳记录：--';
+      return;
+    }
+    const time = best.time === null ? '--' : `${Math.floor(best.time / 60)}分${String(best.time % 60).padStart(2, '0')}秒`;
+    el.textContent = `最佳记录：${best.rating} ${best.title} · ${time}`;
   }
 
   _buildInventory() {

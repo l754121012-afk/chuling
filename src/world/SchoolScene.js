@@ -33,6 +33,9 @@ export class SchoolScene {
     this.group = new THREE.Group();
     this.flickerLights = [];
     this.footprints = [];
+    this.particles = [];
+    this._deskShakeUntil = 0;
+    this._lockerShakeUntil = 0;
     this.refs = null;
   }
 
@@ -46,6 +49,7 @@ export class SchoolScene {
       props: [],
       pillars: [],
       clutter: [],
+      desks: [],
       platform: null,
       itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
@@ -111,6 +115,7 @@ export class SchoolScene {
       mesh.position.set(desk.x, 0, desk.z);
       mesh.rotation.y = desk.rotY;
       this.group.add(mesh);
+      refs.desks.push({ mesh, base: { x: desk.x, z: desk.z } });
       const body = makeBody({
         shape: new CANNON.Box(v3(0.4, 0.38, 0.28)),
         position: { x: desk.x, y: 0.38, z: desk.z },
@@ -201,6 +206,7 @@ export class SchoolScene {
       pos: { x: lockerPos.x, z: lockerPos.z },
       topY: 1.7
     };
+    refs.lockerShake = { mesh: lockerMesh, base: { x: lockerPos.x, z: lockerPos.z } };
     const safeSign = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: textTexture('安全屋', {
@@ -715,7 +721,60 @@ export class SchoolScene {
     }
   }
 
+  spawnParticles(pos, color = '#ffe08a') {
+    for (let i = 0; i < 7; i++) {
+      const size = rand(0.05, 0.12);
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(size, size, size),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
+      );
+      mesh.position.set(
+        pos.x + rand(-0.3, 0.3),
+        pos.y + rand(0.2, 0.7),
+        pos.z + rand(-0.3, 0.3)
+      );
+      this.group.add(mesh);
+      this.particles.push({ mesh, ttl: 0.55 });
+    }
+  }
+
   update(dt, game) {
+    const currentStage = game.currentStage();
+    if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {
+      this._deskShakeUntil = nowSec() + 0.15;
+    }
+    if (currentStage.id === 'furious' || currentStage.id === 'insane') {
+      this._lockerShakeUntil = nowSec() + 0.15;
+    }
+    for (const d of this.refs?.desks || []) {
+      if (nowSec() < this._deskShakeUntil) {
+        d.mesh.position.x = d.base.x + rand(-0.04, 0.04);
+        d.mesh.position.z = d.base.z + rand(-0.04, 0.04);
+      } else {
+        d.mesh.position.x = d.base.x;
+        d.mesh.position.z = d.base.z;
+      }
+    }
+    const locker = this.refs?.lockerShake;
+    if (locker) {
+      if (nowSec() < this._lockerShakeUntil) {
+        locker.mesh.position.x = locker.base.x + rand(-0.03, 0.03);
+        locker.mesh.position.z = locker.base.z + rand(-0.03, 0.03);
+      } else {
+        locker.mesh.position.x = locker.base.x;
+        locker.mesh.position.z = locker.base.z;
+      }
+    }
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.ttl -= dt;
+      if (p.ttl <= 0) {
+        this.group.remove(p.mesh);
+        p.mesh.material.dispose();
+        this.particles.splice(i, 1);
+      }
+    }
+
     for (const prop of this.refs?.props || []) {
       if (prop.body && prop.mesh) {
         syncMeshToBody(prop.mesh, prop.body);
