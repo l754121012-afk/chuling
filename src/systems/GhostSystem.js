@@ -182,7 +182,7 @@ export class GhostSystem {
     const py = playerPos.y;
     const gy = body.position.y;
     const heightDiff = py - gy;
-    if (heightDiff > 0.25 && heightDiff < 1.5) {
+    if (heightDiff > 0.25 && heightDiff < 0.8) {
       body.position.y += heightDiff * Math.min(1, dt * 2.5);
     } else if (heightDiff < -0.2) {
       body.position.y += heightDiff * Math.min(1, dt * 1.2);
@@ -395,7 +395,7 @@ export class GhostSystem {
   _canSee(playerPos, stage) {
     if (this.game.hiding) return false;
     const b = this.pawn.body.position;
-    if (playerPos.y - b.y > 1.5) return false;
+    if (playerPos.y - b.y > 0.8) return false;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > stage.viewDist) return false;
     if (this.playerCrouching?.() && dist > 1.8) return false;
@@ -438,7 +438,7 @@ export class GhostSystem {
     if (nowSec() < this.game.weakUntil) return;
     if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;
-    if (playerPos.y - b.y > 1.5) return;
+    if (playerPos.y - b.y > 0.8) return;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > 1.15) return;
     const stage = this.game.currentStage();

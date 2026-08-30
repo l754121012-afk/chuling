@@ -282,6 +282,7 @@ export class PlayerSystem {
       const d = distance2D(pos.x, pos.z, c.x, c.z);
       if (d < 0.9) {
         c.used = true;
+        if (c.mesh) this.scene.group.remove(c.mesh);
         this.rage.add(2, 'clutter');
         this.events.emit('noise', { pos: { x: c.x, z: c.z }, radius: 9 });
         this.events.emit('toast', { text: '踢到杂物了！', ms: 1200 });

@@ -23,6 +23,7 @@ export class InputSystem {
   attach() {
     window.addEventListener('keydown', e => this._onKeyDown(e));
     window.addEventListener('keyup', e => this._onKeyUp(e));
+    window.addEventListener('blur', () => this.keys.clear());
     this.canvas.addEventListener('mousedown', e => this._onMouseDown(e));
     this.canvas.addEventListener('mousemove', e => this._onMouseMove(e));
     window.addEventListener('mouseup', e => this._onMouseUp(e));
@@ -48,6 +49,7 @@ export class InputSystem {
 
   _onKeyDown(e) {
     if (['Tab', 'Space', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+    if (e.repeat) return;
     if (!this.keys.has(e.code)) this._pressed.add(e.code);
     this.keys.add(e.code);
   }

@@ -62,15 +62,15 @@ export class SchoolScene {
     const wallColor = PALETTE.wall;
     const wallTrim = PALETTE.wallTrim;
 
-    this._box(22, 3.5, 0.25, { x: 0, y: 1.75, z: -7 }, wallColor);
-    this._box(0.25, 3.5, 12.5, { x: 11, y: 1.75, z: -1 }, wallColor);
-    this._box(0.25, 3.5, 12.5, { x: -11, y: 1.75, z: -1 }, wallColor);
-    this._box(8.5, 3.5, 0.25, { x: -6.75, y: 1.75, z: 5 }, wallColor);
-    this._box(8.5, 3.5, 0.25, { x: 6.75, y: 1.75, z: 5 }, wallColor);
-    this._box(0.25, 3.5, 15.5, { x: -4.5, y: 1.75, z: 12.5 }, wallColor);
-    this._box(0.25, 3.5, 15.5, { x: 4.5, y: 1.75, z: 12.5 }, wallColor);
-    this._box(9, 3.5, 0.25, { x: 0, y: 1.75, z: 20 }, wallColor);
-    this._box(5, 0.7, 0.25, { x: 0, y: 3.15, z: 5 }, wallTrim);
+    this._box(22, 7, 0.25, { x: 0, y: 3.5, z: -7 }, wallColor);
+    this._box(0.25, 7, 12.5, { x: 11, y: 3.5, z: -1 }, wallColor);
+    this._box(0.25, 7, 12.5, { x: -11, y: 3.5, z: -1 }, wallColor);
+    this._box(8.5, 7, 0.25, { x: -6.75, y: 3.5, z: 5 }, wallColor);
+    this._box(8.5, 7, 0.25, { x: 6.75, y: 3.5, z: 5 }, wallColor);
+    this._box(0.25, 7, 15.5, { x: -4.5, y: 3.5, z: 12.5 }, wallColor);
+    this._box(0.25, 7, 15.5, { x: 4.5, y: 3.5, z: 12.5 }, wallColor);
+    this._box(9, 7, 0.25, { x: 0, y: 3.5, z: 20 }, wallColor);
+    this._box(5, 0.7, 0.25, { x: 0, y: 6.3, z: 5 }, wallTrim);
   }
 
   _addProps(refs) {
@@ -364,12 +364,12 @@ export class SchoolScene {
       new THREE.BoxGeometry(1.2, 0.15, ramp.length),
       material('#a9744f', 0.85)
     );
-    rampMesh.position.set(ramp.x, 1.25, ramp.z);
+    rampMesh.position.set(ramp.x, 2.0, ramp.z);
     rampMesh.rotation.x = ramp.tilt;
     this.group.add(rampMesh);
     const rampBody = makeBody({
       shape: new CANNON.Box(v3(0.6, 0.075, ramp.length / 2)),
-      position: { x: ramp.x, y: 1.25, z: ramp.z },
+      position: { x: ramp.x, y: 2.0, z: ramp.z },
       group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
@@ -413,11 +413,11 @@ export class SchoolScene {
       new THREE.BoxGeometry(2.2, 0.2, 1.4),
       material('#6b5b4a', 0.8)
     );
-    landing.position.set(0, 2.5, 3.8);
+    landing.position.set(0, 3.9, 4.2);
     this.group.add(landing);
     const landingBody = makeBody({
       shape: new CANNON.Box(v3(1.1, 0.1, 0.7)),
-      position: { x: 0, y: 2.5, z: 3.8 },
+      position: { x: 0, y: 3.9, z: 4.2 },
       group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
@@ -439,6 +439,7 @@ export class SchoolScene {
       group.position.set(c.x, 0, c.z);
       group.rotation.y = c.rot;
       this.group.add(group);
+      refs.clutter.push({ x: c.x, z: c.z, used: false, mesh: group });
     }
   }
 

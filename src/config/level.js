@@ -40,17 +40,17 @@ export const LEVEL_CONFIG = {
     { x: -1.5, z: 3.2 }
   ],
   highCatwalk: [
-    { from: { x: 10.2, z: -1.5 }, to: { x: 10.2, z: 4.6 }, y: 2.6 },
-    { from: { x: 10.2, z: 4.6 }, to: { x: 0, z: 4.6 }, y: 2.6 }
+    { from: { x: 10.2, z: -1.5 }, to: { x: 10.2, z: 4.6 }, y: 4.0 },
+    { from: { x: 10.2, z: 4.6 }, to: { x: 0, z: 4.6 }, y: 4.0 }
   ],
   palletStack: { x: -2.5, z: -4.8, tiers: [0.5, 1.1, 1.7] },
   wallLedges: [
-    { x: 10.2, z: -1.5, y: 1.0 },
-    { x: 10.2, z: -1.5, y: 1.8 },
-    { x: 10.2, z: -1.5, y: 2.6 }
+    { x: 10.2, z: -1.5, y: 1.6 },
+    { x: 10.2, z: -1.5, y: 2.8 },
+    { x: 10.2, z: -1.5, y: 4.0 }
   ],
-  slideRamp: { x: 8.0, z: -1.5, length: 4.5, tilt: -0.55 },
-  rope: { x: 10.0, z: -1.5, topY: 2.6 },
+  slideRamp: { x: 8.0, z: -1.5, length: 6.0, tilt: -0.5 },
+  rope: { x: 10.0, z: -1.5, topY: 4.0 },
   routeClutter: [
     { x: 0, z: 3.8, rot: 0.25 },
     { x: -2, z: 2.4, rot: -0.2 },
