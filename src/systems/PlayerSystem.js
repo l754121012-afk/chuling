@@ -29,6 +29,7 @@ export class PlayerSystem {
     this._comboReady = false;
     this._lastEquipped = null;
     this._hurtFlash = 0;
+    this._footprintCooldown = 0;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -72,6 +73,7 @@ export class PlayerSystem {
 
     this._handleMovement(dt, body);
     this._handleStamina(dt, body);
+    this._checkFootprints(dt);
     this._handleInteractions();
     this._handleItemControls();
 
@@ -202,6 +204,25 @@ export class PlayerSystem {
         0,
         GAME_CONFIG.staminaMax
       );
+    }
+  }
+
+  _checkFootprints(dt) {
+    this._footprintCooldown = Math.max(0, this._footprintCooldown - dt);
+    if (this._footprintCooldown > 0 || this.game.hiding) return;
+    const pos = this.getPos();
+    for (const f of this.scene.footprints) {
+      const d = distance2D(pos.x, pos.z, f.x, f.z);
+      if (d < 0.38) {
+        this._footprintCooldown = 0.8;
+        this.rage.add(6, 'footprint');
+        this.game.stamina = Math.max(0, this.game.stamina - 5);
+        this.events.emit('noise', { pos: { x: f.x, z: f.z }, radius: 7 });
+        this.events.emit('toast', { text: '踩到脚印了！它听见了！', ms: 1500 });
+        this.audio?.play('slap');
+        this.playPose('hurt', 0.35);
+        break;
+      }
     }
   }
 
@@ -362,7 +383,7 @@ export class PlayerSystem {
           this.events.emit('toast', { text: '瞄准中，再次左键或按 F 射出', ms: 1500 });
         }
       }
-    } else if (click && usable) {
+    } else if ((click || this.input.justRightPressed()) && usable) {
       this.playPose('use', 0.45);
       this.items.useEquipped();
     }

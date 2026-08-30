@@ -101,6 +101,7 @@ events.on('game.start', () => {
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
   game.equipped = 'pen';
+  items.resetBackup();
   items.syncHand();
   audio.init();
   ui.toggleNotebook(false);

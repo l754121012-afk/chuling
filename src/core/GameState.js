@@ -26,6 +26,7 @@ export class GameState {
     this.notebookOpen = false;
     this.noiseTimer = 0;
     this.sealed = false;
+    this.staplerBroken = false;
   }
 
   addItem(id, n = 1) {

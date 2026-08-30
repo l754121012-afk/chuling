@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { GROUPS, makeBody, v3 } from '../core/Physics.js';
+import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
 import {
   material,
   makePropMesh,
@@ -110,6 +110,7 @@ export class SchoolScene {
       group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
+    shelfBody.quaternion.setFromEuler(0, shelf.rotY, 0);
     shelfBody.angularDamping = 0.6;
     shelfBody.linearDamping = 0.2;
     this.physics.add(shelfBody);
@@ -149,7 +150,7 @@ export class SchoolScene {
       shape: new CANNON.Cylinder(0.28, 0.22, 0.72, 12),
       position: v3(trash.x, 0.55, trash.z),
       collisionFilterGroup: GROUPS.PROP,
-      collisionFilterMask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      collisionFilterMask: GROUPS.WORLD | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     trashBody.angularDamping = 0.4;
     trashBody.linearDamping = 0.1;
@@ -293,10 +294,14 @@ export class SchoolScene {
     mesh.position.set(x, 0.03, z);
     mesh.rotation.y = Math.random() * Math.PI * 2;
     this.group.add(mesh);
-    this.footprints.push({ mesh, ttl: 18 });
+    this.footprints.push({ mesh, ttl: 18, x, z });
   }
 
   update(dt, game) {
+    for (const prop of this.refs?.props || []) {
+      if (prop.body && prop.mesh) syncMeshToBody(prop.mesh, prop.body);
+    }
+
     for (let i = this.footprints.length - 1; i >= 0; i--) {
       const f = this.footprints[i];
       f.ttl -= dt;

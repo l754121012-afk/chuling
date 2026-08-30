@@ -138,6 +138,7 @@ export class UISystem {
     }
     const hasNote = game.hasClue('note');
     const hasBoard = game.hasClue('blackboard');
+    if (game.staplerBroken) return '订书机坏了：打空灵体值，或等备用订书机刷新';
     if (hasNote && hasBoard) return '趁它冷静，从背后用订书机封印';
     if (hasNote) return '还差一条线索：看看黑板上写了什么';
     if (hasBoard) return '线索已更新：它讨厌被打扰，再看看桌上的纸条';

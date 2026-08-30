@@ -61,12 +61,7 @@ export class InputSystem {
       return;
     }
     if (e.button !== 0) return;
-    if (this.allowLock && !this.locked) {
-      this._requestLock();
-      this._ignoreClick = true;
-      this._down = false;
-      return;
-    }
+    if (this.allowLock && !this.locked) this._requestLock();
     this._down = true;
     this._lastX = null;
     this._lastY = null;
@@ -133,9 +128,12 @@ export class InputSystem {
     clearTimeout(this._lockTimer);
     this._lockTimer = null;
     const locked = document.pointerLockElement === this.canvas;
-    if (locked === this.locked) return;
+    if (locked === this.locked) {
+      this._ignoreClick = false;
+      return;
+    }
     this.locked = locked;
-    if (!locked) this._ignoreClick = false;
+    this._ignoreClick = false;
     this.onLockChange?.(locked);
   }
 

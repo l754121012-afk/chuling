@@ -52,6 +52,12 @@ export class GhostSystem {
     this._visualStage = null;
     this._flameTime = 0;
     this._hiddenTimer = 0;
+    this._dashTimer = 0;
+    this._dashCooldown = 0;
+    this._dashDirX = 0;
+    this._dashDirZ = 0;
+    this._dashSpeed = 0;
+    this._dashFlash = 0;
 
     events.on('noise', payload => this._onNoise(payload));
   }
@@ -90,14 +96,21 @@ export class GhostSystem {
     this._slapCooldown = Math.max(0, this._slapCooldown - dt);
     this._speechTimer = Math.max(0, this._speechTimer - dt);
     this._flash = Math.max(0, this._flash - dt);
-    this.pawn.mesh.scale.setScalar(this._flash > 0 ? 1.22 : 1);
+    this.pawn.mesh.scale.setScalar(this._flash > 0 ? 1.22 : this._dashFlash > 0 ? 1.28 : 1);
+    this._dashFlash = Math.max(0, this._dashFlash - dt);
 
-    if (this.game.phase === 'escape') {
-      this._chase(playerPos, GHOST_CONFIG.finalChaseSpeed, dt);
-      this.game.escapeTimer -= dt;
-      if (this.game.escapeTimer <= 0) this._catchPlayer();
+    if (this._dashTimer > 0) {
+      this._dashTimer -= dt;
+      this._setVelocity(this._dashDirX * this._dashSpeed, this._dashDirZ * this._dashSpeed, dt);
     } else {
-      this._investigateAI(dt, playerPos);
+      this._tryDash(dt, playerPos);
+      if (this.game.phase === 'escape') {
+        this._chase(playerPos, GHOST_CONFIG.finalChaseSpeed, dt);
+        this.game.escapeTimer -= dt;
+        if (this.game.escapeTimer <= 0) this._catchPlayer();
+      } else {
+        this._investigateAI(dt, playerPos);
+      }
     }
 
     const speed = Math.hypot(body.velocity.x, body.velocity.z);
@@ -120,6 +133,31 @@ export class GhostSystem {
     } else {
       this._hiddenTimer = 0;
     }
+  }
+
+  _tryDash(dt, playerPos) {
+    if (this.game.hiding) return;
+    this._dashCooldown -= dt;
+    if (this._dashCooldown > 0) return;
+    const stage = this.game.currentStage();
+    const idx = GHOST_CONFIG.stages.findIndex(s => s.id === stage.id);
+    if (idx < 2) return;
+    const b = this.pawn.body.position;
+    const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+    if (dist < 2.5 || dist > 14) return;
+    if (Math.random() > dt * 0.55) return;
+    const speed = (GHOST_CONFIG.stages[idx].speed || 2.6) * 1.8;
+    const dx = playerPos.x - b.x;
+    const dz = playerPos.z - b.z;
+    const len = Math.hypot(dx, dz) || 1;
+    this._dashDirX = dx / len;
+    this._dashDirZ = dz / len;
+    this._dashSpeed = speed;
+    this._dashTimer = 0.38;
+    this._dashCooldown = rand(2.8, 5.5);
+    this._dashFlash = 0.3;
+    this.audio?.play('whoosh');
+    this.events.emit('toast', { text: '鬼突然加速了！', ms: 1100 });
   }
 
   _applyStageVisual(stage, dt) {
@@ -363,6 +401,7 @@ export class GhostSystem {
 
     this.game.consumeItem('stapler');
     this.game.usedItems.push('stapler');
+    this.game.staplerBroken = true;
     this.rage.add(GHOST_CONFIG.rage.wrongSeal, 'wrongSeal');
     this.audio?.play('stapler');
     this.events.emit('toast', { text: '封了个寂寞！订书机坏了！', ms: 2200 });
