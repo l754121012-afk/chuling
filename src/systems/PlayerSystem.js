@@ -30,6 +30,9 @@ export class PlayerSystem {
     this._lastEquipped = null;
     this._hurtFlash = 0;
     this._footprintCooldown = 0;
+    this._hideRestorePos = null;
+    this._hideRestoreType = null;
+    this._hideRestoreMask = null;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -54,6 +57,20 @@ export class PlayerSystem {
     this.physics.add(body);
     this.pawn = { mesh, body };
     return this.pawn;
+  }
+
+  resetHiding() {
+    this.game.hiding = false;
+    if (this.pawn) this.pawn.mesh.visible = true;
+    if (this._hideRestoreType) {
+      this.pawn.body.type = this._hideRestoreType;
+      this._hideRestoreType = null;
+    }
+    if (this._hideRestoreMask) {
+      this.pawn.body.collisionFilterMask = this._hideRestoreMask;
+      this._hideRestoreMask = null;
+    }
+    this._hideRestorePos = null;
   }
 
   getPos() {
@@ -83,6 +100,13 @@ export class PlayerSystem {
       this.pawn.mesh.rotation.y = Math.atan2(body.velocity.x, body.velocity.z);
     }
     this._updatePose(dt);
+    if (this.game.hiding) {
+      this.pawn.mesh.visible = false;
+    } else if (nowSec() < this.game.invincibleUntil) {
+      this.pawn.mesh.visible = Math.floor(nowSec() * 12) % 2 === 0;
+    } else {
+      this.pawn.mesh.visible = true;
+    }
   }
 
   _syncPlayerMesh() {
@@ -303,8 +327,37 @@ export class PlayerSystem {
       this.clues.readClue(target.clue.id);
     } else if (target.type === 'locker') {
       this.game.hiding = !this.game.hiding;
-      this.pawn.mesh.visible = !this.game.hiding;
-      if (this.game.hiding) this.pawn.body.velocity.set(0, 0, 0);
+      if (this.game.hiding) {
+        this._hideRestorePos = {
+          x: this.pawn.body.position.x,
+          y: this.pawn.body.position.y,
+          z: this.pawn.body.position.z
+        };
+        this._hideRestoreType = this.pawn.body.type;
+        this._hideRestoreMask = this.pawn.body.collisionFilterMask;
+        this.pawn.body.type = CANNON.Body.KINEMATIC;
+        this.pawn.body.collisionFilterMask = 0;
+        const locker = this.refs.locker;
+        this.pawn.body.position.set(locker.pos.x, 1.0, locker.pos.z);
+        this.pawn.body.velocity.set(0, 0, 0);
+        this.pawn.mesh.visible = false;
+      } else {
+        if (this._hideRestorePos) {
+          this.pawn.body.type = this._hideRestoreType ?? CANNON.Body.DYNAMIC;
+          this.pawn.body.collisionFilterMask = this._hideRestoreMask ??
+            (GROUPS.WORLD | GROUPS.PROP | GROUPS.ITEM);
+          this.pawn.body.position.set(
+            this._hideRestorePos.x,
+            this._hideRestorePos.y,
+            this._hideRestorePos.z
+          );
+          this.pawn.body.velocity.set(0, 0, 0);
+          this._hideRestorePos = null;
+          this._hideRestoreType = null;
+          this._hideRestoreMask = null;
+        }
+        this.pawn.mesh.visible = true;
+      }
       this.audio?.play('click');
       this.events.emit('toast', {
         text: this.game.hiding ? '躲进柜子了，暴怒值缓慢下降' : '从柜子里出来',

@@ -40,7 +40,9 @@ export class UISystem {
       warning: document.getElementById('ghost-warning'),
       warningLabel: document.getElementById('warn-label'),
       crosshair: document.getElementById('crosshair'),
-      itemHint: document.getElementById('item-hint')
+      itemHint: document.getElementById('item-hint'),
+      lives: document.getElementById('lives'),
+      sealStatus: document.getElementById('seal-status')
     };
     this._buildInventory();
 
@@ -110,6 +112,9 @@ export class UISystem {
     this.el.battery.style.width = `${game.battery}%`;
     this.el.phone.classList.toggle('drained', game.battery <= 0);
     this.el.stamina.style.width = `${game.stamina}%`;
+    if (this.el.lives) {
+      this.el.lives.textContent = '♥'.repeat(game.lives) + '♡'.repeat(Math.max(0, 3 - game.lives));
+    }
     this.el.objective.textContent = this._objectiveText(game);
 
     const slots = this.el.inventory.querySelectorAll('.inv-slot');
@@ -167,6 +172,32 @@ export class UISystem {
     }
     this.el.prompt.textContent = text;
     this.el.prompt.classList.add('show');
+  }
+
+  updateSealStatus(player, ghost) {
+    const el = this.el.sealStatus;
+    if (!el) return;
+    const game = this.game;
+    const active = game.equipped === 'stapler' &&
+      game.hasClue('note') &&
+      game.phase === 'investigate';
+    if (!active) {
+      el.classList.remove('show', 'ready');
+      return;
+    }
+    const p = player.getPos();
+    const gp = ghost.getPos();
+    const dx = p.x - gp.x;
+    const dz = p.z - gp.z;
+    const dist = Math.hypot(dx, dz);
+    const facingX = Math.sin(ghost._facing);
+    const facingZ = Math.cos(ghost._facing);
+    const dot = (dx * facingX + dz * facingZ) / (dist || 1);
+    const behind = dot < -0.25;
+    const ready = dist <= 2.4 && behind;
+    el.classList.toggle('show', true);
+    el.classList.toggle('ready', ready);
+    el.textContent = ready ? '背后封印！按左键' : `距离 ${dist.toFixed(1)}m，绕到背后`;
   }
 
   toggleNotebook(force) {

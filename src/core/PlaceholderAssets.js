@@ -180,6 +180,31 @@ export function makeItemMarker(id) {
   return group;
 }
 
+export function makeWeakPointMarker() {
+  const group = new THREE.Group();
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.16, 0.22, 20),
+    new THREE.MeshBasicMaterial({
+      color: '#7CFC00',
+      transparent: true,
+      opacity: 0.95,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    })
+  );
+  ring.rotation.y = Math.PI;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: iconTexture('弱', '#7CFC00'),
+      transparent: true,
+      depthWrite: false
+    })
+  );
+  sprite.scale.set(0.32, 0.32, 1);
+  group.add(ring, sprite);
+  return group;
+}
+
 function limbMesh(from, to, radius, mat) {
   const a = new THREE.Vector3(from[0], from[1], from[2]);
   const b = new THREE.Vector3(to[0], to[1], to[2]);

@@ -166,6 +166,20 @@ canvas {
   color: #d6d0c2;
 }
 
+.lives-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #d6d0c2;
+}
+
+#lives {
+  color: #ff6b6b;
+  letter-spacing: 2px;
+}
+
 .battery-shell,
 .stamina-shell {
   flex: 1;
@@ -362,6 +376,31 @@ canvas {
   text-align: center;
   pointer-events: none;
   white-space: nowrap;
+}
+
+#seal-status {
+  position: absolute;
+  top: calc(50% + 26px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(120, 12, 28, 0.9);
+  color: #ffd9d9;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+#seal-status.show {
+  opacity: 1;
+}
+
+#seal-status.ready {
+  background: rgba(28, 110, 55, 0.92);
+  color: #eaffea;
 }
 
 #prompt {

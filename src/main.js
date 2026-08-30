@@ -97,7 +97,7 @@ events.on('game.start', () => {
   game.reset();
   game.phase = 'investigate';
   input.allowLock = true;
-  player.pawn.mesh.visible = true;
+  player.resetHiding();
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
   game.equipped = 'pen';
@@ -184,6 +184,7 @@ function tick() {
 
   if (input.justPressed('Tab')) ui.toggleNotebook();
   ui.sync(game);
+  ui.updateSealStatus(player, ghost);
   cameraSys.update(input, player.getPos(), dt);
   physics.step(dt);
   renderer.render(scene, camera);

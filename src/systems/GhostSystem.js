@@ -1,8 +1,9 @@
+import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GHOST_CONFIG, stageForRage } from '../config/ghost.js';
 import { GAME_CONFIG } from '../config/game.js';
 import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
-import { makeGhostMesh } from '../core/PlaceholderAssets.js';
+import { makeGhostMesh, makeWeakPointMarker } from '../core/PlaceholderAssets.js';
 import { choice, clamp, distance2D, nowSec, rand } from '../core/Utils.js';
 
 const GHOST_VISUALS = {
@@ -58,6 +59,9 @@ export class GhostSystem {
     this._dashDirZ = 0;
     this._dashSpeed = 0;
     this._dashFlash = 0;
+    this._weakPoint = null;
+    this._rangeRing = null;
+    this._rangeRingMat = null;
 
     events.on('noise', payload => this._onNoise(payload));
   }
@@ -79,6 +83,28 @@ export class GhostSystem {
     body.allowSleep = false;
     this.physics.add(body);
     this.pawn = { mesh, body };
+
+    const weak = makeWeakPointMarker();
+    weak.position.set(0, 1.4, -0.52);
+    weak.visible = false;
+    mesh.add(weak);
+    this._weakPoint = weak;
+
+    const rangeMat = new THREE.MeshBasicMaterial({
+      color: 0xe63946,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const range = new THREE.Mesh(new THREE.RingGeometry(2.25, 2.4, 40), rangeMat);
+    range.rotation.x = -Math.PI / 2;
+    range.position.y = -1.2;
+    range.visible = false;
+    mesh.add(range);
+    this._rangeRing = range;
+    this._rangeRingMat = rangeMat;
+
     return this.pawn;
   }
 
@@ -90,6 +116,7 @@ export class GhostSystem {
   update(dt, playerPos) {
     if (!this.pawn) return;
     this._applyStageVisual(this.game.currentStage(), dt);
+    this._updateTargetingUI(playerPos);
     if (!this.game.isPlaying()) return;
     const body = this.pawn.body;
     syncMeshToBody(this.pawn.mesh, body);
@@ -343,17 +370,43 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this.game.hiding) return;
+    if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > 1.15) return;
     const stage = this.game.currentStage();
     const shouldCatch = this.game.phase === 'escape' || stage.id === 'insane';
     if (shouldCatch) {
+      if (this.game.lives > 0) {
+        this.game.lives -= 1;
+        this.game.invincibleUntil = nowSec() + 2.2;
+        if (this.playerBody) {
+          const dx = playerPos.x - b.x;
+          const dz = playerPos.z - b.z;
+          const len = Math.hypot(dx, dz) || 1;
+          this.playerBody.velocity.set((dx / len) * 9, 4, (dz / len) * 9);
+        }
+        this._lastSeen = null;
+        this._lastNoise = null;
+        this._searchTimer = 0;
+        this._waypoint = this._pointAwayFromLocker();
+        this.audio?.play('slap');
+        this.events.emit('player.hurt');
+        this.events.emit('camera.shake', { amount: 0.45 });
+        if (this.game.lives <= 0) {
+          this._catchPlayer();
+          return;
+        }
+        this.events.emit('toast', { text: `被抓住了！还剩 ${this.game.lives} 次机会`, ms: 2200 });
+        this._speak('你跑不掉的……', 1800);
+        return;
+      }
       this._catchPlayer();
       return;
     }
     if (this._slapCooldown > 0) return;
     this._slapCooldown = GAME_CONFIG.slapCooldown;
+    this.game.invincibleUntil = nowSec() + 1.0;
     this.rage.add(GHOST_CONFIG.rage.slap, 'slap');
     this.game.stamina = Math.max(0, this.game.stamina - 25);
     if (this.playerBody) {
@@ -367,6 +420,31 @@ export class GhostSystem {
     this.events.emit('player.hurt');
     this.events.emit('camera.shake', { amount: 0.32 });
     this._speak('别在教室里乱跑！', 1800);
+  }
+
+  _updateTargetingUI(playerPos) {
+    if (!this._weakPoint || !this._rangeRing) return;
+    const noteKnown = this.game.hasClue('note');
+    const showWeak = noteKnown && this.game.phase === 'investigate' && !this.game.sealed;
+    this._weakPoint.visible = showWeak;
+    if (showWeak) this._weakPoint.rotation.z = Math.sin(nowSec() * 3) * 0.15;
+
+    const staplerEquipped = this.game.equipped === 'stapler';
+    this._rangeRing.visible = showWeak && staplerEquipped;
+    if (!this._rangeRing.visible) return;
+
+    const b = this.pawn.body.position;
+    const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+    const dx = playerPos.x - b.x;
+    const dz = playerPos.z - b.z;
+    const facingX = Math.sin(this._facing);
+    const facingZ = Math.cos(this._facing);
+    const dot = (dx * facingX + dz * facingZ) / (Math.hypot(dx, dz) || 1);
+    const behind = dot < -0.25;
+    const ready = dist <= 2.4 && behind;
+    this._rangeRingMat.color.setHex(ready ? 0x4caf50 : 0xe63946);
+    this._rangeRingMat.opacity = ready ? 0.85 : 0.4;
+    this._rangeRing.scale.setScalar(1 + Math.sin(nowSec() * 4) * 0.03);
   }
 
   _catchPlayer() {

@@ -27,6 +27,8 @@ export class GameState {
     this.noiseTimer = 0;
     this.sealed = false;
     this.staplerBroken = false;
+    this.lives = 3;
+    this.invincibleUntil = 0;
   }
 
   addItem(id, n = 1) {

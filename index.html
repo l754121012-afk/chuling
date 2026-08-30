@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>除灵实习生 Phase 0</title>
-  <link rel="stylesheet" href="./styles.css?v=8" />
+  <link rel="stylesheet" href="./styles.css?v=10" />
   <script type="importmap">
     {
       "imports": {
@@ -41,6 +41,10 @@
             <span>手机电量</span>
             <div class="battery-shell"><div id="battery-bar"></div></div>
           </div>
+          <div class="lives-row">
+            <span>容错</span>
+            <span id="lives">♥♥♥</span>
+          </div>
         </div>
         <div id="objective" class="objective">调查教室：找到黑板和纸条两条线索</div>
       </div>
@@ -54,6 +58,7 @@
       <div id="item-hint"></div>
 
       <div id="crosshair"><span class="tick-x"></span></div>
+      <div id="seal-status"></div>
       <div id="prompt"></div>
       <div id="speech"></div>
       <div id="toast"></div>
@@ -115,6 +120,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/main.js?v=8"></script>
+  <script type="module" src="./src/main.js?v=10"></script>
 </body>
 </html>
