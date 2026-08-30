@@ -16,6 +16,7 @@ export class InputSystem {
     this.allowLock = false;
     this._ignoreClick = false;
     this.onLockChange = null;
+    this.onLockError = null;
     this._lockTimer = null;
   }
 
@@ -36,6 +37,7 @@ export class InputSystem {
       this.locked = false;
       this._ignoreClick = false;
       this.onLockChange?.(false);
+      this.onLockError?.();
     });
     this.canvas.addEventListener('wheel', e => {
       e.preventDefault();

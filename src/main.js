@@ -52,6 +52,9 @@ input.onLockChange = locked => {
   }
   if (locked) events.emit('toast', { text: '鼠标已锁定，按 Esc 释放', ms: 1800 });
 };
+input.onLockError = () => {
+  events.emit('toast', { text: '鼠标锁定不可用，点击画面重试', ms: 2000 });
+};
 const cameraSys = new CameraSystem(camera, school);
 const rage = new RageSystem(game, events, audio);
 const ghost = new GhostSystem({ scene: school, physics, events, game, rage, audio });
@@ -113,6 +116,13 @@ events.on('game.start', () => {
   game.reset();
   game.phase = 'investigate';
   input.allowLock = true;
+  if (renderer.domElement.requestPointerLock) {
+    try {
+      renderer.domElement.requestPointerLock();
+    } catch {
+      // fallback: cursor hidden and edge look remains available
+    }
+  }
   phoneRang = false;
   document.body.classList.add('playing');
   player.resetHiding();

@@ -48,9 +48,9 @@ export class SchoolScene {
   }
 
   _addFloor() {
-    this._box(36, 0.4, 30, { x: 0, y: -0.2, z: 5 }, PALETTE.floor);
+    this._box(46, 0.4, 38, { x: 0, y: -0.2, z: 6 }, PALETTE.floor);
     const darkFloor = new THREE.Mesh(
-      new THREE.PlaneGeometry(18, 14),
+      new THREE.PlaneGeometry(24, 18),
       new THREE.MeshStandardMaterial({ color: PALETTE.floorDark, roughness: 0.95 })
     );
     darkFloor.rotation.x = -Math.PI / 2;
@@ -62,15 +62,15 @@ export class SchoolScene {
     const wallColor = PALETTE.wall;
     const wallTrim = PALETTE.wallTrim;
 
-    this._box(18, 3.5, 0.25, { x: 0, y: 1.75, z: -6 }, wallColor);
-    this._box(0.25, 3.5, 10.5, { x: 9, y: 1.75, z: -1 }, wallColor);
-    this._box(0.25, 3.5, 10.5, { x: -9, y: 1.75, z: -1 }, wallColor);
-    this._box(7, 3.5, 0.25, { x: -5.5, y: 1.75, z: 4 }, wallColor);
-    this._box(7, 3.5, 0.25, { x: 5.5, y: 1.75, z: 4 }, wallColor);
-    this._box(0.25, 3.5, 12.5, { x: -3.5, y: 1.75, z: 10 }, wallColor);
-    this._box(0.25, 3.5, 12.5, { x: 3.5, y: 1.75, z: 10 }, wallColor);
-    this._box(7, 3.5, 0.25, { x: 0, y: 1.75, z: 16 }, wallColor);
-    this._box(4, 0.7, 0.25, { x: 0, y: 3.15, z: 4 }, wallTrim);
+    this._box(22, 3.5, 0.25, { x: 0, y: 1.75, z: -7 }, wallColor);
+    this._box(0.25, 3.5, 12.5, { x: 11, y: 1.75, z: -1 }, wallColor);
+    this._box(0.25, 3.5, 12.5, { x: -11, y: 1.75, z: -1 }, wallColor);
+    this._box(8.5, 3.5, 0.25, { x: -6.75, y: 1.75, z: 5 }, wallColor);
+    this._box(8.5, 3.5, 0.25, { x: 6.75, y: 1.75, z: 5 }, wallColor);
+    this._box(0.25, 3.5, 15.5, { x: -4.5, y: 1.75, z: 12.5 }, wallColor);
+    this._box(0.25, 3.5, 15.5, { x: 4.5, y: 1.75, z: 12.5 }, wallColor);
+    this._box(9, 3.5, 0.25, { x: 0, y: 1.75, z: 20 }, wallColor);
+    this._box(5, 0.7, 0.25, { x: 0, y: 3.15, z: 5 }, wallTrim);
   }
 
   _addProps(refs) {
@@ -98,7 +98,7 @@ export class SchoolScene {
     const platformBody = makeBody({
       shape: new CANNON.Box(v3(platform.w / 2, platform.h / 2, platform.d / 2)),
       position: { x: platform.x, y: platform.h / 2, z: platform.z },
-      group: GROUPS.WORLD,
+      group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(platformBody);
@@ -201,7 +201,7 @@ export class SchoolScene {
     const stepBody = makeBody({
       shape: new CANNON.Box(v3(step.w / 2, step.h / 2, step.d / 2)),
       position: { x: step.x, y: step.h / 2, z: step.z },
-      group: GROUPS.WORLD,
+      group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(stepBody);
@@ -241,7 +241,7 @@ export class SchoolScene {
       const body = makeBody({
         shape: new CANNON.Cylinder(pillar.r, pillar.r, 3, 14),
         position: { x: pillar.x, y: 1.5, z: pillar.z },
-        group: GROUPS.WORLD,
+        group: GROUPS.PROP,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       this.physics.add(body);
@@ -336,7 +336,7 @@ export class SchoolScene {
       const body = makeBody({
         shape: new CANNON.Box(v3(size / 2, h / 2, size / 2)),
         position: { x: stack.x, y: centerY, z: stack.z },
-        group: GROUPS.WORLD,
+        group: GROUPS.PROP,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       this.physics.add(body);
@@ -370,7 +370,7 @@ export class SchoolScene {
     const rampBody = makeBody({
       shape: new CANNON.Box(v3(0.6, 0.075, ramp.length / 2)),
       position: { x: ramp.x, y: 1.25, z: ramp.z },
-      group: GROUPS.WORLD,
+      group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     rampBody.quaternion.setFromEuler(ramp.tilt, 0, 0);
@@ -402,7 +402,7 @@ export class SchoolScene {
       const body = makeBody({
         shape: new CANNON.Box(v3(0.5, 0.1, len / 2)),
         position: { x: midX, y: seg.y - 0.1, z: midZ },
-        group: GROUPS.WORLD,
+        group: GROUPS.PROP,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       body.quaternion.setFromEuler(0, yaw, 0);
@@ -418,7 +418,7 @@ export class SchoolScene {
     const landingBody = makeBody({
       shape: new CANNON.Box(v3(1.1, 0.1, 0.7)),
       position: { x: 0, y: 2.5, z: 3.8 },
-      group: GROUPS.WORLD,
+      group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(landingBody);

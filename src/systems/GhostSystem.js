@@ -63,6 +63,8 @@ export class GhostSystem {
     this._knockbackTimer = 0;
     this._knockbackVX = 0;
     this._knockbackVZ = 0;
+    this._stuckTime = 0;
+    this._lastStuckPos = { x: 0, z: 0 };
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
@@ -87,6 +89,7 @@ export class GhostSystem {
     body.allowSleep = false;
     this.physics.add(body);
     this.pawn = { mesh, body };
+    this._lastStuckPos = { x: pos.x, z: pos.z };
 
     const weak = makeWeakPointMarker();
     weak.position.set(0, 1.4, -0.52);
@@ -174,6 +177,25 @@ export class GhostSystem {
       }
     } else {
       this._hiddenTimer = 0;
+    }
+
+    const trying = Math.hypot(body.velocity.x, body.velocity.z) > 0.3;
+    const moved = Math.hypot(
+      body.position.x - this._lastStuckPos.x,
+      body.position.z - this._lastStuckPos.z
+    );
+    if (trying && moved < 0.02) {
+      this._stuckTime += dt;
+    } else {
+      this._stuckTime = 0;
+    }
+    this._lastStuckPos = { x: body.position.x, z: body.position.z };
+    if (this._stuckTime > 0.6) {
+      this._stuckTime = 0;
+      this._waypoint = this._randomClassroomPoint();
+      this._lastSeen = null;
+      this._lastNoise = null;
+      this._searchTimer = 0;
     }
   }
 
