@@ -96,6 +96,7 @@ events.on('game.start', () => {
   game.reset();
   game.phase = 'investigate';
   input.allowLock = true;
+  player.pawn.mesh.visible = true;
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
   game.equipped = 'pen';

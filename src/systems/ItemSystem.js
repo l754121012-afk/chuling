@@ -313,7 +313,7 @@ export class ItemSystem {
       const p = this.pendingPickups[i];
       if (nowSec() < p.at) continue;
       const mesh = makeItemMesh(p.id);
-      mesh.position.set(p.pos.x, 1.0, p.pos.z);
+      mesh.position.set(p.pos.x, 0.06, p.pos.z);
       mesh.rotation.y = rand(0, Math.PI * 2);
       this.scene.group.add(mesh);
       this.pickups.push({

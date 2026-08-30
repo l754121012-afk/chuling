@@ -281,6 +281,7 @@ export class GhostSystem {
 
   _catchOrSlap(playerPos) {
     if (this._caught) return;
+    if (this.game.hiding) return;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > 1.15) return;

@@ -189,7 +189,7 @@ export function makePlayerMesh() {
   const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.22), material(PALETTE.wallTrim, 0.85));
   backpack.position.set(0, 0.9, -0.36);
 
-  armLGroup.rotation.z = 0.45;
+  armLGroup.rotation.z = -0.45;
   armRGroup.rotation.x = -0.55;
   armRGroup.rotation.z = -0.15;
 

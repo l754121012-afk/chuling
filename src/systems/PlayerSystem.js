@@ -55,7 +55,7 @@ export class PlayerSystem {
   update(dt) {
     if (!this.pawn) return;
     if (!this.game.isPlaying()) {
-      syncMeshToBody(this.pawn.mesh, this.pawn.body);
+      this._syncPlayerMesh();
       return;
     }
 
@@ -67,12 +67,19 @@ export class PlayerSystem {
     this._handleInteractions();
     this._handleItemControls();
 
-    syncMeshToBody(this.pawn.mesh, body);
+    this._syncPlayerMesh();
     const hSpeed = Math.hypot(body.velocity.x, body.velocity.z);
     if (hSpeed > 0.4) {
       this.pawn.mesh.rotation.y = Math.atan2(body.velocity.x, body.velocity.z);
     }
     this._updatePose(dt);
+  }
+
+  _syncPlayerMesh() {
+    syncMeshToBody(this.pawn.mesh, this.pawn.body);
+    // Physics capsule center sits at 0.35 above the floor; the visual model's
+    // feet are at local y=0, so shift the mesh down to stand on the ground.
+    this.pawn.mesh.position.y = this.pawn.body.position.y - 0.35;
   }
 
   playPose(name, duration) {
@@ -102,9 +109,9 @@ export class PlayerSystem {
 
   _poseTarget() {
     const poses = {
-      idle: { armR: { x: -0.55, z: -0.15 }, armL: { x: 0.25, z: 0.45 }, body: 0, head: 0 },
-      use: { armR: { x: -1.15, z: -0.45 }, armL: { x: 0.3, z: 0.5 }, body: 0.08, head: -0.08 },
-      interact: { armR: { x: -0.95, z: -0.3 }, armL: { x: -1.0, z: 0.75 }, body: 0.3, head: 0.25 }
+      idle: { armR: { x: -0.55, z: -0.15 }, armL: { x: 0.25, z: -0.45 }, body: 0, head: 0 },
+      use: { armR: { x: -1.15, z: -0.45 }, armL: { x: 0.3, z: -0.5 }, body: 0.08, head: -0.08 },
+      interact: { armR: { x: -0.95, z: -0.3 }, armL: { x: -1.0, z: -0.75 }, body: 0.3, head: 0.25 }
     };
     return poses[this.pose] || poses.idle;
   }
@@ -253,6 +260,8 @@ export class PlayerSystem {
       this.clues.readClue(target.clue.id);
     } else if (target.type === 'locker') {
       this.game.hiding = !this.game.hiding;
+      this.pawn.mesh.visible = !this.game.hiding;
+      if (this.game.hiding) this.pawn.body.velocity.set(0, 0, 0);
       this.audio?.play('click');
       this.events.emit('toast', {
         text: this.game.hiding ? '躲进柜子了，暴怒值缓慢下降' : '从柜子里出来',

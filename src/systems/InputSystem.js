@@ -5,6 +5,7 @@ export class InputSystem {
     this._pressed = new Set();
     this.look = { x: 0, y: 0 };
     this.zoom = 0;
+    this.edgeLook = { x: 0, y: 0 };
     this.clicked = false;
     this._down = false;
     this._lastX = null;
@@ -72,6 +73,9 @@ export class InputSystem {
     this._lastY = e.clientY;
     this.look.x += dx;
     this.look.y += dy;
+    const edge = 28;
+    this.edgeLook.x = e.clientX <= edge ? -1 : e.clientX >= window.innerWidth - edge ? 1 : 0;
+    this.edgeLook.y = e.clientY <= edge ? -1 : e.clientY >= window.innerHeight - edge ? 1 : 0;
   }
 
   _onLockedMouseMove(e) {
@@ -141,8 +145,13 @@ export class InputSystem {
   }
 
   update() {
-    this.look.x = 0;
-    this.look.y = 0;
+    if (!this.locked) {
+      this.look.x = this.edgeLook.x * 4;
+      this.look.y = this.edgeLook.y * 4;
+    } else {
+      this.look.x = 0;
+      this.look.y = 0;
+    }
     this.zoom = 0;
   }
 }
