@@ -89,7 +89,7 @@ function faceTexture(kind) {
   return canvasTexture(canvas);
 }
 
-function iconTexture(char, color) {
+export function iconTexture(char, color) {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 128;

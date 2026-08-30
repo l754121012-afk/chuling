@@ -4,10 +4,12 @@ import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
 import {
   material,
   makePropMesh,
-  makeFootprintMesh
+  makeFootprintMesh,
+  iconTexture
 } from '../core/PlaceholderAssets.js';
 import { PALETTE } from '../config/palette.js';
 import { LEVEL_CONFIG } from '../config/level.js';
+import { nowSec } from '../core/Utils.js';
 
 export class SchoolScene {
   constructor(physics, events) {
@@ -39,6 +41,7 @@ export class SchoolScene {
     this._addClues(refs);
     this._addExit(refs);
     this._addLights();
+    this._addRouteMarkers(refs);
 
     this.refs = refs;
     return refs;
@@ -267,6 +270,72 @@ export class SchoolScene {
       this.group.add(mesh);
       refs.clutter.push({ x: c.x, z: c.z, used: false });
     }
+
+    for (const crate of LEVEL_CONFIG.crates) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.8, 0.8),
+        material('#a9744f', 0.85)
+      );
+      mesh.position.set(crate.x, 0.4, crate.z);
+      this.group.add(mesh);
+      const body = makeBody({
+        shape: new CANNON.Box(v3(0.4, 0.4, 0.4)),
+        position: { x: crate.x, y: 0.4, z: crate.z },
+        mass: 20,
+        group: GROUPS.PROP,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      body.linearDamping = 0.3;
+      body.angularDamping = 0.4;
+      this.physics.add(body);
+      refs.props.push({
+        type: 'crate',
+        mesh,
+        body,
+        pos: { x: crate.x, z: crate.z },
+        cost: 0,
+        used: false,
+        offsetY: 0
+      });
+    }
+  }
+
+  _addRouteMarkers(refs) {
+    const points = LEVEL_CONFIG.routePath;
+    const strips = [];
+    const arrows = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i];
+      const b = points[i + 1];
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const len = Math.hypot(dx, dz);
+      if (len < 0.1) continue;
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0x7fd4ff,
+        transparent: true,
+        opacity: 0.16,
+        depthWrite: false
+      });
+      const strip = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.02, len), mat);
+      strip.position.set((a.x + b.x) / 2, 0.02, (a.z + b.z) / 2);
+      strip.rotation.y = Math.atan2(dx, dz);
+      this.group.add(strip);
+      strips.push({ mesh: strip, mat });
+
+      const arrowMat = new THREE.SpriteMaterial({
+        map: iconTexture('→', '#7fd4ff'),
+        transparent: true,
+        opacity: 0.65,
+        depthWrite: false
+      });
+      const sprite = new THREE.Sprite(arrowMat);
+      sprite.position.set(a.x, 0.45, a.z);
+      sprite.scale.set(0.42, 0.42, 1);
+      this.group.add(sprite);
+      arrows.push({ sprite, mat: arrowMat });
+    }
+    refs.routeMarkers = { strips, arrows };
   }
 
   _addClues(refs) {
@@ -420,6 +489,18 @@ export class SchoolScene {
   }
 
   update(dt, game) {
+    const route = this.refs?.routeMarkers;
+    if (route) {
+      const active = game.phase === 'escape';
+      const pulse = 0.85 + Math.sin(nowSec() * 3) * 0.15;
+      for (const s of route.strips) {
+        s.mat.opacity = active ? 0.5 * pulse : 0.16;
+      }
+      for (const a of route.arrows) {
+        a.mat.opacity = active ? pulse : 0.55;
+      }
+    }
+
     for (const prop of this.refs?.props || []) {
       if (prop.body && prop.mesh) {
         syncMeshToBody(prop.mesh, prop.body);
