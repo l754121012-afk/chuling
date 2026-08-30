@@ -7,16 +7,15 @@ export class InputSystem {
     this.zoom = 0;
     this.clicked = false;
     this._down = false;
-    this._moved = 0;
-    this._lastX = 0;
-    this._lastY = 0;
+    this._lastX = null;
+    this._lastY = null;
   }
 
   attach() {
     window.addEventListener('keydown', e => this._onKeyDown(e));
     window.addEventListener('keyup', e => this._onKeyUp(e));
     this.canvas.addEventListener('mousedown', e => this._onMouseDown(e));
-    window.addEventListener('mousemove', e => this._onMouseMove(e));
+    this.canvas.addEventListener('mousemove', e => this._onMouseMove(e));
     window.addEventListener('mouseup', e => this._onMouseUp(e));
     this.canvas.addEventListener('wheel', e => {
       e.preventDefault();
@@ -38,18 +37,15 @@ export class InputSystem {
   _onMouseDown(e) {
     if (e.button !== 0) return;
     this._down = true;
-    this._moved = 0;
-    this._lastX = e.clientX;
-    this._lastY = e.clientY;
+    this._lastX = null;
+    this._lastY = null;
   }
 
   _onMouseMove(e) {
-    if (!this._down) return;
-    const dx = e.clientX - this._lastX;
-    const dy = e.clientY - this._lastY;
+    const dx = this._lastX === null ? 0 : e.clientX - this._lastX;
+    const dy = this._lastY === null ? 0 : e.clientY - this._lastY;
     this._lastX = e.clientX;
     this._lastY = e.clientY;
-    this._moved += Math.abs(dx) + Math.abs(dy);
     this.look.x += dx;
     this.look.y += dy;
   }
@@ -58,7 +54,7 @@ export class InputSystem {
     if (e.button !== 0) return;
     const wasDown = this._down;
     this._down = false;
-    if (wasDown && this._moved < 6) this.clicked = true;
+    if (wasDown) this.clicked = true;
   }
 
   isDown(code) {

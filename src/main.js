@@ -43,7 +43,7 @@ ui.init();
 
 const input = new InputSystem(renderer.domElement);
 input.attach();
-const cameraSys = new CameraSystem(camera);
+const cameraSys = new CameraSystem(camera, school);
 const rage = new RageSystem(game, events, audio);
 const ghost = new GhostSystem({ scene: school, physics, events, game, rage, audio });
 const player = new PlayerSystem({
@@ -134,6 +134,7 @@ window.__game = {
   ghost,
   items,
   player,
+  camera: cameraSys,
   events
 };
 
@@ -144,7 +145,6 @@ function tick() {
   const now = nowSec();
   const dt = Math.min(now - last, 0.05);
   last = now;
-  input.update();
 
   if (game.isPlaying()) {
     const pp = player.getPos();
@@ -169,6 +169,7 @@ function tick() {
   cameraSys.update(input, player.getPos());
   physics.step(dt);
   renderer.render(scene, camera);
+  input.update();
 }
 
 ui.sync(game);
