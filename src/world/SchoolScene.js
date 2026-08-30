@@ -4,7 +4,8 @@ import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
 import {
   material,
   makePropMesh,
-  makeFootprintMesh
+  makeFootprintMesh,
+  textTexture
 } from '../core/PlaceholderAssets.js';
 import { PALETTE } from '../config/palette.js';
 import { LEVEL_CONFIG } from '../config/level.js';
@@ -168,6 +169,27 @@ export class SchoolScene {
       pos: { x: lockerPos.x, z: lockerPos.z },
       topY: 1.7
     };
+    const safeSign = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('安全屋', {
+          bg: '#14532d',
+          fg: '#eaffea',
+          font: 'bold 62px "Microsoft YaHei", sans-serif',
+          width: 512,
+          height: 160,
+          lineHeight: 80,
+          pad: 10
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    safeSign.position.set(lockerPos.x, 2.25, lockerPos.z);
+    safeSign.scale.set(1.5, 0.5, 1);
+    this.group.add(safeSign);
+    const safeLight = new THREE.PointLight('#7CFC00', 0.8, 4.5, 1.8);
+    safeLight.position.set(lockerPos.x, 1.6, lockerPos.z);
+    this.group.add(safeLight);
 
     const step = LEVEL_CONFIG.lockerStep;
     const stepMesh = new THREE.Mesh(
@@ -361,6 +383,31 @@ export class SchoolScene {
     );
     ropeMesh.position.set(rope.x, rope.topY / 2, rope.z);
     this.group.add(ropeMesh);
+
+    for (const seg of LEVEL_CONFIG.highCatwalk) {
+      const dx = seg.to.x - seg.from.x;
+      const dz = seg.to.z - seg.from.z;
+      const len = Math.hypot(dx, dz);
+      if (len < 0.1) continue;
+      const yaw = Math.atan2(dx, dz);
+      const midX = (seg.from.x + seg.to.x) / 2;
+      const midZ = (seg.from.z + seg.to.z) / 2;
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.2, len),
+        material('#6b5b4a', 0.8)
+      );
+      mesh.position.set(midX, seg.y - 0.1, midZ);
+      mesh.rotation.y = yaw;
+      this.group.add(mesh);
+      const body = makeBody({
+        shape: new CANNON.Box(v3(0.5, 0.1, len / 2)),
+        position: { x: midX, y: seg.y - 0.1, z: midZ },
+        group: GROUPS.WORLD,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      body.quaternion.setFromEuler(0, yaw, 0);
+      this.physics.add(body);
+    }
   }
 
   _addRouteClutter(refs) {

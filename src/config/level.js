@@ -37,7 +37,11 @@ export const LEVEL_CONFIG = {
   plant: { x: 8.3, z: 1.6 },
   crates: [
     { x: 5.4, z: -2.8 },
-    { x: 7.2, z: -1.2 }
+    { x: 6.5, z: 0.8 }
+  ],
+  highCatwalk: [
+    { from: { x: 8.2, z: -1.2 }, to: { x: 8.2, z: 3.6 }, y: 2.6 },
+    { from: { x: 8.2, z: 3.6 }, to: { x: 0, z: 3.6 }, y: 2.6 }
   ],
   palletStack: { x: -2, z: -3.8, tiers: [0.5, 1.1, 1.7] },
   wallLedges: [
@@ -51,7 +55,7 @@ export const LEVEL_CONFIG = {
     { x: 0, z: 2.8, rot: 0.25 },
     { x: -2, z: 1.0, rot: -0.2 },
     { x: 2, z: 1.0, rot: 0.2 },
-    { x: 5, z: -1.8, rot: 0.35 },
+    { x: 5, z: 2.6, rot: 0.35 },
     { x: 0, z: 6.0, rot: 0.1 }
   ],
   clutter: [

@@ -37,6 +37,8 @@ export class PlayerSystem {
     this._hideRestoreMask = null;
     this.crouching = false;
     this._shortcutUsed = { locker: false, platform: false };
+    this._jumpsUsed = 0;
+    this._wasFalling = false;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -218,9 +220,17 @@ export class PlayerSystem {
     body.velocity.set(dirX * speed, body.velocity.y, dirZ * speed);
     body.wakeUp();
 
-    if ((this.input.isDown('Space')) && Math.abs(body.velocity.y) < 0.12) {
+    const canJump = this.input.isDown('Space') &&
+      this._jumpsUsed < 2 &&
+      (Math.abs(body.velocity.y) < 0.12 || this._jumpsUsed > 0);
+    if (canJump) {
       body.velocity.y = 5.6;
+      this._jumpsUsed++;
     }
+    if (this._wasFalling && body.velocity.y > -0.1) {
+      this._jumpsUsed = 0;
+    }
+    this._wasFalling = body.velocity.y < -0.2;
 
     if (canSprint && len > 0 && this._noiseTimer <= 0) {
       this.events.emit('noise', {
