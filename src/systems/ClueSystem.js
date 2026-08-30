@@ -22,6 +22,11 @@ export class ClueSystem {
 
   readClue(id) {
     if (this.game.hasClue(id)) return;
+    if (this.game.battery <= 0) {
+      this.events.emit('toast', { text: '手机没电了，看不清线索', ms: 1800 });
+      this.audio?.play('click');
+      return;
+    }
     this.game.clues.add(id);
     this.game.battery = Math.max(0, this.game.battery - GAME_CONFIG.batteryDrainPerClue);
     this.rage.reduce(GHOST_CONFIG.rage.clueRead, 'clue');

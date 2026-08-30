@@ -39,14 +39,20 @@ export const LEVEL_CONFIG = {
     { x: 5.4, z: -2.8 },
     { x: 7.2, z: -1.2 }
   ],
-  routePath: [
-    { x: 0, z: 3.3 },
-    { x: 0, z: 0.2 },
-    { x: -4, z: 0.2 },
-    { x: 4, z: 0.2 },
-    { x: 7.8, z: -1.9 },
-    { x: 0, z: 8.5 },
-    { x: 0, z: 15.5 }
+  palletStack: { x: -2, z: -3.8, tiers: [0.5, 1.1, 1.7] },
+  wallLedges: [
+    { x: 8.2, z: -1.2, y: 1.0 },
+    { x: 8.2, z: -1.2, y: 1.8 },
+    { x: 8.2, z: -1.2, y: 2.6 }
+  ],
+  slideRamp: { x: 6.4, z: -1.2, length: 4.2, tilt: -0.55 },
+  rope: { x: 8.0, z: -1.2, topY: 2.6 },
+  routeClutter: [
+    { x: 0, z: 2.8, rot: 0.25 },
+    { x: -2, z: 1.0, rot: -0.2 },
+    { x: 2, z: 1.0, rot: 0.2 },
+    { x: 5, z: -1.8, rot: 0.35 },
+    { x: 0, z: 6.0, rot: 0.1 }
   ],
   clutter: [
     { x: -2.8, z: 2.8 },

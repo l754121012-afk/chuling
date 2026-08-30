@@ -1,4 +1,5 @@
 import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 import { GAME_CONFIG } from '../config/game.js';
 import { ITEM_DEFS } from '../config/items.js';
 import { GROUPS, makeBody, syncMeshToBody } from '../core/Physics.js';
@@ -21,6 +22,7 @@ export class PlayerSystem {
     this.refs = refs;
     this.rage = rage;
     this.pawn = null;
+    this.phoneLight = null;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
@@ -58,6 +60,10 @@ export class PlayerSystem {
     body.allowSleep = false;
     this.physics.add(body);
     this.pawn = { mesh, body };
+    const phoneLight = new THREE.PointLight('#ffe9b0', 1.8, 8, 1.8);
+    phoneLight.position.set(0.45, 1.05, 0.55);
+    mesh.add(phoneLight);
+    this.phoneLight = phoneLight;
     return this.pawn;
   }
 
@@ -106,6 +112,11 @@ export class PlayerSystem {
       this.pawn.mesh.rotation.y = Math.atan2(body.velocity.x, body.velocity.z);
     }
     this._updatePose(dt);
+    if (this.phoneLight) {
+      const f = Math.max(0, this.game.battery) / 100;
+      this.phoneLight.intensity = f * 1.9;
+      this.phoneLight.distance = 5 + f * 6;
+    }
     this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
     if (this.game.hiding) {
       this.pawn.mesh.visible = false;

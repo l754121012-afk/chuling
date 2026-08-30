@@ -17,7 +17,7 @@ export const GAME_CONFIG = {
   quietDecay: 1.5,
   hideDecay: 6,
   slapCooldown: 2.5,
-  batteryDrainPerSecond: 0.35,
-  batteryDrainPerClue: 6,
-  phoneOpenDrainPerSecond: 3
+  batteryDrainPerSecond: 0.6,
+  batteryDrainPerClue: 8,
+  phoneOpenDrainPerSecond: 4.5
 };

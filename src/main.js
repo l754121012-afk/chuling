@@ -26,7 +26,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(PALETTE.bg);
-scene.fog = new THREE.Fog(PALETTE.bg, 18, 34);
+scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 80);
 

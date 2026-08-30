@@ -4,12 +4,10 @@ import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
 import {
   material,
   makePropMesh,
-  makeFootprintMesh,
-  iconTexture
+  makeFootprintMesh
 } from '../core/PlaceholderAssets.js';
 import { PALETTE } from '../config/palette.js';
 import { LEVEL_CONFIG } from '../config/level.js';
-import { nowSec } from '../core/Utils.js';
 
 export class SchoolScene {
   constructor(physics, events) {
@@ -41,7 +39,8 @@ export class SchoolScene {
     this._addClues(refs);
     this._addExit(refs);
     this._addLights();
-    this._addRouteMarkers(refs);
+    this._addVerticalProps(refs);
+    this._addRouteClutter(refs);
 
     this.refs = refs;
     return refs;
@@ -300,42 +299,86 @@ export class SchoolScene {
     }
   }
 
-  _addRouteMarkers(refs) {
-    const points = LEVEL_CONFIG.routePath;
-    const strips = [];
-    const arrows = [];
-    for (let i = 0; i < points.length - 1; i++) {
-      const a = points[i];
-      const b = points[i + 1];
-      const dx = b.x - a.x;
-      const dz = b.z - a.z;
-      const len = Math.hypot(dx, dz);
-      if (len < 0.1) continue;
-      const mat = new THREE.MeshBasicMaterial({
-        color: 0x7fd4ff,
-        transparent: true,
-        opacity: 0.16,
-        depthWrite: false
+  _addVerticalProps(refs) {
+    const stack = LEVEL_CONFIG.palletStack;
+    let baseY = 0;
+    for (const h of stack.tiers) {
+      const size = 1.1;
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(size, h, size),
+        material('#8a6240', 0.85)
+      );
+      const centerY = baseY + h / 2;
+      mesh.position.set(stack.x, centerY, stack.z);
+      this.group.add(mesh);
+      const body = makeBody({
+        shape: new CANNON.Box(v3(size / 2, h / 2, size / 2)),
+        position: { x: stack.x, y: centerY, z: stack.z },
+        group: GROUPS.WORLD,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
-      const strip = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.02, len), mat);
-      strip.position.set((a.x + b.x) / 2, 0.02, (a.z + b.z) / 2);
-      strip.rotation.y = Math.atan2(dx, dz);
-      this.group.add(strip);
-      strips.push({ mesh: strip, mat });
-
-      const arrowMat = new THREE.SpriteMaterial({
-        map: iconTexture('→', '#7fd4ff'),
-        transparent: true,
-        opacity: 0.65,
-        depthWrite: false
-      });
-      const sprite = new THREE.Sprite(arrowMat);
-      sprite.position.set(a.x, 0.45, a.z);
-      sprite.scale.set(0.42, 0.42, 1);
-      this.group.add(sprite);
-      arrows.push({ sprite, mat: arrowMat });
+      this.physics.add(body);
+      baseY += h;
     }
-    refs.routeMarkers = { strips, arrows };
+
+    for (const ledge of LEVEL_CONFIG.wallLedges) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 0.18, 0.65),
+        material('#7c644d', 0.85)
+      );
+      mesh.position.set(ledge.x, ledge.y, ledge.z);
+      this.group.add(mesh);
+      const body = makeBody({
+        shape: new CANNON.Box(v3(0.75, 0.09, 0.325)),
+        position: { x: ledge.x, y: ledge.y, z: ledge.z },
+        group: GROUPS.WORLD,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      this.physics.add(body);
+    }
+
+    const ramp = LEVEL_CONFIG.slideRamp;
+    const rampMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.15, ramp.length),
+      material('#a9744f', 0.85)
+    );
+    rampMesh.position.set(ramp.x, 1.25, ramp.z);
+    rampMesh.rotation.x = ramp.tilt;
+    this.group.add(rampMesh);
+    const rampBody = makeBody({
+      shape: new CANNON.Box(v3(0.6, 0.075, ramp.length / 2)),
+      position: { x: ramp.x, y: 1.25, z: ramp.z },
+      group: GROUPS.WORLD,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+    });
+    rampBody.quaternion.setFromEuler(ramp.tilt, 0, 0);
+    this.physics.add(rampBody);
+
+    const rope = LEVEL_CONFIG.rope;
+    const ropeMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, rope.topY, 6),
+      material('#6b4f2f', 0.7)
+    );
+    ropeMesh.position.set(rope.x, rope.topY / 2, rope.z);
+    this.group.add(ropeMesh);
+  }
+
+  _addRouteClutter(refs) {
+    for (const c of LEVEL_CONFIG.routeClutter) {
+      const group = new THREE.Group();
+      for (let i = 0; i < 3; i++) {
+        const box = new THREE.Mesh(
+          new THREE.BoxGeometry(0.5, 0.22, 0.32),
+          material(i % 2 ? '#8a6240' : '#b9926a', 0.85)
+        );
+        box.position.set(i * 0.08, 0.11 + i * 0.22, -i * 0.05);
+        box.rotation.z = c.rot * (i + 1) * 0.12;
+        group.add(box);
+      }
+      group.position.set(c.x, 0, c.z);
+      group.rotation.y = c.rot;
+      this.group.add(group);
+    }
   }
 
   _addClues(refs) {
@@ -431,8 +474,8 @@ export class SchoolScene {
   }
 
   _addLights() {
-    this.group.add(new THREE.HemisphereLight('#f7f3ea', '#2b3245', 0.95));
-    const sun = new THREE.DirectionalLight('#fff4dc', 1.25);
+    this.group.add(new THREE.HemisphereLight('#3d4a5c', '#10141c', 0.22));
+    const sun = new THREE.DirectionalLight('#5f6a7a', 0.35);
     sun.position.set(6, 12, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
@@ -449,7 +492,7 @@ export class SchoolScene {
       { x: 0, z: 8, color: '#ffe9c4' }
     ];
     for (const f of flicker) {
-      const light = new THREE.PointLight(f.color, 0.7, 13, 1.8);
+      const light = new THREE.PointLight(f.color, 0.3, 9, 1.8);
       light.position.set(f.x, 2.7, f.z);
       this.group.add(light);
       this.flickerLights.push(light);
@@ -489,18 +532,6 @@ export class SchoolScene {
   }
 
   update(dt, game) {
-    const route = this.refs?.routeMarkers;
-    if (route) {
-      const active = game.phase === 'escape';
-      const pulse = 0.85 + Math.sin(nowSec() * 3) * 0.15;
-      for (const s of route.strips) {
-        s.mat.opacity = active ? 0.5 * pulse : 0.16;
-      }
-      for (const a of route.arrows) {
-        a.mat.opacity = active ? pulse : 0.55;
-      }
-    }
-
     for (const prop of this.refs?.props || []) {
       if (prop.body && prop.mesh) {
         syncMeshToBody(prop.mesh, prop.body);
@@ -521,9 +552,9 @@ export class SchoolScene {
     const insane = stage.id === 'furious' || stage.id === 'insane' || game.phase === 'escape';
     for (const light of this.flickerLights) {
       if (insane) {
-        light.intensity = 0.25 + Math.random() * 0.95;
+        light.intensity = 0.12 + Math.random() * 0.45;
       } else {
-        light.intensity = 0.7;
+        light.intensity = 0.3;
       }
     }
   }
