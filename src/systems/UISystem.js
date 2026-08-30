@@ -139,11 +139,17 @@ export class UISystem {
 
   _objectiveText(game) {
     if (game.phase === 'escape') {
-      return `逃出校园！剩余 ${Math.ceil(game.escapeTimer)} 秒`;
+      const weak = game.weakUntil > performance.now() / 1000;
+      return weak
+        ? `鬼虚弱了：快跑向出口！剩余 ${Math.ceil(game.escapeTimer)} 秒`
+        : `它追上来了！快跑！剩余 ${Math.ceil(game.escapeTimer)} 秒`;
     }
     const hasNote = game.hasClue('note');
     const hasBoard = game.hasClue('blackboard');
     if (game.staplerBroken) return '订书机坏了：打空灵体值，或等备用订书机刷新';
+    const stage = game.currentStage();
+    if (stage.id === 'furious' || stage.id === 'insane') return '它暴怒了：躲进柜子降怒，或打空灵体值';
+    if (stage.id === 'angry') return '它生气了：躲进柜子降怒，或打空灵体值';
     if (hasNote && hasBoard) return '趁它冷静，从背后用订书机封印';
     if (hasNote) return '还差一条线索：看看黑板上写了什么';
     if (hasBoard) return '线索已更新：它讨厌被打扰，再看看桌上的纸条';

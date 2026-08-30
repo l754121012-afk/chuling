@@ -29,6 +29,7 @@ export class GameState {
     this.staplerBroken = false;
     this.lives = 3;
     this.invincibleUntil = 0;
+    this.weakUntil = 0;
   }
 
   addItem(id, n = 1) {

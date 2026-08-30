@@ -354,8 +354,8 @@ export function makePropMesh(type) {
   } else if (type === 'teacherDesk') {
     const top = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.07, 0.65), material('#9a7049', 0.9));
     top.position.y = 0.95;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.55, 0.6), material('#7c644d', 0.9));
-    body.position.y = 0.42;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.95, 0.6), material('#7c644d', 0.9));
+    body.position.y = 0.475;
     group.add(top, body);
   } else if (type === 'bookshelf') {
     const frame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.0, 0.5), material('#8a6240', 0.9));

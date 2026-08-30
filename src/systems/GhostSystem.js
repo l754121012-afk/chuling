@@ -123,10 +123,18 @@ export class GhostSystem {
     this._slapCooldown = Math.max(0, this._slapCooldown - dt);
     this._speechTimer = Math.max(0, this._speechTimer - dt);
     this._flash = Math.max(0, this._flash - dt);
-    this.pawn.mesh.scale.setScalar(this._flash > 0 ? 1.22 : this._dashFlash > 0 ? 1.28 : 1);
+    const weakNow = this.game.weakUntil > nowSec();
+    const baseScale = this._flash > 0 ? 1.22 : this._dashFlash > 0 ? 1.28 : 1;
+    this.pawn.mesh.scale.set(baseScale, weakNow ? baseScale * 0.72 : baseScale, baseScale);
     this._dashFlash = Math.max(0, this._dashFlash - dt);
 
-    if (this._dashTimer > 0) {
+    if (weakNow) {
+      this.pawn.body.velocity.set(0, 0, 0);
+      if (this.game.phase === 'escape') {
+        this.game.escapeTimer -= dt;
+        if (this.game.escapeTimer <= 0) this._catchPlayer();
+      }
+    } else if (this._dashTimer > 0) {
       this._dashTimer -= dt;
       this._setVelocity(this._dashDirX * this._dashSpeed, this._dashDirZ * this._dashSpeed, dt);
     } else {
@@ -164,6 +172,7 @@ export class GhostSystem {
 
   _tryDash(dt, playerPos) {
     if (this.game.hiding) return;
+    if (this.game.weakUntil > nowSec()) return;
     this._dashCooldown -= dt;
     if (this._dashCooldown > 0) return;
     const stage = this.game.currentStage();
@@ -209,6 +218,15 @@ export class GhostSystem {
       parts.aura.material.color.setHex(v.aura);
       parts.aura.material.opacity = v.auraOpacity;
     }
+    if (this.game.weakUntil > nowSec()) {
+      parts.ghostMat.color.setHex(0xa9c6dc);
+      parts.ghostMat.emissive.setHex(0x1d4e89);
+      parts.ghostMat.emissiveIntensity = 0.35;
+      if (parts.aura) {
+        parts.aura.material.color.setHex(0x6fa8dc);
+        parts.aura.material.opacity = 0.2;
+      }
+    }
     this._updateFlames(dt, v.flames);
   }
 
@@ -235,6 +253,7 @@ export class GhostSystem {
     const stage = this.game.currentStage();
     const cfg = GHOST_CONFIG.stages.find(s => s.id === stage.id) || GHOST_CONFIG.stages[0];
     let speed = cfg.speed;
+    if (this.game.weakUntil > nowSec()) speed = 0;
     if (this.game.slowedUntil > nowSec()) speed *= 0.45;
     if (this.game.stunnedUntil > nowSec()) speed = 0;
 
@@ -370,6 +389,7 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this.game.hiding) return;
+    if (nowSec() < this.game.weakUntil) return;
     if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
@@ -480,9 +500,10 @@ export class GhostSystem {
     this.game.consumeItem('stapler');
     this.game.usedItems.push('stapler');
     this.game.staplerBroken = true;
+    this.game.weakUntil = nowSec() + 1.6;
     this.rage.add(GHOST_CONFIG.rage.wrongSeal, 'wrongSeal');
     this.audio?.play('stapler');
-    this.events.emit('toast', { text: '封了个寂寞！订书机坏了！', ms: 2200 });
+    this.events.emit('toast', { text: '订书机让它虚弱了！但封印失败……', ms: 2200 });
     this._speak('你在干嘛？！', 2000);
     return 'wrong';
   }
@@ -492,11 +513,12 @@ export class GhostSystem {
     this.game.rage = 100;
     this.game.phase = 'escape';
     this.game.escapeTimer = GAME_CONFIG.escapeTime;
+    this.game.weakUntil = nowSec() + 3.0;
     this.scene.openExit();
     this.audio?.play('stapler');
     this.audio?.play('gate');
     this.events.emit('escape.start', { reason: 'sealed' });
-    this.events.emit('toast', { text: '封印成功！但它暴走了！快跑！', ms: 2600 });
+    this.events.emit('toast', { text: '封印成功！它暂时虚弱了，快跑！', ms: 2600 });
     this._speak('你居然……咩————！！', 2600);
   }
 

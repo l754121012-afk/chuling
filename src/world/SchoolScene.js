@@ -120,7 +120,8 @@ export class SchoolScene {
       body: shelfBody,
       pos: { x: shelf.x, z: shelf.z },
       cost: 8000,
-      used: false
+      used: false,
+      offsetY: 1.0
     });
 
     const lockerPos = LEVEL_CONFIG.lockers;
@@ -148,7 +149,7 @@ export class SchoolScene {
     const trashBody = new CANNON.Body({
       mass: 6,
       shape: new CANNON.Cylinder(0.28, 0.22, 0.72, 12),
-      position: v3(trash.x, 0.55, trash.z),
+      position: v3(trash.x, 0.36, trash.z),
       collisionFilterGroup: GROUPS.PROP,
       collisionFilterMask: GROUPS.WORLD | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
@@ -161,7 +162,8 @@ export class SchoolScene {
       body: trashBody,
       pos: { x: trash.x, z: trash.z },
       cost: 1000,
-      used: false
+      used: false,
+      offsetY: 0.36
     });
   }
 
@@ -231,10 +233,27 @@ export class SchoolScene {
     lockMesh.position.set(exit.x, 1.5, exit.z + 0.1);
     this.group.add(lockMesh);
 
+    const beacon = new THREE.Group();
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.08, 1.6, 8),
+      material(PALETTE.exit)
+    );
+    pole.position.y = 3.2;
+    const arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.34, 0.7, 10),
+      material(PALETTE.exit)
+    );
+    arrow.position.y = 4.2;
+    beacon.add(pole, arrow);
+    beacon.position.set(exit.x, 0, exit.z);
+    beacon.visible = false;
+    this.group.add(beacon);
+
     refs.exit = {
       mesh,
       body,
       lockMesh,
+      beacon,
       pos: { x: exit.x, z: exit.z },
       locked: true
     };
@@ -285,6 +304,7 @@ export class SchoolScene {
     if (!this.refs?.exit || !this.refs.exit.locked) return;
     this.refs.exit.locked = false;
     this.refs.exit.lockMesh.visible = false;
+    this.refs.exit.beacon.visible = true;
     this.events.emit('toast', { text: '出口开了！快跑！', ms: 2400 });
     this.events.emit('audio', { name: 'gate' });
   }
@@ -299,7 +319,10 @@ export class SchoolScene {
 
   update(dt, game) {
     for (const prop of this.refs?.props || []) {
-      if (prop.body && prop.mesh) syncMeshToBody(prop.mesh, prop.body);
+      if (prop.body && prop.mesh) {
+        syncMeshToBody(prop.mesh, prop.body);
+        prop.mesh.position.y = prop.body.position.y - (prop.offsetY || 0);
+      }
     }
 
     for (let i = this.footprints.length - 1; i >= 0; i--) {
