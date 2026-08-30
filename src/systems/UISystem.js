@@ -44,7 +44,8 @@ export class UISystem {
       itemHint: document.getElementById('item-hint'),
       lives: document.getElementById('lives'),
       sealStatus: document.getElementById('seal-status'),
-      flashOverlay: document.getElementById('flash-overlay')
+      flashOverlay: document.getElementById('flash-overlay'),
+      fullscreenBtn: document.getElementById('fullscreen-btn')
     };
     this._buildInventory();
 

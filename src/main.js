@@ -160,6 +160,22 @@ ui.el.mute.addEventListener('click', () => {
   const muted = audio.toggleMute();
   ui.el.mute.classList.toggle('muted', muted);
 });
+ui.el.fullscreenBtn.addEventListener('click', () => {
+  const el = document.documentElement;
+  if (!document.fullscreenElement) {
+    const req = el.requestFullscreen?.() || el.webkitRequestFullscreen?.();
+    req?.catch?.(() => {});
+  } else {
+    document.exitFullscreen?.();
+  }
+});
+window.addEventListener('keydown', e => {
+  if (e.code === 'AltLeft' || e.code === 'AltRight') {
+    document.body.classList.remove('playing');
+    if (document.pointerLockElement) document.exitPointerLock();
+    events.emit('toast', { text: '鼠标已唤出，点击右上角全屏按钮', ms: 2500 });
+  }
+});
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

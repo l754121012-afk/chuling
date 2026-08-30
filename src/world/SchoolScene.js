@@ -338,6 +338,7 @@ export class SchoolScene {
         group: GROUPS.PROP,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
+      body.type = CANNON.Body.KINEMATIC;
       body.linearDamping = 0.3;
       body.angularDamping = 0.4;
       this.physics.add(body);
@@ -488,6 +489,21 @@ export class SchoolScene {
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(landingBody);
+
+    const cw = this.L.highCatwalk;
+    const xs = cw.flatMap(s => [s.from.x, s.to.x]);
+    const zs = cw.flatMap(s => [s.from.z, s.to.z]);
+    const minX = Math.min(...xs) - 1;
+    const maxX = Math.max(...xs) + 1;
+    const minZ = Math.min(...zs) - 1;
+    const maxZ = Math.max(...zs) + 1;
+    const solidBody = makeBody({
+      shape: new CANNON.Box(v3((maxX - minX) / 2, 0.8, (maxZ - minZ) / 2)),
+      position: { x: (minX + maxX) / 2, y: 3.2, z: (minZ + maxZ) / 2 },
+      group: GROUPS.WORLD,
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+    });
+    this.physics.add(solidBody);
   }
 
   _addRouteClutter(refs) {

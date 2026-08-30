@@ -223,11 +223,18 @@ export class PlayerSystem {
       body.velocity.set(0, 0, 0);
       const rope = this.refs.rope;
       const speed = 0.55;
+      const ropeDx = rope.to.x - rope.from.x;
+      const ropeDz = rope.to.z - rope.from.z;
+      const ropeLen = Math.hypot(ropeDx, ropeDz) || 1;
+      const yaw = this.camera.yaw;
+      const facingX = -Math.sin(yaw);
+      const facingZ = -Math.cos(yaw);
+      const dirSign = (ropeDx * facingX + ropeDz * facingZ) / ropeLen >= 0 ? 1 : -1;
       if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) {
-        this._ropeT = Math.min(1, this._ropeT + speed * dt * this._ropeDirSign);
+        this._ropeT = Math.min(1, this._ropeT + speed * dt * dirSign);
       }
       if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) {
-        this._ropeT = Math.max(0, this._ropeT - speed * dt * this._ropeDirSign);
+        this._ropeT = Math.max(0, this._ropeT - speed * dt * dirSign);
       }
       body.position.set(
         rope.from.x + (rope.to.x - rope.from.x) * this._ropeT,
