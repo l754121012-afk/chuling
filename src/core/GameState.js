@@ -35,6 +35,7 @@ export class GameState {
     this.lightsOutUntil = 0;
     this.hitstopUntil = 0;
     this.slowmoUntil = 0;
+    this.firstScareDone = false;
   }
 
   addItem(id, n = 1) {

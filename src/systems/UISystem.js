@@ -154,6 +154,7 @@ export class UISystem {
     const hasNote = game.hasClue('note');
     const hasBoard = game.hasClue('blackboard');
     if (game.staplerBroken) return '订书机坏了：打空灵体值，或等备用订书机刷新';
+    if (game.firstScareDone && !hasNote && !hasBoard) return '它注意到你了：躲进安全屋或绕柱甩开它';
     const stage = game.currentStage();
     if (stage.id === 'furious' || stage.id === 'insane') return '它暴怒了：躲进柜子降怒，或打空灵体值';
     if (stage.id === 'angry') return '它生气了：躲进柜子降怒，或打空灵体值';

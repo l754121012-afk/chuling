@@ -96,6 +96,7 @@ items.spawnPickups();
 
 const settlement = new SettlementSystem();
 let phoneRang = false;
+let firstScareAt = 0;
 
 events.on('audio', p => audio.play(p.name));
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
@@ -142,6 +143,7 @@ events.on('game.start', () => {
     }
   }
   phoneRang = false;
+  firstScareAt = nowSec() + 8;
   document.body.classList.add('playing');
   player.resetHiding();
   game.addItem('pen', 2);
@@ -260,6 +262,29 @@ function tick() {
       game.battery = Math.max(0, game.battery - drain * simDt);
     }
     if (game.battery <= 0 && game.notebookOpen) ui.toggleNotebook(false);
+  }
+  if (
+    game.isPlaying() &&
+    !game.firstScareDone &&
+    nowSec() >= firstScareAt
+  ) {
+    game.firstScareDone = true;
+    const pp = player.getPos();
+    const yaw = cameraSys.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    const gb = ghost.pawn.body;
+    gb.position.set(pp.x - fwdX * 3, 1.2, pp.z - fwdZ * 3);
+    gb.velocity.set(0, 0, 0);
+    ghost._lastNoise = { x: pp.x, z: pp.z };
+    ghost._lastSeen = { x: pp.x, z: pp.z };
+    rage.add(6, 'firstScare');
+    audio.play('slam');
+    events.emit('camera.shake', { amount: 0.35 });
+    events.emit('toast', {
+      text: '灯闪了一下……它出现在你身后！快躲起来！',
+      ms: 2600
+    });
   }
   input.allowLock = game.isPlaying();
 
