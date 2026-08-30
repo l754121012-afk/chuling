@@ -335,12 +335,10 @@ export class SchoolScene {
         shape: new CANNON.Box(v3(0.4, 0.4, 0.4)),
         position: { x: crate.x, y: 0.4, z: crate.z },
         mass: 20,
-        group: GROUPS.PROP,
+        group: GROUPS.WORLD,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
-      body.type = CANNON.Body.KINEMATIC;
-      body.linearDamping = 0.3;
-      body.angularDamping = 0.4;
+      body.type = CANNON.Body.STATIC;
       this.physics.add(body);
       refs.props.push({
         type: 'crate',
@@ -490,6 +488,29 @@ export class SchoolScene {
     });
     this.physics.add(landingBody);
 
+    for (const seg of this.L.highCatwalk) {
+      const minX = Math.min(seg.from.x, seg.to.x) - 0.5;
+      const maxX = Math.max(seg.from.x, seg.to.x) + 0.5;
+      const minZ = Math.min(seg.from.z, seg.to.z) - 0.5;
+      const maxZ = Math.max(seg.from.z, seg.to.z) + 0.5;
+      const slab = makeBody({
+        shape: new CANNON.Box(v3((maxX - minX) / 2, 0.8, (maxZ - minZ) / 2)),
+        position: { x: (minX + maxX) / 2, y: 3.2, z: (minZ + maxZ) / 2 },
+        group: GROUPS.WORLD,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      this.physics.add(slab);
+    }
+
+    for (const ledge of this.L.wallLedges) {
+      const block = makeBody({
+        shape: new CANNON.Box(v3(1.2, 1.5, 0.9)),
+        position: { x: ledge.x, y: 2.7, z: ledge.z },
+        group: GROUPS.WORLD,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      this.physics.add(block);
+    }
   }
 
   _addRouteClutter(refs) {

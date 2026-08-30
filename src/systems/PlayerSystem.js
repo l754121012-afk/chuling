@@ -139,6 +139,7 @@ export class PlayerSystem {
         const v = this._pushTarget.body.velocity;
         this._pushTarget.body.position.x += v.x * dt;
         this._pushTarget.body.position.z += v.z * dt;
+        this._pushTarget.body.aabbNeedsUpdate = true;
       } else {
         this._pushTarget = null;
         this._pushMove = null;

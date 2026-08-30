@@ -172,13 +172,8 @@ export class InputSystem {
   }
 
   update() {
-    if (!this.locked) {
-      this.look.x = (this._pointerX - window.innerWidth / 2) * 0.018;
-      this.look.y = (this._pointerY - window.innerHeight / 2) * 0.018;
-    } else {
-      this.look.x = 0;
-      this.look.y = 0;
-    }
+    this.look.x = 0;
+    this.look.y = 0;
     this.zoom = 0;
   }
 }
