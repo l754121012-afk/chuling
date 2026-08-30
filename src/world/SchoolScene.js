@@ -421,7 +421,8 @@ export class SchoolScene {
       rope.y,
       (rope.from.z + rope.to.z) / 2
     );
-    ropeMesh.rotation.y = Math.atan2(rdx, rdz);
+    const ropeDir = new THREE.Vector3(rdx, 0, rdz).normalize();
+    ropeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ropeDir);
     this.group.add(ropeMesh);
     refs.rope = { from: { ...rope.from }, to: { ...rope.to }, y: rope.y };
 
