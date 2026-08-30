@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>除灵实习生 Phase 0</title>
-  <link rel="stylesheet" href="./styles.css?v=33" />
+  <link rel="stylesheet" href="./styles.css?v=34" />
   <script type="importmap">
     {
       "imports": {
@@ -107,6 +107,7 @@
     <div id="screen-win" class="screen hidden">
       <div class="modal-card end-card">
         <h2>跑出来了！</h2>
+        <div id="settlement-rating" class="rating-line"></div>
         <div id="settlement-rows"></div>
         <div class="settle-total">到手 <span id="settlement-total"></span></div>
         <p id="settlement-line"></p>
@@ -117,6 +118,7 @@
     <div id="screen-lose" class="screen hidden">
       <div class="modal-card end-card lose-card">
         <h2>被鬼抓住了</h2>
+        <div id="lose-rating" class="rating-line"></div>
         <div id="lose-rows"></div>
         <div class="settle-total">结算 <span id="lose-total"></span></div>
         <p id="lose-line"></p>
@@ -125,6 +127,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/main.js?v=33"></script>
+  <script type="module" src="./src/main.js?v=34"></script>
 </body>
 </html>

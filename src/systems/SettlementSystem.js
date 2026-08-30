@@ -32,8 +32,12 @@ export class SettlementSystem {
     }
 
     let finalLine;
+    let rating = 'C';
+    let title = '摸鱼实习生';
     if (game.phase === 'lost') {
       finalLine = '公司表示：合同写得很清楚，死亡抚恤金 0円。';
+      rating = 'D';
+      title = '工伤免责声明爱好者';
     } else if (total <= 0) {
       finalLine = '恭喜！你不仅白干一天，还倒欠公司钱。';
     } else if (total < 5000) {
@@ -42,6 +46,26 @@ export class SettlementSystem {
       finalLine = '主管：年轻人就是有活力，明天继续啊！';
     }
 
-    return { rows, total, finalLine };
+    const damages = rows
+      .filter(r => r.amount < 0 && r.label !== '基本工资')
+      .reduce((sum, r) => sum - r.amount, 0);
+    const used = game.usedItems.length;
+    if (game.phase !== 'lost') {
+      if (damages === 0 && used <= 3) {
+        rating = 'S';
+        title = '老练跑路工';
+      } else if (damages <= 5000 && used <= 6) {
+        rating = 'A';
+        title = '惊声尖笑实习生';
+      } else if (damages <= 12000) {
+        rating = 'B';
+        title = '还算稳重的打工人';
+      } else {
+        rating = 'C';
+        title = '拆迁队预备役';
+      }
+    }
+
+    return { rows, total, finalLine, rating, title };
   }
 }

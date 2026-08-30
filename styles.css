@@ -721,6 +721,16 @@ body.playing canvas {
   color: var(--red-dark);
 }
 
+.rating-line {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(201, 79, 61, 0.12);
+  color: var(--red-dark);
+  font-weight: 700;
+  font-size: 14px;
+}
+
 .end-card p {
   font-size: 13px;
   color: #5a6470;

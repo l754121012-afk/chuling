@@ -34,9 +34,11 @@ export class UISystem {
       settlementRows: document.getElementById('settlement-rows'),
       settlementTotal: document.getElementById('settlement-total'),
       settlementLine: document.getElementById('settlement-line'),
+      settlementRating: document.getElementById('settlement-rating'),
       loseRows: document.getElementById('lose-rows'),
       loseTotal: document.getElementById('lose-total'),
       loseLine: document.getElementById('lose-line'),
+      loseRating: document.getElementById('lose-rating'),
       vignette: document.getElementById('danger-vignette'),
       warning: document.getElementById('ghost-warning'),
       warningLabel: document.getElementById('warn-label'),
@@ -252,6 +254,8 @@ export class UISystem {
   }
 
   renderSettlement(rowsEl, totalEl, lineEl, settlement) {
+    const ratingEl = rowsEl === this.el.settlementRows ? this.el.settlementRating : this.el.loseRating;
+    if (ratingEl) ratingEl.textContent = `节目效果评分：${settlement.rating} · ${settlement.title}`;
     rowsEl.innerHTML = '';
     for (const row of settlement.rows) {
       const div = document.createElement('div');

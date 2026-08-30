@@ -45,12 +45,6 @@ export class RageSystem {
       this.events.emit('ghost.stage', { stage, reason });
       if (stage.id === 'furious' || stage.id === 'insane') {
         this.audio?.play('bleat');
-        this.events.emit('toast', {
-          text: stage.id === 'furious' ? '暴怒！环境开始异变了！' : '狂乱！它已经不讲道理了！',
-          ms: 2200
-        });
-      } else {
-        this.events.emit('toast', { text: `恶灵进入「${stage.label}」状态`, ms: 1600 });
       }
     }
   }

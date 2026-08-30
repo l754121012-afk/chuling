@@ -99,7 +99,25 @@ let phoneRang = false;
 
 events.on('audio', p => audio.play(p.name));
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
+events.on('hitstop', p => {
+  game.hitstopUntil = Math.max(game.hitstopUntil, nowSec() + (p?.ms ?? 80) / 1000);
+});
+events.on('slowmo', p => {
+  game.slowmoUntil = Math.max(game.slowmoUntil, nowSec() + (p?.ms ?? 400) / 1000);
+});
 events.on('ghost.stage', p => {
+  const beats = {
+    annoyed: { audio: 'chalk', text: '粉笔在黑板上划出刺耳声！恶灵不悦了' },
+    angry: { audio: 'shake', text: '课桌开始震动，恶灵愤怒了！' },
+    furious: { audio: 'slam', text: '所有柜门猛地响了一声！暴怒！' },
+    insane: { audio: 'heartbeat', text: '心跳声越来越快……狂乱！' }
+  };
+  const beat = beats[p.stage.id];
+  if (beat) {
+    audio.play(beat.audio);
+    events.emit('camera.shake', { amount: 0.18 });
+    events.emit('toast', { text: beat.text, ms: 2000 });
+  }
   if (
     !phoneRang &&
     game.phase === 'investigate' &&
@@ -134,7 +152,7 @@ events.on('game.start', () => {
   audio.init();
   ui.toggleNotebook(false);
   ui.sync(game);
-  events.emit('toast', { text: '实习开始：先找线索，别惊动它。', ms: 2400 });
+  events.emit('toast', { text: '实习开始：先找线索，别惊动它。主管：这一单预计到手 12 円。', ms: 3200 });
   audio.play('click');
 });
 events.on('game.win', () => {
@@ -222,21 +240,24 @@ function tick() {
   const now = nowSec();
   const dt = Math.min(now - last, 0.05);
   last = now;
+  let simDt = dt;
+  if (nowSec() < game.hitstopUntil) simDt = 0;
+  else if (nowSec() < game.slowmoUntil) simDt *= 0.35;
 
   if (game.isPlaying()) {
     const pp = player.getPos();
-    player.update(dt);
+    player.update(simDt);
     const p2 = player.getPos();
-    ghost.update(dt, p2);
-    items.update(dt, p2, ghost.getPos());
-    rage.update(dt, p2, ghost.getPos());
-    school.update(dt, game);
+    ghost.update(simDt, p2);
+    items.update(simDt, p2, ghost.getPos());
+    rage.update(simDt, p2, ghost.getPos());
+    school.update(simDt, game);
 
     const drain = game.notebookOpen
       ? GAME_CONFIG.phoneOpenDrainPerSecond
       : GAME_CONFIG.batteryDrainPerSecond;
     if (!game.hiding) {
-      game.battery = Math.max(0, game.battery - drain * dt);
+      game.battery = Math.max(0, game.battery - drain * simDt);
     }
     if (game.battery <= 0 && game.notebookOpen) ui.toggleNotebook(false);
   }
@@ -246,7 +267,7 @@ function tick() {
   ui.sync(game);
   ui.updateSealStatus(player, ghost);
   cameraSys.update(input, player.getPos(), dt);
-  physics.step(dt);
+  physics.step(simDt);
   renderer.render(scene, camera);
   input.update();
 }

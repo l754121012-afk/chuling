@@ -33,6 +33,8 @@ export class GameState {
     this.ropeClimbing = false;
     this.ladderClimbing = false;
     this.lightsOutUntil = 0;
+    this.hitstopUntil = 0;
+    this.slowmoUntil = 0;
   }
 
   addItem(id, n = 1) {

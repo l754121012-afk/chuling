@@ -515,6 +515,7 @@ export class GhostSystem {
         this.audio?.play('slap');
         this.events.emit('player.hurt');
         this.events.emit('camera.shake', { amount: 0.45 });
+        this.events.emit('hitstop', { ms: 90 });
         if (this.game.lives <= 0) {
           this._catchPlayer();
           return;
@@ -619,6 +620,8 @@ export class GhostSystem {
     this.scene.openExit();
     this.audio?.play('stapler');
     this.audio?.play('gate');
+    this.events.emit('hitstop', { ms: 120 });
+    this.events.emit('slowmo', { ms: 450 });
     this.events.emit('escape.start', { reason: 'sealed' });
     this.events.emit('toast', { text: '封印成功！它暂时虚弱了，快跑！', ms: 2600 });
     this._speak('你居然……咩————！！', 2600);

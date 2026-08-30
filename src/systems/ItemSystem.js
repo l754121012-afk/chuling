@@ -285,6 +285,7 @@ export class ItemSystem {
     }
     this.ghost.damage(proj.def.damage || 1, proj.def);
     this.events.emit('noise', { pos: hitPos, radius: 10 });
+    this.events.emit('hitstop', { ms: 50 });
     this.events.emit('toast', {
       text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,
       ms: 1300
@@ -360,7 +361,7 @@ export class ItemSystem {
       until: nowSec() + 60,
       used: false
     });
-    this.events.emit('toast', { text: '修正带陷阱画好了！', ms: 1500 });
+    this.events.emit('toast', { text: '陷阱放好了：鬼踩中时推倒书架能压住它', ms: 2200 });
     this.audio?.play('click');
   }
 

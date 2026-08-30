@@ -65,6 +65,17 @@ export class AudioSystem {
     } else if (name === 'flash') {
       this._noise(t, 0.18, 0.22, 'highpass', 2400, 0.8, 6000);
       this._tone(t, 1200, 0.12, 'sine', 0.12, 300);
+    } else if (name === 'chalk') {
+      this._noise(t, 0.28, 0.12, 'highpass', 2600, 0.9, 4200);
+      this._noise(t + 0.18, 0.22, 0.1, 'highpass', 2000, 0.8, 3600);
+    } else if (name === 'shake') {
+      this._noise(t, 0.5, 0.14, 'lowpass', 240, 1.2, 90);
+    } else if (name === 'slam') {
+      this._tone(t, 95, 0.22, 'sine', 0.35, 42);
+      this._noise(t, 0.18, 0.22, 'lowpass', 500, 1, 120);
+    } else if (name === 'heartbeat') {
+      this._tone(t, 72, 0.14, 'sine', 0.4, 48);
+      this._tone(t + 0.2, 64, 0.12, 'sine', 0.32, 44);
     } else if (name === 'win') {
       [523, 659, 784, 1046].forEach((f, i) => this._tone(t + i * 0.11, f, 0.18, 'triangle', 0.18));
     } else if (name === 'lose') {
