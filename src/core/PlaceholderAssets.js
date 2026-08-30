@@ -142,6 +142,16 @@ export function makePlayerMesh() {
   const skinMat = material(PALETTE.playerSkin, 0.8, 0);
   const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.85, 12), bodyMat);
   body.position.y = 0.85;
+  const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.58, 8), bodyMat);
+  armL.position.set(-0.38, 1.24, 0);
+  armL.rotation.z = 0.38;
+  const armR = armL.clone();
+  armR.position.x = 0.38;
+  armR.rotation.z = -0.38;
+  const handL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), skinMat);
+  handL.position.set(-0.47, 0.98, 0.1);
+  const handR = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), skinMat);
+  handR.position.set(0.47, 0.98, 0.1);
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 14), skinMat);
   head.position.y = 1.55;
   const face = new THREE.Mesh(
@@ -151,7 +161,10 @@ export function makePlayerMesh() {
   face.position.set(0, 1.58, 0.27);
   const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.22), material(PALETTE.wallTrim, 0.85));
   backpack.position.set(0, 0.9, -0.36);
-  group.add(body, head, face, backpack);
+  const handSlot = new THREE.Group();
+  handSlot.position.set(0.47, 1.02, 0.18);
+  group.add(body, armL, armR, handL, handR, head, face, backpack, handSlot);
+  group.userData.handSlot = handSlot;
   group.userData.assetKey = 'player';
   return group;
 }

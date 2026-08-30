@@ -76,6 +76,7 @@ player.items = items;
 player.clues = clues;
 ghost.playerPos = () => player.getPos();
 ghost.playerBody = player.createPawn().body;
+items.playerHand = player.pawn.mesh.userData.handSlot;
 ghost.createPawn(refs.ghostSpawn);
 items.spawnPickups();
 
@@ -88,6 +89,7 @@ events.on('game.start', () => {
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
   game.equipped = 'pen';
+  items.syncHand();
   audio.init();
   ui.toggleNotebook(false);
   ui.sync(game);

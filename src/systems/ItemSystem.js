@@ -26,6 +26,9 @@ export class ItemSystem {
     this.pendingPickups = [];
     this.zones = [];
     this._removeQueue = [];
+    this.playerHand = null;
+    this._handModel = null;
+    this._handItemId = null;
     this.cooldown = 0;
   }
 
@@ -49,6 +52,7 @@ export class ItemSystem {
     pickup.picked = true;
     this.scene.group.remove(pickup.mesh);
     this.game.addItem(pickup.id, 1);
+    this.syncHand();
     const def = ITEM_DEFS[pickup.id];
     this.events.emit('item.picked', { id: pickup.id, def });
     this.audio?.play('paper');
@@ -252,12 +256,46 @@ export class ItemSystem {
 
   giveItem(id, n = 1) {
     this.game.addItem(id, n);
+    this.syncHand();
     this.events.emit('item.picked', { id, def: ITEM_DEFS[id] });
+  }
+
+  syncHand() {
+    const slot = this.playerHand;
+    if (!slot) return;
+
+    let equipped = this.game.equipped;
+    if (!this.game.hasItem(equipped)) {
+      const owned = Object.keys(ITEM_DEFS).filter(id => this.game.hasItem(id));
+      equipped = owned[0] || null;
+      if (equipped) this.game.equipped = equipped;
+    }
+
+    if (!equipped || !this.game.isPlaying()) {
+      if (this._handModel) {
+        slot.remove(this._handModel);
+        this._handModel = null;
+      }
+      this._handItemId = null;
+      return;
+    }
+
+    if (this._handItemId === equipped && this._handModel) return;
+
+    if (this._handModel) slot.remove(this._handModel);
+    const mesh = makeItemMesh(equipped);
+    mesh.scale.setScalar(1.15);
+    mesh.position.set(0, -0.02, 0.12);
+    mesh.rotation.set(0.15, 0.35, 0);
+    slot.add(mesh);
+    this._handModel = mesh;
+    this._handItemId = equipped;
   }
 
   update(dt, playerPos, ghostPos) {
     this.cooldown = Math.max(0, this.cooldown - dt);
     this._processRemovals();
+    this.syncHand();
 
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const proj = this.projectiles[i];

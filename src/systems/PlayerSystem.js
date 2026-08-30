@@ -39,6 +39,7 @@ export class PlayerSystem {
       fixedRotation: true
     });
     body.linearDamping = 0.35;
+    body.allowSleep = false;
     this.physics.add(body);
     this.pawn = { mesh, body };
     return this.pawn;
@@ -104,6 +105,7 @@ export class PlayerSystem {
     const speed = baseSpeed * (sticky ? 0.6 : 1);
 
     body.velocity.set(dirX * speed, body.velocity.y, dirZ * speed);
+    body.wakeUp();
 
     if ((this.input.isDown('Space')) && body.position.y < 0.62) {
       body.velocity.y = 5.6;

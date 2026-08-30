@@ -44,6 +44,7 @@ export class GhostSystem {
       gravityScale: 0
     });
     body.linearDamping = 0.4;
+    body.allowSleep = false;
     this.physics.add(body);
     this.pawn = { mesh, body };
     return this.pawn;
