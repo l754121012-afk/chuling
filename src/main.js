@@ -176,6 +176,20 @@ window.addEventListener('keydown', e => {
     events.emit('toast', { text: '鼠标已唤出，点击右上角全屏按钮', ms: 2500 });
   }
 });
+window.addEventListener('keyup', e => {
+  if (e.code === 'AltLeft' || e.code === 'AltRight') {
+    if (game.isPlaying()) {
+      document.body.classList.add('playing');
+      if (renderer.domElement.requestPointerLock) {
+        try {
+          renderer.domElement.requestPointerLock();
+        } catch {
+          // keep cursor hidden via CSS if re-lock is not allowed
+        }
+      }
+    }
+  }
+});
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

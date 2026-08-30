@@ -128,9 +128,17 @@ export class PlayerSystem {
 
     if (this._pushTarget) {
       const pos = this.getPos();
-      const d = distance2D(pos.x, pos.z, this._pushTarget.pos.x, this._pushTarget.pos.z);
+      const d = distance2D(
+        pos.x,
+        pos.z,
+        this._pushTarget.body.position.x,
+        this._pushTarget.body.position.z
+      );
       if (this.input.isDown('KeyE') && d < 3.2) {
         this._pushCrateContinuous(this._pushTarget);
+        const v = this._pushTarget.body.velocity;
+        this._pushTarget.body.position.x += v.x * dt;
+        this._pushTarget.body.position.z += v.z * dt;
       } else {
         this._pushTarget = null;
         this._pushMove = null;

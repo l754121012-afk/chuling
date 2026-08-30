@@ -12,6 +12,8 @@ export class InputSystem {
     this._rightPressed = false;
     this._lastX = null;
     this._lastY = null;
+    this._pointerX = window.innerWidth / 2;
+    this._pointerY = window.innerHeight / 2;
     this.locked = false;
     this.allowLock = false;
     this._ignoreClick = false;
@@ -77,6 +79,8 @@ export class InputSystem {
     const dy = this._lastY === null ? 0 : e.clientY - this._lastY;
     this._lastX = e.clientX;
     this._lastY = e.clientY;
+    this._pointerX = e.clientX;
+    this._pointerY = e.clientY;
     this.look.x += dx;
     this.look.y += dy;
     const edge = 28;
@@ -169,8 +173,8 @@ export class InputSystem {
 
   update() {
     if (!this.locked) {
-      this.look.x = this.edgeLook.x * 2.7;
-      this.look.y = this.edgeLook.y * 2.7;
+      this.look.x = (this._pointerX - window.innerWidth / 2) * 0.018;
+      this.look.y = (this._pointerY - window.innerHeight / 2) * 0.018;
     } else {
       this.look.x = 0;
       this.look.y = 0;

@@ -490,20 +490,6 @@ export class SchoolScene {
     });
     this.physics.add(landingBody);
 
-    const cw = this.L.highCatwalk;
-    const xs = cw.flatMap(s => [s.from.x, s.to.x]);
-    const zs = cw.flatMap(s => [s.from.z, s.to.z]);
-    const minX = Math.min(...xs) - 1;
-    const maxX = Math.max(...xs) + 1;
-    const minZ = Math.min(...zs) - 1;
-    const maxZ = Math.max(...zs) + 1;
-    const solidBody = makeBody({
-      shape: new CANNON.Box(v3((maxX - minX) / 2, 0.8, (maxZ - minZ) / 2)),
-      position: { x: (minX + maxX) / 2, y: 3.2, z: (minZ + maxZ) / 2 },
-      group: GROUPS.WORLD,
-      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
-    });
-    this.physics.add(solidBody);
   }
 
   _addRouteClutter(refs) {
