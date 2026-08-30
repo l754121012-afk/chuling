@@ -43,6 +43,8 @@ export class PlayerSystem {
     this._wasFalling = false;
     this._jumpLock = 0;
     this._pushTarget = null;
+    this._ropeT = 0;
+    this._ladder = null;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -76,6 +78,8 @@ export class PlayerSystem {
   resetHiding() {
     this.game.hiding = false;
     this.game.ropeClimbing = false;
+    this.game.ladderClimbing = false;
+    this._ladder = null;
     if (this.pawn) this.pawn.mesh.visible = true;
     if (this.pawn) {
       this.pawn.body.type = CANNON.Body.DYNAMIC;
@@ -213,9 +217,26 @@ export class PlayerSystem {
     if (this.game.ropeClimbing) {
       body.velocity.set(0, 0, 0);
       const rope = this.refs.rope;
+      const speed = 0.55;
+      if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) {
+        this._ropeT = Math.max(0, this._ropeT - speed * dt);
+      }
+      if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) {
+        this._ropeT = Math.min(1, this._ropeT + speed * dt);
+      }
+      body.position.set(
+        rope.from.x + (rope.to.x - rope.from.x) * this._ropeT,
+        rope.y - 0.05,
+        rope.from.z + (rope.to.z - rope.from.z) * this._ropeT
+      );
+      return;
+    }
+    if (this.game.ladderClimbing) {
+      body.velocity.set(0, 0, 0);
+      const ladder = this._ladder;
       const speed = 2.5;
       if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) {
-        body.position.y = Math.min(rope.topY - 0.2, body.position.y + speed * dt);
+        body.position.y = Math.min(ladder.topY - 0.2, body.position.y + speed * dt);
       }
       if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) {
         body.position.y = Math.max(0.35, body.position.y - speed * dt);
@@ -436,23 +457,39 @@ export class PlayerSystem {
 
     const rope = this.refs.rope;
     if (rope) {
-      const dr = distance2D(pos.x, pos.z, rope.x, rope.z);
+      const startD = distance2D(pos.x, pos.z, rope.from.x, rope.from.z);
+      const endD = distance2D(pos.x, pos.z, rope.to.x, rope.to.z);
+      const nearRopeEnd = Math.min(startD, endD) < 1.8 && Math.abs(pos.y - rope.y) < 1.2;
       if (this.game.ropeClimbing) {
         if (2.8 > bestPriority) {
           bestPriority = 2.8;
           best = {
             type: 'ropeRelease',
             label: '松开绳索',
-            pos: { x: rope.x, y: pos.y + 1.2, z: rope.z }
+            pos: { x: pos.x, y: pos.y + 1.0, z: pos.z }
           };
         }
-      } else if (dr < 1.6 && pos.y < 1.2 && 2.8 > bestPriority) {
+      } else if (nearRopeEnd && 2.8 > bestPriority) {
         bestPriority = 2.8;
         best = {
           type: 'ropeGrab',
-          label: '抓住绳索',
-          pos: { x: rope.x, y: 0.8, z: rope.z }
+          label: '抓住绳索（A/D 横移）',
+          pos: { x: startD <= endD ? rope.from.x : rope.to.x, y: rope.y + 0.6, z: startD <= endD ? rope.from.z : rope.to.z }
         };
+      }
+    }
+
+    const ladder = this.refs.ladders?.[0];
+    if (ladder) {
+      const dl = distance2D(pos.x, pos.z, ladder.x, ladder.z);
+      if (this.game.ladderClimbing) {
+        if (2.7 > bestPriority) {
+          bestPriority = 2.7;
+          best = { type: 'ladderRelease', label: '离开梯子', pos: { x: pos.x, y: pos.y + 1.0, z: pos.z } };
+        }
+      } else if (dl < 1.6 && pos.y < 1.2 && 2.7 > bestPriority) {
+        bestPriority = 2.7;
+        best = { type: 'ladderGrab', label: '爬梯子（W/S 上下）', pos: { x: ladder.x, y: 0.8, z: ladder.z } };
       }
     }
 
@@ -469,19 +506,52 @@ export class PlayerSystem {
       this.clues.readClue(target.clue.id);
     } else if (target.type === 'ropeGrab') {
       const rope = this.refs.rope;
+      const startD = distance2D(
+        this.pawn.body.position.x,
+        this.pawn.body.position.z,
+        rope.from.x,
+        rope.from.z
+      );
+      const endD = distance2D(
+        this.pawn.body.position.x,
+        this.pawn.body.position.z,
+        rope.to.x,
+        rope.to.z
+      );
+      this._ropeT = startD <= endD ? 0 : 1;
       this.game.ropeClimbing = true;
       this.pawn.body.type = CANNON.Body.KINEMATIC;
       this.pawn.body.collisionFilterMask = 0;
-      this.pawn.body.position.set(rope.x, Math.max(0.35, this.pawn.body.position.y), rope.z);
+      this.pawn.body.position.set(
+        rope.from.x + (rope.to.x - rope.from.x) * this._ropeT,
+        rope.y - 0.05,
+        rope.from.z + (rope.to.z - rope.from.z) * this._ropeT
+      );
       this.pawn.body.velocity.set(0, 0, 0);
       this.playPose('interact', 0.5);
-      this.events.emit('toast', { text: '抓住绳索：W/S 上下移动', ms: 1800 });
+      this.events.emit('toast', { text: '抓住绳索：A/D 横向移动', ms: 1800 });
     } else if (target.type === 'ropeRelease') {
       this.game.ropeClimbing = false;
       this.pawn.body.type = CANNON.Body.DYNAMIC;
       this.pawn.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PROP | GROUPS.ITEM;
       this.pawn.body.velocity.set(0, 0, 0);
       this.events.emit('toast', { text: '松开绳索', ms: 1000 });
+    } else if (target.type === 'ladderGrab') {
+      const ladder = this.refs.ladders?.[0];
+      this.game.ladderClimbing = true;
+      this._ladder = ladder;
+      this.pawn.body.type = CANNON.Body.KINEMATIC;
+      this.pawn.body.collisionFilterMask = 0;
+      this.pawn.body.position.set(ladder.x, Math.max(0.35, this.pawn.body.position.y), ladder.z);
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.events.emit('toast', { text: '爬梯子：W/S 上下移动', ms: 1800 });
+    } else if (target.type === 'ladderRelease') {
+      this.game.ladderClimbing = false;
+      this._ladder = null;
+      this.pawn.body.type = CANNON.Body.DYNAMIC;
+      this.pawn.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PROP | GROUPS.ITEM;
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.events.emit('toast', { text: '离开梯子', ms: 1000 });
     } else if (target.type === 'locker') {
       this.game.hiding = !this.game.hiding;
       if (this.game.hiding) {

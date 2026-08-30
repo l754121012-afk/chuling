@@ -31,6 +31,7 @@ export class GameState {
     this.invincibleUntil = 0;
     this.weakUntil = 0;
     this.ropeClimbing = false;
+    this.ladderClimbing = false;
   }
 
   addItem(id, n = 1) {

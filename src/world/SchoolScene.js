@@ -409,13 +409,44 @@ export class SchoolScene {
     this.physics.add(rampBody);
 
     const rope = this.L.rope;
+    const rdx = rope.to.x - rope.from.x;
+    const rdz = rope.to.z - rope.from.z;
+    const ropeLen = Math.hypot(rdx, rdz);
     const ropeMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.035, 0.035, rope.topY, 6),
+      new THREE.CylinderGeometry(0.03, 0.03, ropeLen, 8),
       material('#6b4f2f', 0.7)
     );
-    ropeMesh.position.set(rope.x, rope.topY / 2, rope.z);
+    ropeMesh.position.set(
+      (rope.from.x + rope.to.x) / 2,
+      rope.y,
+      (rope.from.z + rope.to.z) / 2
+    );
+    ropeMesh.rotation.y = Math.atan2(rdx, rdz);
     this.group.add(ropeMesh);
-    refs.rope = { x: rope.x, z: rope.z, topY: rope.topY };
+    refs.rope = { from: { ...rope.from }, to: { ...rope.to }, y: rope.y };
+
+    refs.ladders = [];
+    for (const ladder of this.L.ladders) {
+      const railMat = material('#8a6240', 0.75);
+      for (const side of [-1, 1]) {
+        const rail = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.035, 0.035, ladder.topY, 6),
+          railMat
+        );
+        rail.position.set(ladder.x + side * 0.25, ladder.topY / 2, ladder.z);
+        this.group.add(rail);
+      }
+      for (let y = 0.4; y < ladder.topY - 0.2; y += 0.45) {
+        const rung = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.022, 0.022, 0.5, 5),
+          railMat
+        );
+        rung.rotation.x = Math.PI / 2;
+        rung.position.set(ladder.x, y, ladder.z);
+        this.group.add(rung);
+      }
+      refs.ladders.push({ x: ladder.x, z: ladder.z, topY: ladder.topY });
+    }
 
     for (const seg of this.L.highCatwalk) {
       const dx = seg.to.x - seg.from.x;
@@ -435,7 +466,7 @@ export class SchoolScene {
       const body = makeBody({
         shape: new CANNON.Box(v3(0.5, 0.15, len / 2)),
         position: { x: midX, y: seg.y - 0.15, z: midZ },
-        group: GROUPS.PROP,
+        group: GROUPS.WORLD,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       body.quaternion.setFromEuler(0, yaw, 0);
@@ -446,12 +477,13 @@ export class SchoolScene {
       new THREE.BoxGeometry(3, 0.25, 3),
       material('#6b5b4a', 0.8)
     );
-    landing.position.set(0, 3.875, 4.6);
+    const catEndZ = this.L.highCatwalk[1].to.z;
+    landing.position.set(0, 3.875, catEndZ);
     this.group.add(landing);
     const landingBody = makeBody({
       shape: new CANNON.Box(v3(1.5, 0.125, 1.5)),
-      position: { x: 0, y: 3.875, z: 4.6 },
-      group: GROUPS.PROP,
+      position: { x: 0, y: 3.875, z: catEndZ },
+      group: GROUPS.WORLD,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     this.physics.add(landingBody);
@@ -627,19 +659,27 @@ export class SchoolScene {
   }
 
   breakClutter(c) {
+    const roll = Math.random();
+    if (c.mesh && roll < 0.3) {
+      c.mesh.scale.set(1.4, 0.18, 1.2);
+      c.mesh.rotation.x = rand(0.3, 1.1);
+      c.mesh.position.y = 0.08;
+      return;
+    }
     if (c.mesh) this.group.remove(c.mesh);
+    const kick = roll > 0.75;
     for (let i = 0; i < 5; i++) {
       const scrap = new THREE.Mesh(
         new THREE.PlaneGeometry(0.16, 0.1),
         new THREE.MeshBasicMaterial({
-          color: i % 2 ? '#f4efe4' : '#d8d2c2',
+          color: i % 2 ? '#d9c8a0' : '#cbb68a',
           side: THREE.DoubleSide
         })
       );
       scrap.position.set(
-        c.x + rand(-0.5, 0.5),
-        0.06 + rand(0, 0.25),
-        c.z + rand(-0.5, 0.5)
+        c.x + rand(-0.6, 0.6) * (kick ? 1.8 : 1),
+        0.06 + rand(0, 0.25) + (kick ? rand(0.3, 0.8) : 0),
+        c.z + rand(-0.6, 0.6) * (kick ? 1.8 : 1)
       );
       scrap.rotation.set(rand(0, Math.PI), rand(0, Math.PI), rand(0, Math.PI));
       this.group.add(scrap);

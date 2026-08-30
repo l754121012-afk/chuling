@@ -50,7 +50,10 @@ export const LEVEL_CONFIG = {
     { x: 10.2, z: -1.5, y: 4.0 }
   ],
   slideRamp: { x: 8.0, z: -1.5, length: 6.0, tilt: -0.5 },
-  rope: { x: 10.0, z: -1.5, topY: 4.0 },
+  rope: { from: { x: -6.25, z: -2.5 }, to: { x: 6.25, z: -2.5 }, y: 3.0 },
+  ladders: [
+    { x: 10.2, z: -1.5, topY: 4.0 }
+  ],
   routeClutter: [
     { x: 0, z: 3.8, rot: 0.25 },
     { x: -2, z: 2.4, rot: -0.2 },

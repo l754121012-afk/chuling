@@ -436,6 +436,7 @@ export class GhostSystem {
     if (this._caught) return;
     if (this.game.hiding) return;
     if (this.game.ropeClimbing) return;
+    if (this.game.ladderClimbing) return;
     if (nowSec() < this.game.weakUntil) return;
     if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;
