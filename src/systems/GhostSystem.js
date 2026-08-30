@@ -65,6 +65,7 @@ export class GhostSystem {
     this._knockbackVZ = 0;
     this._stuckTime = 0;
     this._lastStuckPos = { x: 0, z: 0 };
+    this._skillCooldown = rand(8, 14);
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
@@ -186,6 +187,37 @@ export class GhostSystem {
       body.position.y += heightDiff * Math.min(1, dt * 2.5);
     } else if (heightDiff < -0.2) {
       body.position.y += heightDiff * Math.min(1, dt * 1.2);
+    }
+
+    this._skillCooldown -= dt;
+    const stage = this.game.currentStage();
+    if (
+      this._skillCooldown <= 0 &&
+      (stage.id === 'furious' || stage.id === 'insane') &&
+      this.game.phase === 'investigate' &&
+      !this.game.hiding &&
+      !this.game.ropeClimbing
+    ) {
+      this._skillCooldown = rand(10, 16);
+      this.game.lightsOutUntil = nowSec() + 2.5;
+      this.audio?.play('ghost');
+      this.events.emit('toast', { text: '它把灯拍灭了！手机是唯一光源！', ms: 2200 });
+      this.events.emit('camera.shake', { amount: 0.2 });
+      const p = playerPos;
+      const ang = Math.random() * Math.PI * 2;
+      const d = 3.2;
+      body.position.x = clamp(
+        p.x + Math.cos(ang) * d,
+        this.scene.L.classroom.minX + 1,
+        this.scene.L.classroom.maxX - 1
+      );
+      body.position.z = clamp(
+        p.z + Math.sin(ang) * d,
+        this.scene.L.classroom.minZ + 1,
+        this.scene.L.classroom.maxZ - 1
+      );
+      body.position.y = 1.2;
+      body.velocity.set(0, 0, 0);
     }
 
     const trying = Math.hypot(body.velocity.x, body.velocity.z) > 0.3;
@@ -425,8 +457,8 @@ export class GhostSystem {
     if (dist > radius) return;
     const stage = this.game.currentStage();
     this.rage.add(GHOST_CONFIG.rage.noise, 'noise');
+    if (!this.game.hiding) this._lastNoise = { x: pos.x, z: pos.z };
     if (stage.id !== 'calm') {
-      this._lastNoise = { x: pos.x, z: pos.z };
       this._speak(choice(GHOST_CONFIG.speech.annoyed), 1800);
       this.audio?.play('ghost');
     }

@@ -284,6 +284,7 @@ export class ItemSystem {
       return;
     }
     this.ghost.damage(proj.def.damage || 1, proj.def);
+    this.events.emit('noise', { pos: hitPos, radius: 10 });
     this.events.emit('toast', {
       text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,
       ms: 1300

@@ -9,7 +9,7 @@ import {
 } from '../core/PlaceholderAssets.js';
 import { PALETTE } from '../config/palette.js';
 import { LEVEL_CONFIG } from '../config/level.js';
-import { rand } from '../core/Utils.js';
+import { nowSec, rand } from '../core/Utils.js';
 
 function scaleLevelConfig(cfg, s = 1.25) {
   const out = structuredClone(cfg);
@@ -277,7 +277,7 @@ export class SchoolScene {
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       this.physics.add(body);
-      refs.pillars.push({ mesh, body, pos: { x: pillar.x, z: pillar.z } });
+      refs.pillars.push({ mesh, body, pos: { x: pillar.x, z: pillar.z }, r: pillar.r });
     }
 
     const plant = this.L.plant;
@@ -662,9 +662,14 @@ export class SchoolScene {
   breakClutter(c) {
     const roll = Math.random();
     if (c.mesh && roll < 0.3) {
-      c.mesh.scale.set(1.4, 0.18, 1.2);
-      c.mesh.rotation.x = rand(0.3, 1.1);
-      c.mesh.position.y = 0.08;
+      this.group.remove(c.mesh);
+      const squashed = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.12, 0.6),
+        material('#cbb68a', 0.9)
+      );
+      squashed.position.set(c.x, 0.06, c.z);
+      squashed.rotation.set(rand(0, 0.4), rand(0, Math.PI), rand(0, 0.4));
+      this.group.add(squashed);
       return;
     }
     if (c.mesh) this.group.remove(c.mesh);
@@ -706,8 +711,11 @@ export class SchoolScene {
 
     const stage = game.currentStage();
     const insane = stage.id === 'furious' || stage.id === 'insane' || game.phase === 'escape';
+    const lightsOut = game.lightsOutUntil > nowSec();
     for (const light of this.flickerLights) {
-      if (insane) {
+      if (lightsOut) {
+        light.intensity = 0;
+      } else if (insane) {
         light.intensity = 0.12 + Math.random() * 0.45;
       } else {
         light.intensity = 0.3;

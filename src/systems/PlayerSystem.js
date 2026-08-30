@@ -394,6 +394,17 @@ export class PlayerSystem {
     };
   }
 
+  _safeReleasePos() {
+    const pos = this.getPos();
+    for (const p of this.scene.refs.pillars || []) {
+      const d = distance2D(pos.x, pos.z, p.pos.x, p.pos.z);
+      if (d < (p.r || 0.55) + 0.1) {
+        return { x: p.pos.x, y: 3.35, z: p.pos.z };
+      }
+    }
+    return { x: pos.x, y: pos.y, z: pos.z };
+  }
+
   findInteractable() {
     const pos = this.getPos();
     let best = null;
@@ -534,6 +545,8 @@ export class PlayerSystem {
       this.game.ropeClimbing = false;
       this.pawn.body.type = CANNON.Body.DYNAMIC;
       this.pawn.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PROP | GROUPS.ITEM;
+      const safe = this._safeReleasePos();
+      this.pawn.body.position.set(safe.x, safe.y, safe.z);
       this.pawn.body.velocity.set(0, 0, 0);
       this.events.emit('toast', { text: '松开绳索', ms: 1000 });
     } else if (target.type === 'ladderGrab') {
@@ -550,6 +563,8 @@ export class PlayerSystem {
       this._ladder = null;
       this.pawn.body.type = CANNON.Body.DYNAMIC;
       this.pawn.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PROP | GROUPS.ITEM;
+      const safe = this._safeReleasePos();
+      this.pawn.body.position.set(safe.x, safe.y, safe.z);
       this.pawn.body.velocity.set(0, 0, 0);
       this.events.emit('toast', { text: '离开梯子', ms: 1000 });
     } else if (target.type === 'locker') {
@@ -700,11 +715,7 @@ export class PlayerSystem {
           if (combo) this.items.comboSlingshot();
           else this.items.useEquipped();
         } else {
-          this.aiming = true;
-          this.playPose('aim', 0.2);
-          this.audio?.play('click');
-          this.events.emit('aim.changed', { aiming: true, combo: this._comboReady });
-          this.events.emit('toast', { text: '瞄准中，再次左键或按 F 射出', ms: 1500 });
+          this.events.emit('toast', { text: '按右键瞄准后再投掷', ms: 1300 });
         }
       }
     } else if ((click || this.input.justRightPressed()) && usable) {

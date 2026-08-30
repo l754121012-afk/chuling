@@ -32,6 +32,7 @@ export class GameState {
     this.weakUntil = 0;
     this.ropeClimbing = false;
     this.ladderClimbing = false;
+    this.lightsOutUntil = 0;
   }
 
   addItem(id, n = 1) {
