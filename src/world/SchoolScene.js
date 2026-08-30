@@ -9,11 +9,27 @@ import {
 } from '../core/PlaceholderAssets.js';
 import { PALETTE } from '../config/palette.js';
 import { LEVEL_CONFIG } from '../config/level.js';
+import { rand } from '../core/Utils.js';
+
+function scaleLevelConfig(cfg, s = 1.25) {
+  const out = structuredClone(cfg);
+  const keys = new Set(['x', 'z', 'minX', 'maxX', 'minZ', 'maxZ', 'w', 'd', 'length']);
+  const visit = obj => {
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (val && typeof val === 'object') visit(val);
+      else if (keys.has(key) && typeof val === 'number') obj[key] = Math.round(val * s * 100) / 100;
+    }
+  };
+  visit(out);
+  return out;
+}
 
 export class SchoolScene {
   constructor(physics, events) {
     this.physics = physics;
     this.events = events;
+    this.L = scaleLevelConfig(LEVEL_CONFIG);
     this.group = new THREE.Group();
     this.flickerLights = [];
     this.footprints = [];
@@ -22,8 +38,8 @@ export class SchoolScene {
 
   build() {
     const refs = {
-      playerStart: { ...LEVEL_CONFIG.playerStart },
-      ghostSpawn: { ...LEVEL_CONFIG.ghostSpawn },
+      playerStart: { ...this.L.playerStart },
+      ghostSpawn: { ...this.L.ghostSpawn },
       exit: null,
       locker: null,
       clues: [],
@@ -31,7 +47,7 @@ export class SchoolScene {
       pillars: [],
       clutter: [],
       platform: null,
-      itemSpawns: LEVEL_CONFIG.itemSpawns.map(s => ({ ...s }))
+      itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
 
     this._addFloor();
@@ -48,47 +64,63 @@ export class SchoolScene {
   }
 
   _addFloor() {
-    this._box(46, 0.4, 38, { x: 0, y: -0.2, z: 6 }, PALETTE.floor);
+    const c = this.L.classroom;
+    const co = this.L.corridor;
+    const minX = Math.min(c.minX, co.minX) - 3;
+    const maxX = Math.max(c.maxX, co.maxX) + 3;
+    const minZ = Math.min(c.minZ, co.minZ) - 3;
+    const maxZ = Math.max(c.maxZ, co.maxZ) + 3;
+    this._box(
+      maxX - minX,
+      0.4,
+      maxZ - minZ,
+      { x: (minX + maxX) / 2, y: -0.2, z: (minZ + maxZ) / 2 },
+      PALETTE.floor
+    );
     const darkFloor = new THREE.Mesh(
-      new THREE.PlaneGeometry(24, 18),
+      new THREE.PlaneGeometry(c.maxX - c.minX + 4, c.maxZ - c.minZ + 4),
       new THREE.MeshStandardMaterial({ color: PALETTE.floorDark, roughness: 0.95 })
     );
     darkFloor.rotation.x = -Math.PI / 2;
-    darkFloor.position.set(0, 0.01, -1);
+    darkFloor.position.set((c.minX + c.maxX) / 2, 0.01, (c.minZ + c.maxZ) / 2);
     this.group.add(darkFloor);
   }
 
   _addWalls() {
     const wallColor = PALETTE.wall;
     const wallTrim = PALETTE.wallTrim;
+    const c = this.L.classroom;
+    const co = this.L.corridor;
+    const H = 7;
+    const doorHalf = 3;
 
-    this._box(22, 7, 0.25, { x: 0, y: 3.5, z: -7 }, wallColor);
-    this._box(0.25, 7, 12.5, { x: 11, y: 3.5, z: -1 }, wallColor);
-    this._box(0.25, 7, 12.5, { x: -11, y: 3.5, z: -1 }, wallColor);
-    this._box(8.5, 7, 0.25, { x: -6.75, y: 3.5, z: 5 }, wallColor);
-    this._box(8.5, 7, 0.25, { x: 6.75, y: 3.5, z: 5 }, wallColor);
-    this._box(0.25, 7, 15.5, { x: -4.5, y: 3.5, z: 12.5 }, wallColor);
-    this._box(0.25, 7, 15.5, { x: 4.5, y: 3.5, z: 12.5 }, wallColor);
-    this._box(9, 7, 0.25, { x: 0, y: 3.5, z: 20 }, wallColor);
-    this._box(5, 0.7, 0.25, { x: 0, y: 6.3, z: 5 }, wallTrim);
+    this._box(c.maxX - c.minX, H, 0.25, { x: 0, y: H / 2, z: c.minZ }, wallColor);
+    this._box(0.25, H, c.maxZ - c.minZ, { x: c.maxX, y: H / 2, z: (c.minZ + c.maxZ) / 2 }, wallColor);
+    this._box(0.25, H, c.maxZ - c.minZ, { x: c.minX, y: H / 2, z: (c.minZ + c.maxZ) / 2 }, wallColor);
+    this._box(-doorHalf - c.minX, H, 0.25, { x: (c.minX - doorHalf) / 2, y: H / 2, z: c.maxZ }, wallColor);
+    this._box(c.maxX - doorHalf, H, 0.25, { x: (doorHalf + c.maxX) / 2, y: H / 2, z: c.maxZ }, wallColor);
+    this._box(0.25, H, co.maxZ - co.minZ, { x: co.minX, y: H / 2, z: (co.minZ + co.maxZ) / 2 }, wallColor);
+    this._box(0.25, H, co.maxZ - co.minZ, { x: co.maxX, y: H / 2, z: (co.minZ + co.maxZ) / 2 }, wallColor);
+    this._box(co.maxX - co.minX, H, 0.25, { x: 0, y: H / 2, z: co.maxZ }, wallColor);
+    this._box(doorHalf * 2, 0.7, 0.25, { x: 0, y: 6.3, z: c.maxZ }, wallTrim);
   }
 
   _addProps(refs) {
-    for (const desk of LEVEL_CONFIG.desks) {
+    for (const desk of this.L.desks) {
       const mesh = makePropMesh('desk');
       mesh.position.set(desk.x, 0, desk.z);
       mesh.rotation.y = desk.rotY;
       this.group.add(mesh);
       const body = makeBody({
-        shape: new CANNON.Box(v3(0.4, 0.05, 0.28)),
-        position: { x: desk.x, y: 0.76, z: desk.z },
+        shape: new CANNON.Box(v3(0.4, 0.38, 0.28)),
+        position: { x: desk.x, y: 0.38, z: desk.z },
         group: GROUPS.PROP,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       this.physics.add(body);
     }
 
-    const platform = LEVEL_CONFIG.platform;
+    const platform = this.L.platform;
     const platformMesh = new THREE.Mesh(
       new THREE.BoxGeometry(platform.w, platform.h, platform.d),
       material('#b9926a', 0.9)
@@ -112,7 +144,7 @@ export class SchoolScene {
       maxZ: platform.z + platform.d / 2
     };
 
-    const teacher = LEVEL_CONFIG.teacherDesk;
+    const teacher = this.L.teacherDesk;
     const teacherMesh = makePropMesh('teacherDesk');
     teacherMesh.position.set(teacher.x, 1.0, teacher.z);
     teacherMesh.rotation.y = teacher.rotY;
@@ -125,7 +157,7 @@ export class SchoolScene {
     });
     this.physics.add(teacherBody);
 
-    const shelf = LEVEL_CONFIG.bookshelf;
+    const shelf = this.L.bookshelf;
     const shelfMesh = makePropMesh('bookshelf');
     shelfMesh.position.set(shelf.x, 0, shelf.z);
     shelfMesh.rotation.y = shelf.rotY;
@@ -151,7 +183,7 @@ export class SchoolScene {
       offsetY: 1.0
     });
 
-    const lockerPos = LEVEL_CONFIG.lockers;
+    const lockerPos = this.L.lockers;
     const lockerMesh = makePropMesh('lockers');
     lockerMesh.position.set(lockerPos.x, 0, lockerPos.z);
     lockerMesh.rotation.y = lockerPos.rotY;
@@ -191,7 +223,7 @@ export class SchoolScene {
     safeLight.position.set(lockerPos.x, 1.6, lockerPos.z);
     this.group.add(safeLight);
 
-    const step = LEVEL_CONFIG.lockerStep;
+    const step = this.L.lockerStep;
     const stepMesh = new THREE.Mesh(
       new THREE.BoxGeometry(step.w, step.h, step.d),
       material('#7c644d', 0.9)
@@ -207,7 +239,7 @@ export class SchoolScene {
     this.physics.add(stepBody);
     refs.lockerStep = { x: step.x, z: step.z };
 
-    const trash = LEVEL_CONFIG.trashCan;
+    const trash = this.L.trashCan;
     const trashMesh = makePropMesh('trashCan');
     trashMesh.position.set(trash.x, 0, trash.z);
     this.group.add(trashMesh);
@@ -216,7 +248,7 @@ export class SchoolScene {
       shape: new CANNON.Cylinder(0.28, 0.22, 0.72, 12),
       position: v3(trash.x, 0.36, trash.z),
       collisionFilterGroup: GROUPS.PROP,
-      collisionFilterMask: GROUPS.WORLD | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      collisionFilterMask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
     trashBody.angularDamping = 0.4;
     trashBody.linearDamping = 0.1;
@@ -231,7 +263,7 @@ export class SchoolScene {
       offsetY: 0.36
     });
 
-    for (const pillar of LEVEL_CONFIG.pillars) {
+    for (const pillar of this.L.pillars) {
       const mesh = new THREE.Mesh(
         new THREE.CylinderGeometry(pillar.r, pillar.r, 3, 14),
         material('#8a7f6d', 0.85)
@@ -248,7 +280,7 @@ export class SchoolScene {
       refs.pillars.push({ mesh, body, pos: { x: pillar.x, z: pillar.z } });
     }
 
-    const plant = LEVEL_CONFIG.plant;
+    const plant = this.L.plant;
     const plantMesh = new THREE.Group();
     const pot = new THREE.Mesh(
       new THREE.CylinderGeometry(0.25, 0.2, 0.7, 10),
@@ -281,7 +313,7 @@ export class SchoolScene {
       offsetY: 0.4
     });
 
-    for (const c of LEVEL_CONFIG.clutter) {
+    for (const c of this.L.clutter) {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.45, 0.08, 0.3),
         material('#f4efe4', 0.9)
@@ -292,7 +324,7 @@ export class SchoolScene {
       refs.clutter.push({ x: c.x, z: c.z, used: false });
     }
 
-    for (const crate of LEVEL_CONFIG.crates) {
+    for (const crate of this.L.crates) {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.8, 0.8, 0.8),
         material('#a9744f', 0.85)
@@ -322,7 +354,7 @@ export class SchoolScene {
   }
 
   _addVerticalProps(refs) {
-    const stack = LEVEL_CONFIG.palletStack;
+    const stack = this.L.palletStack;
     let baseY = 0;
     for (const h of stack.tiers) {
       const size = 1.1;
@@ -343,7 +375,7 @@ export class SchoolScene {
       baseY += h;
     }
 
-    for (const ledge of LEVEL_CONFIG.wallLedges) {
+    for (const ledge of this.L.wallLedges) {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(1.5, 0.18, 0.65),
         material('#7c644d', 0.85)
@@ -359,7 +391,7 @@ export class SchoolScene {
       this.physics.add(body);
     }
 
-    const ramp = LEVEL_CONFIG.slideRamp;
+    const ramp = this.L.slideRamp;
     const rampMesh = new THREE.Mesh(
       new THREE.BoxGeometry(1.2, 0.15, ramp.length),
       material('#a9744f', 0.85)
@@ -376,15 +408,16 @@ export class SchoolScene {
     rampBody.quaternion.setFromEuler(ramp.tilt, 0, 0);
     this.physics.add(rampBody);
 
-    const rope = LEVEL_CONFIG.rope;
+    const rope = this.L.rope;
     const ropeMesh = new THREE.Mesh(
       new THREE.CylinderGeometry(0.035, 0.035, rope.topY, 6),
       material('#6b4f2f', 0.7)
     );
     ropeMesh.position.set(rope.x, rope.topY / 2, rope.z);
     this.group.add(ropeMesh);
+    refs.rope = { x: rope.x, z: rope.z, topY: rope.topY };
 
-    for (const seg of LEVEL_CONFIG.highCatwalk) {
+    for (const seg of this.L.highCatwalk) {
       const dx = seg.to.x - seg.from.x;
       const dz = seg.to.z - seg.from.z;
       const len = Math.hypot(dx, dz);
@@ -393,15 +426,15 @@ export class SchoolScene {
       const midX = (seg.from.x + seg.to.x) / 2;
       const midZ = (seg.from.z + seg.to.z) / 2;
       const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1.0, 0.2, len),
+        new THREE.BoxGeometry(1.0, 0.3, len),
         material('#6b5b4a', 0.8)
       );
-      mesh.position.set(midX, seg.y - 0.1, midZ);
+      mesh.position.set(midX, seg.y - 0.15, midZ);
       mesh.rotation.y = yaw;
       this.group.add(mesh);
       const body = makeBody({
-        shape: new CANNON.Box(v3(0.5, 0.1, len / 2)),
-        position: { x: midX, y: seg.y - 0.1, z: midZ },
+        shape: new CANNON.Box(v3(0.5, 0.15, len / 2)),
+        position: { x: midX, y: seg.y - 0.15, z: midZ },
         group: GROUPS.PROP,
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
@@ -410,14 +443,14 @@ export class SchoolScene {
     }
 
     const landing = new THREE.Mesh(
-      new THREE.BoxGeometry(2.2, 0.2, 1.4),
+      new THREE.BoxGeometry(3, 0.25, 3),
       material('#6b5b4a', 0.8)
     );
-    landing.position.set(0, 3.9, 4.2);
+    landing.position.set(0, 3.875, 4.6);
     this.group.add(landing);
     const landingBody = makeBody({
-      shape: new CANNON.Box(v3(1.1, 0.1, 0.7)),
-      position: { x: 0, y: 3.9, z: 4.2 },
+      shape: new CANNON.Box(v3(1.5, 0.125, 1.5)),
+      position: { x: 0, y: 3.875, z: 4.6 },
       group: GROUPS.PROP,
       mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
     });
@@ -425,7 +458,7 @@ export class SchoolScene {
   }
 
   _addRouteClutter(refs) {
-    for (const c of LEVEL_CONFIG.routeClutter) {
+    for (const c of this.L.routeClutter) {
       const group = new THREE.Group();
       for (let i = 0; i < 3; i++) {
         const box = new THREE.Mesh(
@@ -444,7 +477,7 @@ export class SchoolScene {
   }
 
   _addClues(refs) {
-    const board = LEVEL_CONFIG.blackboard;
+    const board = this.L.blackboard;
     const boardMesh = makePropMesh('blackboard');
     boardMesh.position.set(board.x, board.y, board.z);
     boardMesh.rotation.y = Math.PI;
@@ -463,7 +496,7 @@ export class SchoolScene {
       pos: { x: board.x, z: board.z }
     });
 
-    const note = LEVEL_CONFIG.note;
+    const note = this.L.note;
     const noteMesh = makePropMesh('note');
     noteMesh.position.set(note.x, note.y, note.z);
     noteMesh.rotation.y = -0.4;
@@ -485,7 +518,7 @@ export class SchoolScene {
   }
 
   _addExit(refs) {
-    const exit = LEVEL_CONFIG.exit;
+    const exit = this.L.exit;
     const mesh = makePropMesh('exitGate');
     mesh.position.set(exit.x, 0, exit.z);
     this.group.add(mesh);
@@ -591,6 +624,26 @@ export class SchoolScene {
     mesh.rotation.y = Math.random() * Math.PI * 2;
     this.group.add(mesh);
     this.footprints.push({ mesh, ttl: 18, x, z });
+  }
+
+  breakClutter(c) {
+    if (c.mesh) this.group.remove(c.mesh);
+    for (let i = 0; i < 5; i++) {
+      const scrap = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.16, 0.1),
+        new THREE.MeshBasicMaterial({
+          color: i % 2 ? '#f4efe4' : '#d8d2c2',
+          side: THREE.DoubleSide
+        })
+      );
+      scrap.position.set(
+        c.x + rand(-0.5, 0.5),
+        0.06 + rand(0, 0.25),
+        c.z + rand(-0.5, 0.5)
+      );
+      scrap.rotation.set(rand(0, Math.PI), rand(0, Math.PI), rand(0, Math.PI));
+      this.group.add(scrap);
+    }
   }
 
   update(dt, game) {

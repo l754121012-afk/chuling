@@ -435,6 +435,7 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this.game.hiding) return;
+    if (this.game.ropeClimbing) return;
     if (nowSec() < this.game.weakUntil) return;
     if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;

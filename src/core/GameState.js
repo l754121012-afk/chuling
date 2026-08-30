@@ -30,6 +30,7 @@ export class GameState {
     this.lives = 3;
     this.invincibleUntil = 0;
     this.weakUntil = 0;
+    this.ropeClimbing = false;
   }
 
   addItem(id, n = 1) {

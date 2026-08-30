@@ -68,17 +68,11 @@ export const LEVEL_CONFIG = {
     { id: 'pen', x: -8, y: 0.78, z: -4.8 },
     { id: 'pen', x: -4, y: 0.78, z: -4.8 },
     { id: 'pen', x: 4, y: 0.78, z: -4.8 },
-    { id: 'pen', x: 8, y: 0.78, z: -1.8 },
     { id: 'glue', x: 0, y: 0.78, z: -4.8 },
-    { id: 'glue', x: -4, y: 0.78, z: -1.8 },
     { id: 'stapler', x: 9.2, y: 1.95, z: -5.15 },
     { id: 'eraser', x: 9.2, y: 1.95, z: -4.9 },
-    { id: 'scissors', x: -10.4, y: 0.62, z: -3.0 },
     { id: 'tape', x: 4, y: 0.78, z: -4.8 },
-    { id: 'tape', x: -2, y: 0.78, z: 1.4 },
     { id: 'rubber', x: 0, y: 0.78, z: -1.8 },
-    { id: 'rubber', x: 2, y: 0.78, z: 1.4 },
-    { id: 'chair', x: 5.0, y: 0.45, z: 3.0 },
     { id: 'pen', x: 0, y: 0.06, z: 10.0 }
   ]
 };

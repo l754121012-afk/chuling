@@ -115,7 +115,9 @@ export class UISystem {
     this.el.phone.classList.toggle('drained', game.battery <= 0);
     this.el.stamina.style.width = `${game.stamina}%`;
     if (this.el.lives) {
-      this.el.lives.textContent = '♥'.repeat(game.lives) + '♡'.repeat(Math.max(0, 3 - game.lives));
+      this.el.lives.innerHTML = [0, 1, 2]
+        .map(i => `<span class="life ${i < game.lives ? 'on' : 'off'}">♥</span>`)
+        .join('');
     }
     this.el.objective.textContent = this._objectiveText(game);
 

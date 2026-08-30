@@ -199,6 +199,11 @@ body.playing canvas {
   letter-spacing: 2px;
 }
 
+#lives .life.off {
+  color: #59616e;
+  filter: grayscale(1);
+}
+
 .battery-shell,
 .stamina-shell {
   flex: 1;

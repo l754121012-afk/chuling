@@ -14,11 +14,6 @@ export const ITEM_DEFS = {
     count: 1, damage: 0, rage: 30, mass: 0.8,
     desc: '正确时机才能封印。', cost: 800
   },
-  scissors: {
-    id: 'scissors', name: '剪刀', icon: '✂', type: 'throw',
-    count: 1, damage: 25, rage: 12, speed: 14, mass: 0.25,
-    desc: '可能插进天花板。', cost: 600
-  },
   tape: {
     id: 'tape', name: '修正带', icon: '▤', type: 'trap',
     count: 2, damage: 0, rage: 3, mass: 0.2,
@@ -34,11 +29,6 @@ export const ITEM_DEFS = {
     count: 1, damage: 3, rage: 5, speed: 18, mass: 0.2,
     knockback: 8, desc: '打中会把鬼拍退一截。', cost: 350
   },
-  chair: {
-    id: 'chair', name: '椅子', icon: '椅', type: 'throw',
-    count: 1, damage: 18, rage: 10, speed: 11, mass: 3,
-    knockback: 14, stun: 1.0, desc: '重！砸中会把鬼拍飞。', cost: 700
-  }
 };
 
 export const COMBO_DEFS = {
