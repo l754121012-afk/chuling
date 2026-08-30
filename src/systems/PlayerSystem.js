@@ -712,6 +712,10 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '需要面向箱子才能推', ms: 1200 });
       return;
     }
+    if (!this._canPushCrate(prop, fwdX, fwdZ)) {
+      this.events.emit('toast', { text: '推不动，前面被挡住了', ms: 1200 });
+      return;
+    }
     const speed = 2.1;
     prop.body.velocity.set(fwdX * speed, prop.body.velocity.y, fwdZ * speed);
     this._pushMove = { vx: fwdX * speed, vz: fwdZ * speed };
@@ -728,6 +732,11 @@ export class PlayerSystem {
       this._pushTarget = null;
       return;
     }
+    if (!this._canPushCrate(prop, fwdX, fwdZ)) {
+      prop.body.velocity.set(0, prop.body.velocity.y, 0);
+      this._pushMove = { vx: 0, vz: 0 };
+      return;
+    }
     const speed = 3.2;
     prop.body.velocity.set(fwdX * speed, prop.body.velocity.y, fwdZ * speed);
     this._pushMove = { vx: fwdX * speed, vz: fwdZ * speed };
@@ -741,6 +750,20 @@ export class PlayerSystem {
     const len = Math.hypot(dx, dz) || 1;
     const dot = (dx * fwdX + dz * fwdZ) / len;
     return dot > 0.35 && len < 2.2;
+  }
+
+  _canPushCrate(prop, dirX, dirZ) {
+    const b = prop.body.position;
+    const len = Math.hypot(dirX, dirZ) || 1;
+    dirX /= len;
+    dirZ /= len;
+    const from = new CANNON.Vec3(b.x + dirX * 0.45, b.y, b.z + dirZ * 0.45);
+    const to = new CANNON.Vec3(b.x + dirX * 1.1, b.y, b.z + dirZ * 1.1);
+    const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD | GROUPS.PROP);
+    if (!hit) return true;
+    const hp = hit.hitPointWorld;
+    const dist = Math.hypot(hp.x - from.x, hp.y - from.y, hp.z - from.z);
+    return dist > 0.5;
   }
 
   _handleItemControls() {

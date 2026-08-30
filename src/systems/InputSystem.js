@@ -31,6 +31,7 @@ export class InputSystem {
     window.addEventListener('mouseup', e => this._onMouseUp(e));
     document.addEventListener('mousemove', e => {
       if (this.locked) this._onLockedMouseMove(e);
+      else this._updateEdgeLook(e.clientX, e.clientY);
     });
     document.addEventListener('pointerlockchange', () => this._onLockChange());
     document.addEventListener('pointerlockerror', () => {
@@ -81,11 +82,16 @@ export class InputSystem {
     this._lastY = e.clientY;
     this._pointerX = e.clientX;
     this._pointerY = e.clientY;
-    this.look.x += dx;
-    this.look.y += dy;
+    const maxDelta = 40;
+    this.look.x += Math.max(-maxDelta, Math.min(maxDelta, dx));
+    this.look.y += Math.max(-maxDelta, Math.min(maxDelta, dy));
+    this._updateEdgeLook(e.clientX, e.clientY);
+  }
+
+  _updateEdgeLook(clientX, clientY) {
     const edge = 28;
-    this.edgeLook.x = e.clientX <= edge ? -1 : e.clientX >= window.innerWidth - edge ? 1 : 0;
-    this.edgeLook.y = e.clientY <= edge ? -1 : e.clientY >= window.innerHeight - edge ? 1 : 0;
+    this.edgeLook.x = clientX <= edge ? -1 : clientX >= window.innerWidth - edge ? 1 : 0;
+    this.edgeLook.y = clientY <= edge ? -1 : clientY >= window.innerHeight - edge ? 1 : 0;
   }
 
   _onLockedMouseMove(e) {
@@ -172,8 +178,13 @@ export class InputSystem {
   }
 
   update() {
-    this.look.x = 0;
-    this.look.y = 0;
+    if (!this.locked) {
+      this.look.x = this.edgeLook.x * 4;
+      this.look.y = this.edgeLook.y * 4;
+    } else {
+      this.look.x = 0;
+      this.look.y = 0;
+    }
     this.zoom = 0;
   }
 }
