@@ -74,8 +74,10 @@ export const LEVEL_CONFIG = {
     { id: 'glue', x: 0, y: 0.78, z: -4.8 },
     { id: 'stapler', x: 9.2, y: 1.95, z: -5.15 },
     { id: 'eraser', x: 9.2, y: 1.95, z: -4.9 },
+    { id: 'crossbow', x: 8.8, y: 2.0, z: 2.2 },
     { id: 'tape', x: 4, y: 0.78, z: -4.8 },
     { id: 'rubber', x: 0, y: 0.78, z: -1.8 },
-    { id: 'pen', x: 0, y: 0.06, z: 10.0 }
+    { id: 'pen', x: 0, y: 0.06, z: 10.0 },
+    { id: 'mine', x: 0, y: 0.06, z: 10.0 }
   ]
 };

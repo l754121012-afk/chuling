@@ -108,15 +108,16 @@ events.on('slowmo', p => {
 });
 events.on('ghost.stage', p => {
   const beats = {
-    annoyed: { audio: 'chalk', text: '粉笔在黑板上划出刺耳声！恶灵不悦了' },
-    angry: { audio: 'shake', text: '课桌开始震动，恶灵愤怒了！' },
-    furious: { audio: 'slam', text: '所有柜门猛地响了一声！暴怒！' },
-    insane: { audio: 'heartbeat', text: '心跳声越来越快……狂乱！' }
+    annoyed: { audio: 'chalk', text: '粉笔在黑板上划出刺耳声！它猛地转头！！', color: '#f4d35e' },
+    angry: { audio: 'shake', text: '课桌全部震动起来，它开始砸东西了！！', color: '#f4a261' },
+    furious: { audio: 'slam', text: '所有柜门同时炸响！它彻底暴怒了！！', color: '#e63946' },
+    insane: { audio: 'heartbeat', text: '心跳声震耳欲聋……它已经疯了！！！', color: '#9b5de5' }
   };
   const beat = beats[p.stage.id];
   if (beat) {
     audio.play(beat.audio);
     events.emit('camera.shake', { amount: 0.18 });
+    events.emit('beat.flash', { color: beat.color });
     events.emit('toast', { text: beat.text, ms: 2000 });
   }
   if (

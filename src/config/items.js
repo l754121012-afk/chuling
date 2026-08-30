@@ -29,6 +29,16 @@ export const ITEM_DEFS = {
     count: 1, damage: 3, rage: 5, speed: 18, mass: 0.2,
     knockback: 8, desc: '打中会把鬼拍退一截。', cost: 350
   },
+  crossbow: {
+    id: 'crossbow', name: '玩具弩', icon: '弩', type: 'throw',
+    count: 1, damage: 12, rage: 7, speed: 20, mass: 0.8,
+    knockback: 12, stun: 0.8, desc: '射中会把鬼顶飞。', cost: 900
+  },
+  mine: {
+    id: 'mine', name: '尖叫地雷', icon: '地雷', type: 'mine',
+    count: 1, damage: 0, rage: 3, mass: 0.4,
+    desc: '鬼踩到会被弹开并僵直。', cost: 500
+  }
 };
 
 export const COMBO_DEFS = {

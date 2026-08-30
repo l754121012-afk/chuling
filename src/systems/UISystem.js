@@ -185,7 +185,9 @@ export class UISystem {
         ? '右键/左键瞄准，再点左键或 F 射出'
         : def.type === 'seal'
           ? '找到弱点，靠近鬼背后左键封印'
-          : '左键在脚下放置陷阱';
+          : def.type === 'mine'
+            ? '左键在脚下放置尖叫地雷'
+            : '左键在脚下放置陷阱';
       this.el.itemHint.textContent = `${def.name}：${usage}`;
     }
   }
@@ -336,6 +338,15 @@ export class UISystem {
       this.el.flashOverlay.classList.add('show');
       clearTimeout(this._flashTimer);
       this._flashTimer = setTimeout(() => this.el.flashOverlay.classList.remove('show'), 240);
+    });
+    this.events.on('beat.flash', p => {
+      this.el.flashOverlay.style.background = p?.color || '#ff6b6b';
+      this.el.flashOverlay.classList.add('show');
+      clearTimeout(this._flashTimer);
+      this._flashTimer = setTimeout(() => {
+        this.el.flashOverlay.classList.remove('show');
+        this.el.flashOverlay.style.background = '#fff';
+      }, 340);
     });
   }
 }

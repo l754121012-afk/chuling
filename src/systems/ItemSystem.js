@@ -155,6 +155,8 @@ export class ItemSystem {
       this._useStapler();
     } else if (def.type === 'trap') {
       this._placeTrap();
+    } else if (def.type === 'mine') {
+      this._placeMine();
     }
     this.cooldown = GAME_CONFIG.throwCooldown;
   }
@@ -251,6 +253,7 @@ export class ItemSystem {
       this.audio?.play('splat');
       this.events.emit('toast', { text: '胶水糊了它一脸！速度变慢了', ms: 1800 });
       this.scene.spawnParticles(hitPos, '#8fd3c7');
+      this.scene.spawnHitRing(hitPos, '#8fd3c7');
       this.ghost._speak('黏糊糊的！！', 1600);
       this._removeProjectile(proj);
       return;
@@ -267,6 +270,25 @@ export class ItemSystem {
       this.events.emit('toast', { text: '黑板擦把它拍退了！', ms: 1500 });
       this.events.emit('camera.shake', { amount: 0.25 });
       this.scene.spawnParticles(hitPos, '#cbb68a');
+      this.scene.spawnHitRing(hitPos, '#cbb68a');
+      this._removeProjectile(proj);
+      return;
+    }
+    if (proj.def.id === 'crossbow') {
+      const gb = this.ghost.pawn.body;
+      const dx = gb.position.x - hitPos.x;
+      const dz = gb.position.z - hitPos.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const power = proj.def.knockback || 12;
+      this.ghost.knockback((dx / len) * power, (dz / len) * power, 0.7);
+      this.game.stunnedUntil = nowSec() + (proj.def.stun || 0.8);
+      this.ghost.damage(proj.def.damage || 10, proj.def);
+      this.audio?.play('hit');
+      this.events.emit('toast', { text: '玩具弩把它顶飞了！', ms: 1500 });
+      this.events.emit('hitstop', { ms: 70 });
+      this.events.emit('camera.shake', { amount: 0.35 });
+      this.scene.spawnParticles(hitPos, '#ffb86b');
+      this.scene.spawnHitRing(hitPos, '#ffb86b');
       this._removeProjectile(proj);
       return;
     }
@@ -289,6 +311,7 @@ export class ItemSystem {
     this.events.emit('noise', { pos: hitPos, radius: 10 });
     this.events.emit('hitstop', { ms: 50 });
     this.scene.spawnParticles(hitPos, '#ffe08a');
+    this.scene.spawnHitRing(hitPos, '#ffe08a');
     this.events.emit('toast', {
       text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,
       ms: 1300
@@ -365,6 +388,25 @@ export class ItemSystem {
       used: false
     });
     this.events.emit('toast', { text: '陷阱放好了：鬼踩中时推倒书架能压住它', ms: 2200 });
+    this.audio?.play('click');
+  }
+
+  _placeMine() {
+    if (!this.game.consumeItem('mine')) return;
+    this.game.usedItems.push('mine');
+    const p = this.playerPos();
+    const mesh = makeItemMesh('mine');
+    mesh.position.set(p.x, 0.05, p.z);
+    this.scene.group.add(mesh);
+    this.zones.push({
+      type: 'mine',
+      mesh,
+      pos: { x: p.x, z: p.z },
+      radius: 0.8,
+      until: nowSec() + 120,
+      used: false
+    });
+    this.events.emit('toast', { text: '尖叫地雷放好了！鬼踩到会被弹飞！', ms: 2000 });
     this.audio?.play('click');
   }
 
@@ -506,6 +548,23 @@ export class ItemSystem {
         this.audio?.play('splat');
         this.events.emit('toast', { text: '鬼被修正带黏住了！', ms: 1800 });
         this.ghost._speak('这是什么？！', 1600);
+      }
+      if (zone.type === 'mine' && ghostDist < zone.radius && !zone.used) {
+        zone.used = true;
+        this.scene.group.remove(zone.mesh);
+        this.game.stunnedUntil = nowSec() + 2.5;
+        const dx = ghostPos.x - playerPos.x;
+        const dz = ghostPos.z - playerPos.z;
+        const len = Math.hypot(dx, dz) || 1;
+        this.ghost.knockback((dx / len) * 10, (dz / len) * 10, 0.6);
+        this.rage.add(3, 'mine');
+        this.audio?.play('slam');
+        this.events.emit('hitstop', { ms: 90 });
+        this.events.emit('camera.shake', { amount: 0.4 });
+        this.scene.spawnParticles({ x: zone.pos.x, y: 0.6, z: zone.pos.z }, '#ff6b6b');
+        this.scene.spawnHitRing({ x: zone.pos.x, y: 0.5, z: zone.pos.z }, '#ff6b6b');
+        this.events.emit('toast', { text: '地雷炸了！鬼被弹飞了！', ms: 1800 });
+        this.ghost._speak('咩————？！', 1500);
       }
       if (zone.type === 'glue') {
         if (ghostDist < zone.radius) {

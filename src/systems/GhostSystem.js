@@ -451,7 +451,6 @@ export class GhostSystem {
     if (playerPos.y - b.y > 0.8) return false;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > stage.viewDist) return false;
-    if (stage.viewDist > 0 && dist < 3) return true;
     if (this.playerCrouching?.() && dist > 1.8) return false;
 
     const dx = playerPos.x - b.x;
@@ -521,8 +520,8 @@ export class GhostSystem {
           this._catchPlayer();
           return;
         }
-        this.events.emit('toast', { text: `被抓住了！还剩 ${this.game.lives} 次机会`, ms: 2200 });
-        this._speak('你跑不掉的……', 1800);
+        this.events.emit('toast', { text: `它把你举起来闻了闻！还剩 ${this.game.lives} 次机会`, ms: 2200 });
+        this._speak('你跑不掉的……咦，你好臭。', 1800);
         return;
       }
       this._catchPlayer();
@@ -607,7 +606,7 @@ export class GhostSystem {
     this.game.weakUntil = nowSec() + 1.6;
     this.rage.add(GHOST_CONFIG.rage.wrongSeal, 'wrongSeal');
     this.audio?.play('stapler');
-    this.events.emit('toast', { text: '订书机让它虚弱了！但封印失败……', ms: 2200 });
+    this.events.emit('toast', { text: '订书机咬住了空气，鬼笑出了声！', ms: 2200 });
     this._speak('你在干嘛？！', 2000);
     return 'wrong';
   }
@@ -617,15 +616,15 @@ export class GhostSystem {
     this.game.rage = 100;
     this.game.phase = 'escape';
     this.game.escapeTimer = GAME_CONFIG.escapeTime;
-    this.game.weakUntil = nowSec() + 3.0;
+    this.game.weakUntil = nowSec() + 5.0;
     this.scene.openExit();
     this.audio?.play('stapler');
     this.audio?.play('gate');
     this.events.emit('hitstop', { ms: 120 });
     this.events.emit('slowmo', { ms: 450 });
     this.events.emit('escape.start', { reason: 'sealed' });
-    this.events.emit('toast', { text: '封印成功！它暂时虚弱了，快跑！', ms: 2600 });
-    this._speak('你居然……咩————！！', 2600);
+    this.events.emit('toast', { text: '封印成功！它被你钉在空气里了！快跑！', ms: 2600 });
+    this._speak('你居然……咩————！！！', 2600);
   }
 
   damage(amount, def = null) {

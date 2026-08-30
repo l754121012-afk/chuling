@@ -722,7 +722,7 @@ export class SchoolScene {
   }
 
   spawnParticles(pos, color = '#ffe08a') {
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 14; i++) {
       const size = rand(0.05, 0.12);
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(size, size, size),
@@ -736,6 +736,23 @@ export class SchoolScene {
       this.group.add(mesh);
       this.particles.push({ mesh, ttl: 0.55 });
     }
+  }
+
+  spawnHitRing(pos, color = '#ffe08a') {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.3, 0.5, 24),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.95,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    ring.position.set(pos.x, pos.y, pos.z);
+    ring.rotation.x = -Math.PI / 2;
+    this.group.add(ring);
+    this.particles.push({ mesh: ring, ttl: 0.45, ring: true });
   }
 
   update(dt, game) {
@@ -772,6 +789,9 @@ export class SchoolScene {
         this.group.remove(p.mesh);
         p.mesh.material.dispose();
         this.particles.splice(i, 1);
+      } else if (p.ring) {
+        p.mesh.scale.setScalar(1 + (0.45 - p.ttl) * 6);
+        p.mesh.material.opacity = Math.max(0, p.ttl / 0.45);
       }
     }
 

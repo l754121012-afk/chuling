@@ -156,6 +156,16 @@ function makeItemShape(id) {
       group.add(leg);
     }
     group.add(seat, back);
+  } else if (id === 'crossbow') {
+    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.34), mat);
+    const bow = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.05), dark);
+    bow.position.set(0, 0.08, -0.14);
+    group.add(stock, bow);
+  } else if (id === 'mine') {
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 10), mat);
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 6), dark);
+    spike.position.y = 0.1;
+    group.add(body, spike);
   } else {
     group.add(new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.12), mat));
   }
