@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>除灵实习生 Phase 0</title>
-  <link rel="stylesheet" href="./styles.css?v=4" />
+  <link rel="stylesheet" href="./styles.css?v=5" />
   <script type="importmap">
     {
       "imports": {
@@ -19,6 +19,7 @@
     <canvas id="game-canvas"></canvas>
 
     <div id="hud" class="hidden">
+      <div id="danger-vignette"></div>
       <div id="phone" class="phone">
         <div class="phone-head">
           <span>安心手机</span>
@@ -57,7 +58,8 @@
       <div id="toast"></div>
 
       <button id="mute-btn" type="button" title="静音">♪</button>
-      <div id="hint">WASD 移动 · 鼠标移动 控制视角 · 左键使用道具 · E 互动 · Tab 手机</div>
+      <div id="ghost-warning"><span class="warn-icon">⚠</span><span id="warn-label">愤怒</span></div>
+      <div id="hint">WASD 移动 · 点击画面锁定鼠标 · 左键使用道具 · E 互动 · Tab 手机</div>
     </div>
 
     <div id="notebook" class="modal hidden">
@@ -78,7 +80,7 @@
         <div class="start-controls">
           <span>WASD 移动</span>
           <span>Shift 奔跑</span>
-          <span>鼠标移动 控制视角</span>
+          <span>点击画面 锁定鼠标</span>
           <span>左键 使用道具</span>
           <span>E 互动</span>
           <span>Q 切换道具</span>
@@ -111,6 +113,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/main.js?v=4"></script>
+  <script type="module" src="./src/main.js?v=5"></script>
 </body>
 </html>

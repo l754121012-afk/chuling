@@ -23,6 +23,8 @@ export class PlayerSystem {
     this.pawn = null;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
+    this.pose = 'idle';
+    this.poseTimer = 0;
   }
 
   createPawn() {
@@ -70,6 +72,41 @@ export class PlayerSystem {
     if (hSpeed > 0.4) {
       this.pawn.mesh.rotation.y = Math.atan2(body.velocity.x, body.velocity.z);
     }
+    this._updatePose(dt);
+  }
+
+  playPose(name, duration) {
+    this.pose = name;
+    this.poseTimer = duration;
+  }
+
+  _updatePose(dt) {
+    if (this.poseTimer > 0) {
+      this.poseTimer -= dt;
+      if (this.poseTimer <= 0) this.pose = 'idle';
+    }
+    const parts = this.pawn.mesh.userData.parts;
+    if (!parts) return;
+    const target = this._poseTarget();
+    const k = Math.min(1, dt * 10);
+    const lerpRot = (obj, axis, value) => {
+      obj.rotation[axis] += (value - obj.rotation[axis]) * k;
+    };
+    lerpRot(parts.armR, 'x', target.armR.x);
+    lerpRot(parts.armR, 'z', target.armR.z);
+    lerpRot(parts.armL, 'x', target.armL.x);
+    lerpRot(parts.armL, 'z', target.armL.z);
+    lerpRot(parts.body, 'x', target.body);
+    lerpRot(parts.head, 'x', target.head);
+  }
+
+  _poseTarget() {
+    const poses = {
+      idle: { armR: { x: -0.55, z: -0.15 }, armL: { x: 0.25, z: 0.45 }, body: 0, head: 0 },
+      use: { armR: { x: -1.15, z: -0.45 }, armL: { x: 0.3, z: 0.5 }, body: 0.08, head: -0.08 },
+      interact: { armR: { x: -0.95, z: -0.3 }, armL: { x: -1.0, z: 0.75 }, body: 0.3, head: 0.25 }
+    };
+    return poses[this.pose] || poses.idle;
   }
 
   _handleMovement(dt, body) {
@@ -207,6 +244,7 @@ export class PlayerSystem {
   }
 
   _doInteract(target) {
+    this.playPose('interact', 0.55);
     if (target.type === 'item') {
       this.items.pickup(target.pickup);
     } else if (target.type === 'exit') {
@@ -258,9 +296,11 @@ export class PlayerSystem {
 
   _handleItemControls() {
     if (this.input.consumeClick() && !this.game.notebookOpen && !this.game.hiding) {
+      this.playPose('use', 0.45);
       this.items.useEquipped();
     }
     if (this.input.justPressed('KeyC')) {
+      this.playPose('use', 0.5);
       this.items.comboSlingshot();
     }
     if (this.input.justPressed('KeyQ')) {

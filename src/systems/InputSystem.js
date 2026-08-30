@@ -9,6 +9,11 @@ export class InputSystem {
     this._down = false;
     this._lastX = null;
     this._lastY = null;
+    this.locked = false;
+    this.allowLock = false;
+    this._ignoreClick = false;
+    this.onLockChange = null;
+    this._lockTimer = null;
   }
 
   attach() {
@@ -17,6 +22,18 @@ export class InputSystem {
     this.canvas.addEventListener('mousedown', e => this._onMouseDown(e));
     this.canvas.addEventListener('mousemove', e => this._onMouseMove(e));
     window.addEventListener('mouseup', e => this._onMouseUp(e));
+    document.addEventListener('mousemove', e => {
+      if (this.locked) this._onLockedMouseMove(e);
+    });
+    document.addEventListener('pointerlockchange', () => this._onLockChange());
+    document.addEventListener('pointerlockerror', () => {
+      clearTimeout(this._lockTimer);
+      this._lockTimer = null;
+      this.allowLock = false;
+      this.locked = false;
+      this._ignoreClick = false;
+      this.onLockChange?.(false);
+    });
     this.canvas.addEventListener('wheel', e => {
       e.preventDefault();
       this.zoom += e.deltaY;
@@ -36,12 +53,19 @@ export class InputSystem {
 
   _onMouseDown(e) {
     if (e.button !== 0) return;
+    if (this.allowLock && !this.locked) {
+      this._requestLock();
+      this._ignoreClick = true;
+      this._down = false;
+      return;
+    }
     this._down = true;
     this._lastX = null;
     this._lastY = null;
   }
 
   _onMouseMove(e) {
+    if (this.locked) return;
     const dx = this._lastX === null ? 0 : e.clientX - this._lastX;
     const dy = this._lastY === null ? 0 : e.clientY - this._lastY;
     this._lastX = e.clientX;
@@ -50,11 +74,54 @@ export class InputSystem {
     this.look.y += dy;
   }
 
+  _onLockedMouseMove(e) {
+    this.look.x += e.movementX || 0;
+    this.look.y += e.movementY || 0;
+  }
+
   _onMouseUp(e) {
     if (e.button !== 0) return;
+    if (this._ignoreClick) {
+      this._ignoreClick = false;
+      this._down = false;
+      return;
+    }
     const wasDown = this._down;
     this._down = false;
     if (wasDown) this.clicked = true;
+  }
+
+  _requestLock() {
+    if (!this.canvas.requestPointerLock) {
+      this.allowLock = false;
+      this._ignoreClick = false;
+      return;
+    }
+    clearTimeout(this._lockTimer);
+    this._lockTimer = setTimeout(() => {
+      if (!this.locked && this.allowLock) {
+        this.allowLock = false;
+        this._ignoreClick = false;
+      }
+    }, 300);
+    try {
+      this.canvas.requestPointerLock();
+    } catch {
+      clearTimeout(this._lockTimer);
+      this._lockTimer = null;
+      this.allowLock = false;
+      this._ignoreClick = false;
+    }
+  }
+
+  _onLockChange() {
+    clearTimeout(this._lockTimer);
+    this._lockTimer = null;
+    const locked = document.pointerLockElement === this.canvas;
+    if (locked === this.locked) return;
+    this.locked = locked;
+    if (!locked) this._ignoreClick = false;
+    this.onLockChange?.(locked);
   }
 
   isDown(code) {

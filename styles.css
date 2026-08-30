@@ -44,6 +44,52 @@ canvas {
   z-index: 10;
 }
 
+#danger-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s;
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(180, 18, 40, var(--danger, 0)) 100%);
+}
+
+#danger-vignette.active {
+  opacity: 1;
+}
+
+#ghost-warning {
+  position: absolute;
+  top: max(64px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 6;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(120, 12, 28, 0.9);
+  color: #fff2d8;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #ffb3b3;
+  box-shadow: 0 0 12px rgba(230, 57, 70, 0.55);
+}
+
+#ghost-warning.active {
+  display: flex;
+  animation: warnPulse 0.8s ease-in-out infinite;
+}
+
+.warn-icon {
+  font-size: 16px;
+}
+
+@keyframes warnPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(230, 57, 70, 0.4); }
+  50% { box-shadow: 0 0 18px rgba(230, 57, 70, 0.9); }
+}
+
 .phone {
   position: absolute;
   top: max(14px, env(safe-area-inset-top));

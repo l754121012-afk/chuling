@@ -5,6 +5,29 @@ import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
 import { makeGhostMesh } from '../core/PlaceholderAssets.js';
 import { choice, clamp, distance2D, nowSec, rand } from '../core/Utils.js';
 
+const GHOST_VISUALS = {
+  calm: {
+    color: 0xf3efe7, emissive: 0x000000, intensity: 0,
+    aura: 0x9fb8ad, auraOpacity: 0.08, flames: false, danger: 0
+  },
+  annoyed: {
+    color: 0xf5e8c8, emissive: 0x4a3600, intensity: 0.08,
+    aura: 0xd9a94e, auraOpacity: 0.18, flames: false, danger: 0.12
+  },
+  angry: {
+    color: 0xf0c3a0, emissive: 0x7a2418, intensity: 0.18,
+    aura: 0xe76f51, auraOpacity: 0.3, flames: false, danger: 0.3
+  },
+  furious: {
+    color: 0xd99090, emissive: 0xa01225, intensity: 0.45,
+    aura: 0xd7263d, auraOpacity: 0.45, flames: true, danger: 0.5
+  },
+  insane: {
+    color: 0xb58fd6, emissive: 0x5d1fa8, intensity: 0.8,
+    aura: 0x9b5de5, auraOpacity: 0.6, flames: true, danger: 0.72
+  }
+};
+
 export class GhostSystem {
   constructor({ scene, physics, events, game, rage, audio }) {
     this.scene = scene;
@@ -26,6 +49,8 @@ export class GhostSystem {
     this._flash = 0;
     this._facing = 0;
     this._caught = false;
+    this._visualStage = null;
+    this._flameTime = 0;
 
     events.on('noise', payload => this._onNoise(payload));
   }
@@ -56,7 +81,9 @@ export class GhostSystem {
   }
 
   update(dt, playerPos) {
-    if (!this.pawn || !this.game.isPlaying()) return;
+    if (!this.pawn) return;
+    this._applyStageVisual(this.game.currentStage(), dt);
+    if (!this.game.isPlaying()) return;
     const body = this.pawn.body;
     syncMeshToBody(this.pawn.mesh, body);
     this._slapCooldown = Math.max(0, this._slapCooldown - dt);
@@ -80,6 +107,50 @@ export class GhostSystem {
     }
 
     this._catchOrSlap(playerPos);
+  }
+
+  _applyStageVisual(stage, dt) {
+    const v = GHOST_VISUALS[stage.id] || GHOST_VISUALS.calm;
+    if (this._visualStage !== stage.id) {
+      this._visualStage = stage.id;
+      this.events.emit('ghost.visual', {
+        stage: stage.id,
+        label: stage.label,
+        danger: v.danger,
+        flames: v.flames
+      });
+    }
+    const parts = this.pawn.mesh.userData;
+    if (parts.ghostMat) {
+      parts.ghostMat.color.setHex(v.color);
+      parts.ghostMat.emissive.setHex(v.emissive);
+      parts.ghostMat.emissiveIntensity = v.intensity;
+      parts.ghostMat.needsUpdate = true;
+    }
+    if (parts.aura) {
+      parts.aura.material.color.setHex(v.aura);
+      parts.aura.material.opacity = v.auraOpacity;
+    }
+    this._updateFlames(dt, v.flames);
+  }
+
+  _updateFlames(dt, active) {
+    const flames = this.pawn.mesh.userData.flames;
+    if (!flames) return;
+    this._flameTime += dt;
+    for (const flame of flames.children) {
+      flame.visible = active;
+      if (!active) continue;
+      const o = flame.userData.offset;
+      const t = this._flameTime * o.speed + o.angle;
+      flame.position.set(
+        Math.sin(t) * 0.65,
+        1.0 + ((o.rise + this._flameTime * 0.8) % 1) * 0.55,
+        Math.cos(t * 0.8) * 0.55
+      );
+      flame.rotation.z = Math.sin(t * 2) * 0.3;
+      flame.scale.setScalar(0.8 + Math.sin(t * 3) * 0.3);
+    }
   }
 
   _investigateAI(dt, playerPos) {

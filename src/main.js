@@ -43,6 +43,15 @@ ui.init();
 
 const input = new InputSystem(renderer.domElement);
 input.attach();
+input.onLockChange = locked => {
+  const hint = document.getElementById('hint');
+  if (hint) {
+    hint.textContent = locked
+      ? '鼠标已锁定：按 Esc 释放'
+      : 'WASD 移动 · 点击画面锁定鼠标 · 左键使用道具 · E 互动 · Tab 手机';
+  }
+  if (locked) events.emit('toast', { text: '鼠标已锁定，按 Esc 释放', ms: 1800 });
+};
 const cameraSys = new CameraSystem(camera, school);
 const rage = new RageSystem(game, events, audio);
 const ghost = new GhostSystem({ scene: school, physics, events, game, rage, audio });
@@ -86,6 +95,7 @@ events.on('audio', p => audio.play(p.name));
 events.on('game.start', () => {
   game.reset();
   game.phase = 'investigate';
+  input.allowLock = true;
   game.addItem('pen', 2);
   game.addItem('rubber', 1);
   game.equipped = 'pen';
@@ -98,12 +108,16 @@ events.on('game.start', () => {
 });
 events.on('game.win', () => {
   game.phase = 'win';
+  input.allowLock = false;
+  if (document.pointerLockElement) document.exitPointerLock();
   audio.play('win');
   ui.showWin(settlement.calculate(game));
   ui.sync(game);
 });
 events.on('game.lost', () => {
   game.phase = 'lost';
+  input.allowLock = false;
+  if (document.pointerLockElement) document.exitPointerLock();
   audio.play('lose');
   ui.showLose(settlement.calculate(game));
   ui.sync(game);
@@ -163,6 +177,7 @@ function tick() {
     }
     if (game.battery <= 0 && game.notebookOpen) ui.toggleNotebook(false);
   }
+  input.allowLock = game.isPlaying();
 
   if (input.justPressed('Tab')) ui.toggleNotebook();
   ui.sync(game);

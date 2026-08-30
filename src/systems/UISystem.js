@@ -35,7 +35,10 @@ export class UISystem {
       settlementLine: document.getElementById('settlement-line'),
       loseRows: document.getElementById('lose-rows'),
       loseTotal: document.getElementById('lose-total'),
-      loseLine: document.getElementById('lose-line')
+      loseLine: document.getElementById('lose-line'),
+      vignette: document.getElementById('danger-vignette'),
+      warning: document.getElementById('ghost-warning'),
+      warningLabel: document.getElementById('warn-label')
     };
     this._buildInventory();
 
@@ -200,5 +203,11 @@ export class UISystem {
     this.events.on('toast', p => this.showToast(p.text, p.ms));
     this.events.on('speech', p => this.showSpeech(p.text, p.ms));
     this.events.on('interact.prompt', p => this.showPrompt(p.text));
+    this.events.on('ghost.visual', p => {
+      this.el.vignette.style.setProperty('--danger', String(p.danger));
+      this.el.vignette.classList.toggle('active', p.danger > 0.05);
+      this.el.warning.classList.toggle('active', p.danger > 0.2);
+      this.el.warningLabel.textContent = p.label;
+    });
   }
 }

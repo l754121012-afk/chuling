@@ -136,22 +136,49 @@ export function makeItemMesh(id) {
   return mesh;
 }
 
+function limbMesh(from, to, radius, mat) {
+  const a = new THREE.Vector3(from[0], from[1], from[2]);
+  const b = new THREE.Vector3(to[0], to[1], to[2]);
+  const dir = b.clone().sub(a);
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, dir.length(), 8), mat);
+  mesh.position.copy(a).add(b).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+  return mesh;
+}
+
 export function makePlayerMesh() {
   const group = new THREE.Group();
   const bodyMat = material(PALETTE.player, 0.7, 0.05);
   const skinMat = material(PALETTE.playerSkin, 0.8, 0);
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.85, 12), bodyMat);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.8, 12), bodyMat);
   body.position.y = 0.85;
-  const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.58, 8), bodyMat);
-  armL.position.set(-0.38, 1.24, 0);
-  armL.rotation.z = 0.38;
-  const armR = armL.clone();
-  armR.position.x = 0.38;
-  armR.rotation.z = -0.38;
-  const handL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), skinMat);
-  handL.position.set(-0.47, 0.98, 0.1);
-  const handR = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), skinMat);
-  handR.position.set(0.47, 0.98, 0.1);
+
+  const legL = limbMesh([-0.13, 0.62, 0], [-0.13, 0.08, 0], 0.09, bodyMat);
+  const legR = limbMesh([0.13, 0.62, 0], [0.13, 0.08, 0], 0.09, bodyMat);
+  const footMat = material(PALETTE.ink, 0.75, 0.1);
+  const footL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.09, 0.26), footMat);
+  footL.position.set(-0.13, 0.045, 0.03);
+  const footR = footL.clone();
+  footR.position.x = 0.13;
+
+  const armLGroup = new THREE.Group();
+  armLGroup.position.set(-0.28, 1.25, 0);
+  const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.075, 0.58, 8), bodyMat);
+  armLMesh.position.set(0, -0.32, 0.08);
+  const handL = new THREE.Mesh(new THREE.SphereGeometry(0.095, 10, 8), skinMat);
+  handL.position.set(0, -0.56, 0.18);
+  armLGroup.add(armLMesh, handL);
+
+  const armRGroup = new THREE.Group();
+  armRGroup.position.set(0.28, 1.25, 0);
+  const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.075, 0.58, 8), bodyMat);
+  armRMesh.position.set(0, -0.32, 0.08);
+  const handR = new THREE.Mesh(new THREE.SphereGeometry(0.095, 10, 8), skinMat);
+  handR.position.set(0, -0.56, 0.18);
+  const handSlot = new THREE.Group();
+  handSlot.position.set(0, -0.56, 0.2);
+  armRGroup.add(armRMesh, handR, handSlot);
+
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 14), skinMat);
   head.position.y = 1.55;
   const face = new THREE.Mesh(
@@ -161,9 +188,19 @@ export function makePlayerMesh() {
   face.position.set(0, 1.58, 0.27);
   const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.22), material(PALETTE.wallTrim, 0.85));
   backpack.position.set(0, 0.9, -0.36);
-  const handSlot = new THREE.Group();
-  handSlot.position.set(0.47, 1.02, 0.18);
-  group.add(body, armL, armR, handL, handR, head, face, backpack, handSlot);
+
+  armLGroup.rotation.z = 0.45;
+  armRGroup.rotation.x = -0.55;
+  armRGroup.rotation.z = -0.15;
+
+  group.add(body, legL, legR, footL, footR, armLGroup, armRGroup, head, face, backpack);
+  group.userData.parts = {
+    body,
+    head,
+    armL: armLGroup,
+    armR: armRGroup,
+    handSlot
+  };
   group.userData.handSlot = handSlot;
   group.userData.assetKey = 'player';
   return group;
@@ -171,7 +208,11 @@ export function makePlayerMesh() {
 
 export function makeGhostMesh() {
   const group = new THREE.Group();
-  const ghostMat = material(PALETTE.ghost, 0.65, 0.02);
+  const ghostMat = new THREE.MeshStandardMaterial({
+    color: PALETTE.ghost,
+    roughness: 0.65,
+    metalness: 0.02
+  });
   const body = new THREE.Mesh(new THREE.SphereGeometry(0.55, 20, 16), ghostMat);
   body.position.y = 1.15;
   body.scale.set(1, 1.18, 0.85);
@@ -190,7 +231,38 @@ export function makeGhostMesh() {
   const armR = armL.clone();
   armR.position.x = 0.55;
   armR.rotation.z = -0.5;
-  group.add(body, tail, head, face, armL, armR);
+
+  const aura = new THREE.Mesh(
+    new THREE.SphereGeometry(1.0, 16, 12),
+    new THREE.MeshBasicMaterial({
+      color: '#ffffff',
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.BackSide
+    })
+  );
+  aura.position.y = 1.2;
+
+  const flames = new THREE.Group();
+  for (let i = 0; i < 10; i++) {
+    const flame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.07, 0.26, 6),
+      new THREE.MeshBasicMaterial({ color: '#9b5de5', transparent: true, opacity: 0.9 })
+    );
+    flame.userData.offset = {
+      angle: (i / 10) * Math.PI * 2,
+      speed: 1.2 + Math.random() * 1.5,
+      rise: Math.random()
+    };
+    flame.visible = false;
+    flames.add(flame);
+  }
+
+  group.add(body, tail, head, face, armL, armR, aura, flames);
+  group.userData.ghostMat = ghostMat;
+  group.userData.aura = aura;
+  group.userData.flames = flames;
   group.userData.assetKey = 'ghost';
   return group;
 }
