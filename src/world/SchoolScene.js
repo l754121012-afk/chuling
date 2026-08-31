@@ -840,6 +840,26 @@ export class SchoolScene {
     this.particles.push({ mesh, ttl: duration, maxTtl: duration, trail: true });
   }
 
+  spawnAirSlash(from, to, color = '#ffd166', duration = 0.35) {
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const len = Math.hypot(dx, dz) || 0.1;
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(len, 0.34, 0.05),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    mesh.position.set((from.x + to.x) / 2, 1.25, (from.z + to.z) / 2);
+    mesh.rotation.y = Math.atan2(dx, dz);
+    this.group.add(mesh);
+    this.particles.push({ mesh, ttl: duration, maxTtl: duration, trail: true });
+  }
+
   update(dt, game) {
     const currentStage = game.currentStage();
     if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {

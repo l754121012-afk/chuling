@@ -438,6 +438,16 @@ export class GhostSystem {
           '#ff6b6b',
           0.45
         );
+        this.scene.spawnAirSlash(
+          {
+            x: b.x + Math.sin(this._facing) * 0.8,
+            y: 1.3,
+            z: b.z + Math.cos(this._facing) * 0.8
+          },
+          { x: playerPos.x, y: 1.25, z: playerPos.z },
+          '#ff6b6b',
+          0.4
+        );
         this._attackAnimTimer = 0.45;
         const arm = this.pawn.mesh.userData?.armR;
         if (arm) arm.rotation.x = 1.5;
@@ -531,6 +541,12 @@ export class GhostSystem {
     this.scene.spawnSlashTrail(
       { x: p.x, y: 0, z: p.z },
       { x: b.x, y: 0, z: b.z },
+      '#ffffff',
+      0.5
+    );
+    this.scene.spawnAirSlash(
+      { x: p.x, y: 1.25, z: p.z },
+      { x: b.x, y: 1.25, z: b.z },
       '#ffffff',
       0.5
     );

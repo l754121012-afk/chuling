@@ -323,12 +323,23 @@ export function makeGhostMesh() {
     new THREE.MeshBasicMaterial({ map: faceTexture('ghost'), transparent: true })
   );
   face.position.set(0, 1.75, 0.33);
-  const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), ghostMat);
-  armL.position.set(-0.55, 1.35, 0);
-  armL.rotation.z = 0.5;
-  const armR = armL.clone();
-  armR.position.x = 0.55;
-  armR.rotation.z = -0.5;
+  const armLGroup = new THREE.Group();
+  armLGroup.position.set(-0.55, 1.35, 0);
+  armLGroup.rotation.z = 0.5;
+  const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), ghostMat);
+  armLMesh.position.y = -0.25;
+  const handL = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), ghostMat);
+  handL.position.y = -0.52;
+  armLGroup.add(armLMesh, handL);
+
+  const armRGroup = new THREE.Group();
+  armRGroup.position.set(0.55, 1.35, 0);
+  armRGroup.rotation.z = -0.5;
+  const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), ghostMat);
+  armRMesh.position.y = -0.25;
+  const handR = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), ghostMat);
+  handR.position.y = -0.52;
+  armRGroup.add(armRMesh, handR);
 
   const aura = new THREE.Mesh(
     new THREE.SphereGeometry(1.0, 16, 12),
@@ -357,12 +368,13 @@ export function makeGhostMesh() {
     flames.add(flame);
   }
 
-  group.add(body, tail, head, face, armL, armR, aura, flames);
+  group.add(body, tail, head, face, armLGroup, armRGroup, aura, flames);
   group.userData.ghostMat = ghostMat;
   group.userData.aura = aura;
   group.userData.flames = flames;
-  group.userData.armL = armL;
-  group.userData.armR = armR;
+  group.userData.armL = armLGroup;
+  group.userData.armR = armRGroup;
+  group.userData.handR = handR;
   group.userData.assetKey = 'ghost';
   return group;
 }

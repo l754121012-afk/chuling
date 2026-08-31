@@ -1088,6 +1088,12 @@ export class PlayerSystem {
       '#ffd166',
       0.35
     );
+    this.scene.spawnAirSlash(
+      { x: pp.x, y: 1.25, z: pp.z },
+      { x: gp.x, y: 1.25, z: gp.z },
+      '#ffd166',
+      0.35
+    );
     this.events.emit('hitstop', { ms: 60 });
     this.events.emit('camera.shake', { amount: 0.22 });
     this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#f4d35e');
@@ -1122,6 +1128,12 @@ export class PlayerSystem {
     this.scene.spawnSlashTrail(
       { x: pp.x, y: 0, z: pp.z },
       { x: pp.x + fwdX * 2, y: 0, z: pp.z + fwdZ * 2 },
+      '#d9c8a0',
+      0.3
+    );
+    this.scene.spawnAirSlash(
+      { x: pp.x, y: 1.25, z: pp.z },
+      { x: pp.x + fwdX * 2, y: 1.25, z: pp.z + fwdZ * 2 },
       '#d9c8a0',
       0.3
     );
@@ -1249,6 +1261,12 @@ export class PlayerSystem {
       { x: gp.x, y: 0, z: gp.z },
       '#ffd166',
       0.6
+    );
+    this.scene.spawnAirSlash(
+      { x: pp.x, y: 1.25, z: pp.z },
+      { x: gp.x, y: 1.25, z: gp.z },
+      '#ffd166',
+      0.55
     );
     this.events.emit('toast', { text: '夺命连环鞭！！', ms: 1600 });
   }
