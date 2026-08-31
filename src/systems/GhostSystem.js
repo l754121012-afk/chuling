@@ -477,7 +477,7 @@ export class GhostSystem {
 
     this._attackCooldown -= dt;
     if (this._attackCooldown > 0) return;
-    if (dist < 1.8 || dist > 5) return;
+    if (dist < 1.0 || dist > 5) return;
     this._telegraphActive = true;
     this._attackFired = false;
     this._telegraphUntil = nowSec() + GAME_CONFIG.attackTelegraph;
@@ -533,6 +533,13 @@ export class GhostSystem {
     this.game.parryCount += 1;
     this.rage.addComposure(GAME_CONFIG.composureParry, 'parry');
     this.rage.addDrama(GAME_CONFIG.dramaParry, 'parry');
+    if (this.game.currentStage().id === 'insane') {
+      this.rage.reduce(15, 'parryInsane');
+      this.events.emit('toast', {
+        text: '满怒也能拼！它被你打回暴怒了！',
+        ms: 2200
+      });
+    }
     const p = this.playerPos();
     const b = this.pawn.body.position;
     const dx = b.x - p.x;
@@ -860,6 +867,7 @@ export class GhostSystem {
 
   _catchOrSlap(playerPos) {
     if (this._caught) return;
+    if (this._telegraphActive) return;
     if (this.game.hiding) return;
     if (this.game.chainStuck) return;
     if (this.game.broken) return;
@@ -903,6 +911,12 @@ export class GhostSystem {
         return;
       }
       this._catchPlayer();
+      return;
+    }
+    if (stage.id === 'calm' || stage.id === 'annoyed') return;
+    if (!this._telegraphActive && dist <= 1.6 && this._attackCooldown <= 1.5) {
+      this._attackCooldown = 0;
+      this._updateAttack(0, playerPos);
       return;
     }
     if (this._slapCooldown > 0) return;

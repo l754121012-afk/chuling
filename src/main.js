@@ -123,7 +123,7 @@ events.on('ghost.stage', p => {
     annoyed: { audio: 'chalk', text: '粉笔在黑板上划出刺耳声！它猛地转头！！', color: '#f4d35e', card: '第 2 幕 · 不悦' },
     angry: { audio: 'shake', text: '课桌全部震动起来，它开始砸东西了！！', color: '#f4a261', card: '第 3 幕 · 愤怒' },
     furious: { audio: 'slam', text: '所有柜门同时炸响！它彻底暴怒了！！', color: '#e63946', card: '第 3 幕 · 暴怒' },
-    insane: { audio: 'heartbeat', text: '心跳声震耳欲聋……它已经疯了！！！', color: '#9b5de5', card: '第 3 幕 · 狂乱' }
+    insane: { audio: 'heartbeat', text: '心跳声震耳欲聋……它已经疯了！拼刀能把它打回暴怒！', color: '#9b5de5', card: '第 3 幕 · 狂乱' }
   };
   const beat = beats[p.stage.id];
   if (beat) {

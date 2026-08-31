@@ -129,6 +129,7 @@ export class PlayerSystem {
     this._handleInteractions();
     this._updatePendingCrush();
     this._handleItemControls();
+    if (this.input.zoom !== 0) this._cycleItem(this.input.zoom > 0 ? 1 : -1);
     if (this.game.whipMode && this.input.isLeftDown()) {
       if (!this._tryParry()) this._doWhip();
     }
@@ -938,24 +939,6 @@ export class PlayerSystem {
       this.items.useEquipped();
     }
 
-    if (!this.game.whipMode && this.input.justPressed('KeyC')) {
-      if (def.type === 'throw' && this.game.hasItem('pen') && this.game.hasItem('rubber')) {
-        this.aiming = true;
-        this._comboReady = true;
-        this.playPose('aim', 0.2);
-        this.events.emit('aim.changed', { aiming: true, combo: true });
-        this.events.emit('toast', { text: '自制弹弓已装填，左键或 F 射出', ms: 1500 });
-      } else if (def.type !== 'throw') {
-        this.items.comboSlingshot();
-      }
-    }
-
-    if (this.input.justPressed('KeyQ')) {
-      this._cycleItem();
-      this.aiming = false;
-      this._comboReady = false;
-      this.events.emit('aim.changed', { aiming: false, combo: false });
-    }
     for (let i = 0; i < this._itemCycle.length; i++) {
       if (this.input.justPressed(`Digit${i + 1}`)) {
         const id = this._itemCycle[i];
@@ -1271,11 +1254,14 @@ export class PlayerSystem {
     this.events.emit('toast', { text: '夺命连环鞭！！', ms: 1600 });
   }
 
-  _cycleItem() {
+  _cycleItem(dir = 1) {
     const owned = this._itemCycle.filter(id => this.game.hasItem(id));
     if (owned.length === 0) return;
     const idx = owned.indexOf(this.game.equipped);
-    this.game.equipped = owned[(idx + 1) % owned.length];
+    this.game.equipped = owned[(idx + dir + owned.length) % owned.length];
+    this.aiming = false;
+    this._comboReady = false;
+    this.events.emit('aim.changed', { aiming: false, combo: false });
     this.audio?.play('click');
   }
 }

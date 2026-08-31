@@ -323,13 +323,28 @@ export function makeGhostMesh() {
     new THREE.MeshBasicMaterial({ map: faceTexture('ghost'), transparent: true })
   );
   face.position.set(0, 1.75, 0.33);
+  const handMat = new THREE.MeshStandardMaterial({ color: 0xcfd8c8, roughness: 0.8 });
+  const clawMat = new THREE.MeshStandardMaterial({ color: 0x5d6b63, roughness: 0.9 });
+  const makeGhostHand = () => {
+    const hand = new THREE.Group();
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), handMat);
+    hand.add(palm);
+    for (let i = -1; i <= 1; i++) {
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.2, 6), clawMat);
+      claw.position.set(i * 0.09, -0.2, 0);
+      claw.rotation.x = Math.PI;
+      hand.add(claw);
+    }
+    return hand;
+  };
+
   const armLGroup = new THREE.Group();
   armLGroup.position.set(-0.55, 1.35, 0);
   armLGroup.rotation.z = 0.5;
   const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), ghostMat);
   armLMesh.position.y = -0.25;
-  const handL = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), ghostMat);
-  handL.position.y = -0.52;
+  const handL = makeGhostHand();
+  handL.position.set(0, -0.58, 0);
   armLGroup.add(armLMesh, handL);
 
   const armRGroup = new THREE.Group();
@@ -337,8 +352,8 @@ export function makeGhostMesh() {
   armRGroup.rotation.z = -0.5;
   const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), ghostMat);
   armRMesh.position.y = -0.25;
-  const handR = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), ghostMat);
-  handR.position.y = -0.52;
+  const handR = makeGhostHand();
+  handR.position.set(0, -0.58, 0);
   armRGroup.add(armRMesh, handR);
 
   const aura = new THREE.Mesh(
