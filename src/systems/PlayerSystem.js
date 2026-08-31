@@ -138,6 +138,12 @@ export class PlayerSystem {
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
     this._whipCooldown = Math.max(0, this._whipCooldown - dt);
     this._dodgeCooldown = Math.max(0, this._dodgeCooldown - dt);
+    if (this.game.charging && nowSec() >= this.game.chargingUntil) {
+      this.game.charging = false;
+      this.game.battery = 100;
+      this.audio?.play('win');
+      this.events.emit('toast', { text: '电充满了！手机满血复活！', ms: 2000 });
+    }
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
     if (this.input.justPressed('KeyG')) this._toggleWhipMode();
     if (this.input.justPressed('KeyR')) this._doDodge();
@@ -262,6 +268,10 @@ export class PlayerSystem {
       return;
     }
     if (nowSec() < this.game.playerStunUntil) {
+      body.velocity.set(0, body.velocity.y, 0);
+      return;
+    }
+    if (this.game.charging) {
       body.velocity.set(0, body.velocity.y, 0);
       return;
     }
@@ -495,6 +505,18 @@ export class PlayerSystem {
       }
     }
 
+    if (this.refs.charger && this.game.battery < 100) {
+      const d = distance2D(pos.x, pos.z, this.refs.charger.pos.x, this.refs.charger.pos.z);
+      if (d < GAME_CONFIG.interactRadius && 5 > bestPriority) {
+        bestPriority = 5;
+        best = {
+          type: 'charger',
+          label: this.game.charging ? '充电中...' : 'E 充电',
+          pos: { x: this.refs.charger.pos.x, y: 1.4, z: this.refs.charger.pos.z }
+        };
+      }
+    }
+
     for (const pickup of this.items.pickups) {
       if (pickup.picked) continue;
       const d = distance2D(pos.x, pos.z, pickup.pos.x, pickup.pos.z);
@@ -607,6 +629,16 @@ export class PlayerSystem {
     this.playPose('interact', 0.55);
     if (target.type === 'finisher') {
       this.ghost?.performFinisher();
+    } else if (target.type === 'charger') {
+      if (this.game.charging) return;
+      if (this.game.battery >= 100) {
+        this.events.emit('toast', { text: '电量已满，不需要充电', ms: 1400 });
+        return;
+      }
+      this.game.charging = true;
+      this.game.chargingUntil = nowSec() + 3;
+      this.audio?.play('click');
+      this.events.emit('toast', { text: '开始充电，3秒后充满！小心鬼！', ms: 2200 });
     } else if (target.type === 'item') {
       this.items.pickup(target.pickup);
     } else if (target.type === 'exit') {
@@ -1195,11 +1227,12 @@ export class PlayerSystem {
   _bonkCheck(dirX, dirZ) {
     const p = this.getPos();
     const dashDist = GAME_CONFIG.dodgeSpeed * GAME_CONFIG.dodgeDuration;
+    const bonkDist = Math.min(dashDist, 1.4);
     const from = new CANNON.Vec3(p.x, p.y + 0.4, p.z);
     const to = new CANNON.Vec3(
-      p.x + dirX * dashDist,
+      p.x + dirX * bonkDist,
       p.y + 0.4,
-      p.z + dirZ * dashDist
+      p.z + dirZ * bonkDist
     );
     const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD | GROUPS.PROP);
     if (!hit) return;

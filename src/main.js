@@ -34,7 +34,7 @@ const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerH
 const events = new EventBus();
 const physics = new PhysicsWorld();
 const game = new GameState();
-const school = new SchoolScene(physics, events);
+const school = new SchoolScene(physics, events, scene);
 const refs = school.build();
 scene.add(school.group);
 
@@ -284,9 +284,10 @@ function tick() {
     const drain = game.notebookOpen
       ? GAME_CONFIG.phoneOpenDrainPerSecond
       : GAME_CONFIG.batteryDrainPerSecond;
-    if (!game.hiding) {
+    if (!game.hiding && !game.charging) {
       game.battery = Math.max(0, game.battery - drain * simDt);
     }
+    school.setDarkness(1 - game.battery / 100);
     if (game.battery <= 0 && game.notebookOpen) ui.toggleNotebook(false);
   }
   if (

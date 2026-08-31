@@ -26,9 +26,10 @@ function scaleLevelConfig(cfg, s = 1.25) {
 }
 
 export class SchoolScene {
-  constructor(physics, events) {
+  constructor(physics, events, threeScene = null) {
     this.physics = physics;
     this.events = events;
+    this.threeScene = threeScene;
     this.L = scaleLevelConfig(LEVEL_CONFIG);
     this.group = new THREE.Group();
     this.flickerLights = [];
@@ -36,6 +37,8 @@ export class SchoolScene {
     this.particles = [];
     this._deskShakeUntil = 0;
     this._lockerShakeUntil = 0;
+    this.ambientLight = null;
+    this.sunLight = null;
     this.refs = null;
   }
 
@@ -583,6 +586,48 @@ export class SchoolScene {
       });
       this.physics.add(block);
     }
+
+    const charger = this.L.charger;
+    const chargerGroup = new THREE.Group();
+    const chargerBox = new THREE.Mesh(
+      new THREE.BoxGeometry(0.75, 1.4, 0.4),
+      material('#3f7fa6', 0.9)
+    );
+    chargerBox.position.y = 0.85;
+    const chargerScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.5, 0.55),
+      new THREE.MeshBasicMaterial({ color: 0x7cfc00 })
+    );
+    chargerScreen.position.set(0, 1.05, 0.21);
+    chargerGroup.add(chargerBox, chargerScreen);
+    chargerGroup.position.set(charger.x, 0, charger.z);
+    this.group.add(chargerGroup);
+    const chargerLight = new THREE.PointLight('#7CFC00', 0.9, 4.5, 1.8);
+    chargerLight.position.set(charger.x, 1.3, charger.z);
+    this.group.add(chargerLight);
+    const chargerSign = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('充电桩', {
+          bg: '#0b3d2e',
+          fg: '#c8ffd0',
+          font: 'bold 62px "Microsoft YaHei", sans-serif',
+          width: 512,
+          height: 160,
+          lineHeight: 80,
+          pad: 10
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    chargerSign.position.set(charger.x, 2.3, charger.z);
+    chargerSign.scale.set(1.5, 0.5, 1);
+    this.group.add(chargerSign);
+    refs.charger = {
+      pos: { x: charger.x, z: charger.z },
+      mesh: chargerGroup,
+      light: chargerLight
+    };
   }
 
   _addRouteClutter(refs) {
@@ -697,7 +742,8 @@ export class SchoolScene {
   }
 
   _addLights() {
-    this.group.add(new THREE.HemisphereLight('#3d4a5c', '#10141c', 0.22));
+    this.ambientLight = new THREE.HemisphereLight('#3d4a5c', '#10141c', 0.22);
+    this.group.add(this.ambientLight);
     const sun = new THREE.DirectionalLight('#5f6a7a', 0.35);
     sun.position.set(6, 12, 6);
     sun.castShadow = true;
@@ -707,6 +753,7 @@ export class SchoolScene {
     sun.shadow.camera.top = 16;
     sun.shadow.camera.bottom = -12;
     this.group.add(sun);
+    this.sunLight = sun;
 
     const flicker = [
       { x: -6, z: -4, color: '#ffe9c4' },
@@ -719,6 +766,16 @@ export class SchoolScene {
       light.position.set(f.x, 2.7, f.z);
       this.group.add(light);
       this.flickerLights.push(light);
+    }
+  }
+
+  setDarkness(dark) {
+    const d = Math.max(0, Math.min(1, dark));
+    if (this.ambientLight) this.ambientLight.intensity = 0.22 * (1 - d * 0.92);
+    if (this.sunLight) this.sunLight.intensity = 0.35 * (1 - d * 0.96);
+    if (this.threeScene?.fog) {
+      this.threeScene.fog.near = 2 + d * 5;
+      this.threeScene.fog.far = 8 + d * 14;
     }
   }
 

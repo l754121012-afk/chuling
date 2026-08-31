@@ -84,6 +84,7 @@ export class GhostSystem {
     this._attackUntil = 0;
     this._attackFired = false;
     this._chargeActive = false;
+    this._chargeWindupUntil = 0;
     this._chargeUntil = 0;
     this._chargeDirX = 0;
     this._chargeDirZ = 0;
@@ -228,11 +229,15 @@ export class GhostSystem {
       this._dashTimer -= dt;
       this._setVelocity(this._dashDirX * this._dashSpeed, this._dashDirZ * this._dashSpeed, dt);
     } else if (this._chargeActive) {
-      this.pawn.body.velocity.set(
-        this._chargeDirX * this._chargeSpeed,
-        0,
-        this._chargeDirZ * this._chargeSpeed
-      );
+      if (nowSec() < this._chargeWindupUntil) {
+        this.pawn.body.velocity.set(0, 0, 0);
+      } else {
+        this.pawn.body.velocity.set(
+          this._chargeDirX * this._chargeSpeed,
+          0,
+          this._chargeDirZ * this._chargeSpeed
+        );
+      }
     } else if (this._scareActive || this._telegraphActive) {
       this.pawn.body.velocity.set(0, 0, 0);
     } else {
@@ -536,7 +541,7 @@ export class GhostSystem {
       this._attackCooldown -= dt * (highRage ? 3 : 1);
     }
     if (this._attackCooldown > 0) return;
-    if (dist < 0.8 || dist > attackRange) return;
+    if (dist > attackRange) return;
 
     const scareThreshold = stage.id === 'insane'
       ? 40
@@ -591,7 +596,8 @@ export class GhostSystem {
     const dz = playerPos.z - b.z;
     const len = Math.hypot(dx, dz) || 1;
     this._chargeActive = true;
-    this._chargeUntil = nowSec() + 0.55;
+    this._chargeWindupUntil = nowSec() + 0.45;
+    this._chargeUntil = this._chargeWindupUntil + 0.55;
     this._chargeDirX = dx / len;
     this._chargeDirZ = dz / len;
     this._chargeSpeed = Math.max(6, (stage.speed || 2.6) * 3.2);
@@ -602,10 +608,14 @@ export class GhostSystem {
       this._telegraphRing.position.set(b.x, 0.06, b.z);
       this._telegraphRing.visible = true;
     }
-    this.events.emit('toast', { text: '它要撞过来了！按 R 闪开！', ms: 1400 });
+    this.events.emit('toast', {
+      text: '它在原地蓄力，要撞过来了！按 R 闪开！',
+      ms: 1600
+    });
   }
 
   _updateCharge(dt, playerPos) {
+    if (nowSec() < this._chargeWindupUntil) return;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (!this._chargeHitDone && dist < 1.25 && nowSec() >= this.game.dodgingUntil) {
@@ -628,6 +638,8 @@ export class GhostSystem {
 
   _doGhostChargeHit(playerPos) {
     this.game.stamina = Math.max(0, this.game.stamina - 30);
+    this.game.playerStunUntil = nowSec() + 1.2;
+    this.game.dodgingUntil = 0;
     if (this.playerBody) {
       const b = this.pawn.body.position;
       const dx = playerPos.x - b.x;
@@ -636,7 +648,7 @@ export class GhostSystem {
       this.playerBody.velocity.set((dx / len) * 11, 4, (dz / len) * 11);
     }
     this.audio?.play('slap');
-    this.events.emit('toast', { text: '被撞飞了！体力-30', ms: 1600 });
+    this.events.emit('toast', { text: '被撞飞了！体力-30，僵直了！', ms: 1600 });
     this.events.emit('player.hurt');
     this.events.emit('camera.shake', { amount: 0.42 });
     this.events.emit('hitstop', { ms: 80 });

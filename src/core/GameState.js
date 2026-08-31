@@ -53,6 +53,8 @@ export class GameState {
     this.brokenUntil = 0;
     this.playerStunUntil = 0;
     this.dodgingUntil = 0;
+    this.charging = false;
+    this.chargingUntil = 0;
     this.finisherDone = false;
     this.dramaFullNotified = false;
     this.parryCount = 0;

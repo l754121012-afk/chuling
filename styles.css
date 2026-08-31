@@ -49,6 +49,20 @@ body.playing canvas {
   z-index: 10;
 }
 
+#dark-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    transparent 16%,
+    rgba(0, 0, 0, 0.82) 78%
+  );
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
 #danger-vignette {
   position: absolute;
   inset: 0;

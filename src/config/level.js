@@ -40,6 +40,7 @@ export const LEVEL_CONFIG = {
     { x: -8.2, z: -4.2 }
   ],
   crateTarget: { x: -5.7, z: -2.5, r: 1.1 },
+  charger: { x: 0, z: 12 },
   highCatwalk: [
     { from: { x: 10.2, z: -1.5 }, to: { x: 10.2, z: 4.6 }, y: 4.0 },
     { from: { x: 10.2, z: 4.6 }, to: { x: 0, z: 4.6 }, y: 4.0 }

@@ -27,7 +27,7 @@ export const GAME_CONFIG = {
   dodgeDuration: 0.36,
   dodgeSpeed: 14,
   dodgeCooldown: 0.8,
-  dodgeBonkChance: 0.5,
+  dodgeBonkChance: 0.35,
   parryRange: 4.2,
   attackTelegraph: 1.0,
   attackWindup: 0.35,
