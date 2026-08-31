@@ -46,6 +46,9 @@ export class PlayerSystem {
     this._pushTarget = null;
     this._pushMove = null;
     this._pushMoveTimer = 0;
+    this._pendingCrushUntil = 0;
+    this._pendingCrushProp = null;
+    this._shelfCrushApplied = false;
     this._ropeT = 0;
     this._ropeDirSign = 1;
     this._ladder = null;
@@ -123,6 +126,7 @@ export class PlayerSystem {
     this._handleStamina(dt, body);
     this._checkFootprints(dt);
     this._handleInteractions();
+    this._updatePendingCrush();
     this._handleItemControls();
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
     this._tauntCooldown = Math.max(0, this._tauntCooldown - dt);
@@ -503,7 +507,8 @@ export class PlayerSystem {
       const px = prop.type === 'crate' ? prop.body.position.x : prop.pos.x;
       const pz = prop.type === 'crate' ? prop.body.position.z : prop.pos.z;
       const d = distance2D(pos.x, pos.z, px, pz);
-      if (d < GAME_CONFIG.interactRadius && 1 > bestPriority) {
+      const radius = prop.type === 'bookshelf' ? 2.8 : GAME_CONFIG.interactRadius;
+      if (d < radius && 1 > bestPriority) {
         bestPriority = 1;
         best = {
           type: 'prop',
@@ -684,7 +689,7 @@ export class PlayerSystem {
       if (this.game.chainActive && this.game.chainStep === 'shelf' && this.ghost) {
         const gp = this.ghost.getPos();
         const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
-        if (gd >= 2.5) {
+        if (gd >= 3.2) {
           this.events.emit('toast', { text: '鬼还离书架太远，先把它引到黄色圈里！', ms: 1800 });
           return;
         }
@@ -698,31 +703,20 @@ export class PlayerSystem {
         this.game.damages.push('bookshelf');
       }
       prop.body.applyImpulse(
-        new CANNON.Vec3((dirX / dirLen) * 3, 4.5, (dirZ / dirLen) * 3),
+        new CANNON.Vec3((dirX / dirLen) * 6.5, 7, (dirZ / dirLen) * 6.5),
         new CANNON.Vec3(prop.body.position.x, 0.4, prop.body.position.z)
       );
-      prop.body.angularVelocity.set((dirZ / dirLen) * 1.5, 0.6, -(dirX / dirLen) * 1.5);
+      prop.body.angularVelocity.set((dirZ / dirLen) * 2.2, 0.8, -(dirX / dirLen) * 2.2);
       prop.body.collisionFilterGroup = GROUPS.WORLD;
       prop.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM;
       this.rage.add(12, 'break');
       this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius, rage: 0 });
       this.events.emit('toast', { text: '书架倒了！赔偿 8000 円！', ms: 2200 });
       this.audio?.play('hit');
-      if (this.ghost) {
-        const gp = this.ghost.getPos();
-        const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
-        if (gd < 2.5) {
-          this.game.stunnedUntil = nowSec() + 2;
-          this.ghost.damage(10, { rage: 5 });
-          if (this.game.chainStuck) {
-            this.game.chainStuck = false;
-            this.game.chainPinned = true;
-          }
-          this.events.emit('toast', { text: '书架把鬼砸扁了！！', ms: 1800 });
-          this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');
-          this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');
-        }
-      }
+      this._pendingCrushUntil = nowSec() + 1.3;
+      this._pendingCrushProp = prop;
+      this._shelfCrushApplied = false;
+      this._applyShelfCrush(prop);
     } else if (prop.type === 'trash') {
       if (!prop.used) {
         prop.used = true;
@@ -760,6 +754,42 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '箱子被推动了！', ms: 1200 });
       this.audio?.play('hit');
     }
+  }
+
+  _updatePendingCrush() {
+    if (this._pendingCrushUntil <= 0) return;
+    if (nowSec() >= this._pendingCrushUntil) {
+      this._pendingCrushUntil = 0;
+      this._pendingCrushProp = null;
+      return;
+    }
+    if (!this._shelfCrushApplied && this._pendingCrushProp) {
+      this._applyShelfCrush(this._pendingCrushProp);
+    }
+  }
+
+  _applyShelfCrush(prop) {
+    if (this._shelfCrushApplied || !this.ghost) return false;
+    const gp = this.ghost.getPos();
+    const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
+    if (gd > 3.2) return false;
+    this._shelfCrushApplied = true;
+    this._pendingCrushUntil = 0;
+    this._pendingCrushProp = null;
+    this.game.stunnedUntil = nowSec() + 2;
+    this.ghost.damage(10, { rage: 5 });
+    this.game.pinnedUntil = nowSec() + 12;
+    if (this.game.chainStuck) {
+      this.game.chainStuck = false;
+      this.game.chainPinned = true;
+    }
+    this.audio?.play('slam');
+    this.events.emit('hitstop', { ms: 100 });
+    this.events.emit('camera.shake', { amount: 0.45 });
+    this.events.emit('toast', { text: '书架把鬼砸扁了！！它动不了了！', ms: 2000 });
+    this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');
+    this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');
+    return true;
   }
 
   _pushCrateOnce(prop) {
@@ -930,6 +960,7 @@ export class PlayerSystem {
   _doTaunt() {
     if (this._tauntCooldown > 0) return;
     this._tauntCooldown = 2;
+    this.game.tauntCooldownUntil = nowSec() + 2;
     this.playPose('use', 0.5);
     this.audio?.play('bleat');
     const lines = ['主管！我在这里！！', '来抓我啊！笨蛋！', '你倒是追啊！！'];
@@ -942,6 +973,8 @@ export class PlayerSystem {
       const dz = gp.z - pp.z;
       this.ghost._facing = Math.atan2(dx, dz);
       this.ghost._lastNoise = { x: pp.x, z: pp.z };
+      this.ghost._dashFlash = 0.25;
+      this.ghost._speak('你喊什么喊！！', 1500);
     }
   }
 

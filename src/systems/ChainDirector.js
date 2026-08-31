@@ -130,6 +130,8 @@ export class ChainDirector {
     if (!this.game.firstScareDone) return;
     if (!this.game.hasClue('note')) return;
     if (!this.game.hasItem('stapler')) return;
+    if (this.ghost._isPinned()) return;
+    if (this._bookshelf()?.used) return;
     this._active = true;
     this._step = 'place';
     this.game.chainActive = true;

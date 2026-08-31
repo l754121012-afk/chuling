@@ -43,6 +43,7 @@ export class UISystem {
       vignette: document.getElementById('danger-vignette'),
       warning: document.getElementById('ghost-warning'),
       warningLabel: document.getElementById('warn-label'),
+      tauntHint: document.getElementById('taunt-hint'),
       crosshair: document.getElementById('crosshair'),
       itemHint: document.getElementById('item-hint'),
       lives: document.getElementById('lives'),
@@ -193,6 +194,11 @@ export class UISystem {
             ? '左键在脚下放置尖叫地雷'
             : '左键在脚下放置陷阱';
       this.el.itemHint.textContent = `${def.name}：${usage}`;
+    }
+    if (this.el.tauntHint) {
+      const ready = game.tauntCooldownUntil <= performance.now() / 1000;
+      this.el.tauntHint.classList.toggle('ready', ready);
+      this.el.tauntHint.classList.toggle('cooldown', !ready);
     }
   }
 

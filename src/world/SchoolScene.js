@@ -396,20 +396,31 @@ export class SchoolScene {
     }
 
     const crateTarget = this.L.crateTarget;
-    const targetMarker = new THREE.Mesh(
-      new THREE.RingGeometry(crateTarget.r - 0.35, crateTarget.r, 30),
-      new THREE.MeshBasicMaterial({
-        color: 0xf4d35e,
-        transparent: true,
-        opacity: 0.7,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      })
-    );
-    targetMarker.rotation.x = -Math.PI / 2;
+    const targetMarker = new THREE.Group();
+    const side = crateTarget.r * 2;
+    const barMat = new THREE.MeshBasicMaterial({
+      color: 0xd8c39a,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false
+    });
+    const barW = 0.14;
+    const barH = 0.02;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(side, barH, barW), barMat);
+    const barTop = bar.clone();
+    barTop.position.z = side / 2 - barW / 2;
+    const barBottom = bar.clone();
+    barBottom.position.z = -side / 2 + barW / 2;
+    const barLeft = bar.clone();
+    barLeft.rotation.y = Math.PI / 2;
+    barLeft.position.x = -side / 2 + barW / 2;
+    const barRight = bar.clone();
+    barRight.rotation.y = Math.PI / 2;
+    barRight.position.x = side / 2 - barW / 2;
+    targetMarker.add(barTop, barBottom, barLeft, barRight);
     targetMarker.position.set(crateTarget.x, 0.03, crateTarget.z);
     this.group.add(targetMarker);
-    refs.crateTarget = { x: crateTarget.x, z: crateTarget.z, r: crateTarget.r };
+    refs.crateTarget = { x: crateTarget.x, z: crateTarget.z, r: crateTarget.r, mesh: targetMarker };
   }
 
   _addVerticalProps(refs) {

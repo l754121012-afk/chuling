@@ -547,6 +547,49 @@ body.playing canvas {
   cursor: pointer;
 }
 
+#taunt-hint {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: 58px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(24, 27, 33, 0.72);
+  color: #f4efe4;
+  font-size: 12px;
+  border: 1px solid #6a7480;
+  pointer-events: none;
+}
+
+#taunt-hint span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: #f4a261;
+  color: #241b12;
+  font-weight: 700;
+}
+
+#taunt-hint.cooldown {
+  opacity: 0.45;
+  border-color: #3d434c;
+}
+
+#taunt-hint.ready {
+  border-color: #f4a261;
+  animation: tauntPulse 1s ease-in-out infinite;
+}
+
+@keyframes tauntPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(244, 162, 97, 0.3); }
+  50% { box-shadow: 0 0 14px rgba(244, 162, 97, 0.8); }
+}
+
 #hint {
   position: absolute;
   right: max(14px, env(safe-area-inset-right));

@@ -46,6 +46,8 @@ export class GameState {
     this.chainStuck = false;
     this.chainPinned = false;
     this.chainTutorialDone = false;
+    this.pinnedUntil = 0;
+    this.tauntCooldownUntil = 0;
   }
 
   addItem(id, n = 1) {

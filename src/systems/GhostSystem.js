@@ -128,6 +128,10 @@ export class GhostSystem {
     return { x: p.x, y: p.y, z: p.z };
   }
 
+  _isPinned() {
+    return this.game.chainPinned || this.game.pinnedUntil > nowSec();
+  }
+
   update(dt, playerPos) {
     if (!this.pawn) return;
     this._applyStageVisual(this.game.currentStage(), dt);
@@ -140,7 +144,7 @@ export class GhostSystem {
     this._flash = Math.max(0, this._flash - dt);
     const weakNow = this.game.weakUntil > nowSec();
     const baseScale = this._flash > 0 ? 1.22 : this._dashFlash > 0 ? 1.28 : 1;
-    const squashed = this.game.chainPinned;
+    const squashed = this._isPinned();
     this.pawn.mesh.scale.set(
       squashed ? baseScale * 1.18 : baseScale,
       squashed ? baseScale * 0.5 : weakNow ? baseScale * 0.72 : baseScale,
@@ -148,7 +152,9 @@ export class GhostSystem {
     );
     this._dashFlash = Math.max(0, this._dashFlash - dt);
 
-    if (weakNow) {
+    if (this._isPinned()) {
+      this.pawn.body.velocity.set(0, 0, 0);
+    } else if (weakNow) {
       this.pawn.body.velocity.set(0, 0, 0);
       if (this.game.phase === 'escape') {
         this.game.escapeTimer -= dt;
@@ -290,6 +296,7 @@ export class GhostSystem {
 
   _tryDash(dt, playerPos) {
     if (this.game.hiding) return;
+    if (this._isPinned()) return;
     if (this.game.chainActive) return;
     if (this.game.weakUntil > nowSec()) return;
     this._dashCooldown -= dt;
@@ -431,6 +438,7 @@ export class GhostSystem {
     if (this.game.weakUntil > nowSec()) speed = 0;
     if (this.game.slowedUntil > nowSec()) speed *= 0.45;
     if (this.game.stunnedUntil > nowSec()) speed = 0;
+    if (this._isPinned()) speed = 0;
 
     if (this.game.chainActive && this.game.chainStep === 'lure') {
       const target = this._lastNoise;
@@ -572,6 +580,7 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this.game.hiding) return;
+    if (this._isPinned()) return;
     if (this.game.ropeClimbing) return;
     if (this.game.ladderClimbing) return;
     if (nowSec() < this.game.weakUntil) return;
@@ -688,7 +697,7 @@ export class GhostSystem {
     const behind = dot < -0.25;
     const stealthy = (stage.id === 'calm' || stage.id === 'annoyed') && !this.game.hiding;
 
-    if (this.game.hasClue('note') && ((stealthy && behind) || this.game.chainPinned)) {
+    if (this.game.hasClue('note') && ((stealthy && behind) || this._isPinned())) {
       this._sealSuccess();
       return 'success';
     }
@@ -710,6 +719,7 @@ export class GhostSystem {
     this.game.phase = 'escape';
     this.game.escapeTimer = GAME_CONFIG.escapeTime;
     this.game.weakUntil = nowSec() + 5.0;
+    this.game.pinnedUntil = 0;
     this.scene.openExit();
     this.audio?.play('stapler');
     this.audio?.play('gate');
