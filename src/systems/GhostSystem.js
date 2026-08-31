@@ -432,12 +432,13 @@ export class GhostSystem {
       const armR = this.pawn.mesh.userData?.armR;
       const armL = this.pawn.mesh.userData?.armL;
       const hand = this.pawn.mesh.userData?.handR;
+      const t = 1 - remaining;
       if (armL) armL.rotation.x = -0.8;
       if (armR) {
-        armR.rotation.x = -1.2 - (1 - remaining) * 0.6;
-        armR.rotation.z = -0.9;
+        armR.rotation.x = -1.5 + t * 2.7;
+        armR.rotation.z = -0.9 + t * 0.7;
       }
-      if (hand) hand.position.set(0, -0.5, 0.35);
+      if (hand) hand.position.set(0, -0.5, -0.35 + t * 1.05);
       if (nowSec() < this._telegraphUntil) return;
       if (!this._attackFired) {
         this._attackFired = true;
@@ -502,9 +503,13 @@ export class GhostSystem {
       return;
     }
 
-    this._attackCooldown -= dt;
+    const stage = this.game.currentStage();
+    const attackRange = stage.id === 'insane' ? 8 : 5;
+    if (this._attackCooldown > 0) {
+      this._attackCooldown -= dt * (stage.id === 'insane' ? 3 : 1);
+    }
     if (this._attackCooldown > 0) return;
-    if (dist < 0.8 || dist > 5) return;
+    if (dist < 0.8 || dist > attackRange) return;
     this._telegraphActive = true;
     this._attackFired = false;
     this._telegraphUntil = nowSec() + GAME_CONFIG.attackTelegraph;
@@ -931,7 +936,7 @@ export class GhostSystem {
       this._updateAttack(0, playerPos);
       return;
     }
-    const shouldCatch = this.game.phase === 'escape' || stage.id === 'insane';
+    const shouldCatch = this.game.phase === 'escape';
     if (shouldCatch) {
       if (this.game.lives > 0) {
         this.game.lives -= 1;
@@ -963,7 +968,11 @@ export class GhostSystem {
       return;
     }
     if (stage.id === 'calm' || stage.id === 'annoyed') return;
-    if (!this._telegraphActive && dist <= 1.6 && this._attackCooldown <= 1.5) {
+    if (
+      !this._telegraphActive &&
+      dist <= 1.6 &&
+      (stage.id === 'insane' || this._attackCooldown <= 1.5)
+    ) {
       this._attackCooldown = 0;
       this._updateAttack(0, playerPos);
       return;
