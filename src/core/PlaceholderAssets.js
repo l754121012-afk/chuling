@@ -323,15 +323,25 @@ export function makeGhostMesh() {
     new THREE.MeshBasicMaterial({ map: faceTexture('ghost'), transparent: true })
   );
   face.position.set(0, 1.75, 0.33);
-  const handMat = new THREE.MeshStandardMaterial({ color: 0xcfd8c8, roughness: 0.8 });
-  const clawMat = new THREE.MeshStandardMaterial({ color: 0x5d6b63, roughness: 0.9 });
+  const handMat = new THREE.MeshStandardMaterial({
+    color: 0xe9f2d8,
+    emissive: 0x5a7a5a,
+    emissiveIntensity: 0.25,
+    roughness: 0.7
+  });
+  const clawMat = new THREE.MeshStandardMaterial({
+    color: 0x7c8f82,
+    emissive: 0x2c4038,
+    emissiveIntensity: 0.2,
+    roughness: 0.8
+  });
   const makeGhostHand = () => {
     const hand = new THREE.Group();
-    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), handMat);
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), handMat);
     hand.add(palm);
     for (let i = -1; i <= 1; i++) {
-      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.2, 6), clawMat);
-      claw.position.set(i * 0.09, -0.2, 0);
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.36, 8), clawMat);
+      claw.position.set(i * 0.12, -0.34, 0);
       claw.rotation.x = Math.PI;
       hand.add(claw);
     }

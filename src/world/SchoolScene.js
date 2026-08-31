@@ -860,6 +860,27 @@ export class SchoolScene {
     this.particles.push({ mesh, ttl: duration, maxTtl: duration, trail: true });
   }
 
+  spawnClawSwipe(pos, yaw, color = '#9fc0a8', duration = 0.4) {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    for (let i = -1; i <= 1; i++) {
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.45, 8), mat);
+      claw.position.set(i * 0.18, 0, 0.22);
+      claw.rotation.x = Math.PI / 2;
+      group.add(claw);
+    }
+    group.position.set(pos.x, pos.y, pos.z);
+    group.rotation.y = yaw;
+    this.group.add(group);
+    this.particles.push({ mesh: group, ttl: duration, maxTtl: duration, group: true });
+  }
+
   update(dt, game) {
     const currentStage = game.currentStage();
     if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {
@@ -897,6 +918,10 @@ export class SchoolScene {
       } else if (p.ring) {
         p.mesh.scale.setScalar(1 + (0.45 - p.ttl) * 6);
         p.mesh.material.opacity = Math.max(0, p.ttl / 0.45);
+      } else if (p.group) {
+        for (const child of p.mesh.children) {
+          child.material.opacity = Math.max(0, p.ttl / p.maxTtl);
+        }
       } else if (p.trail) {
         p.mesh.material.opacity = Math.max(0, p.ttl / p.maxTtl);
       }

@@ -236,14 +236,19 @@ export class GhostSystem {
     this._updateAttack(dt, playerPos);
     this._kiteCooldown = Math.max(0, this._kiteCooldown - dt);
     const armR = this.pawn.mesh.userData?.armR;
+    const handR = this.pawn.mesh.userData?.handR;
     if (this._attackAnimTimer > 0) {
       this._attackAnimTimer -= dt;
       if (armR) {
         const t = 1 - Math.max(0, this._attackAnimTimer) / 0.45;
         armR.rotation.x = Math.sin(t * Math.PI) * 1.5;
+        armR.rotation.z = -0.2;
       }
-    } else if (armR && Math.abs(armR.rotation.x) > 0.01) {
+      if (handR) handR.position.set(0, -0.5, 0.7);
+    } else if (armR && !this._telegraphActive && Math.abs(armR.rotation.x) > 0.01) {
       armR.rotation.x = 0;
+      armR.rotation.z = -0.5;
+      if (handR) handR.position.set(0, -0.58, 0);
     }
 
     const speed = Math.hypot(body.velocity.x, body.velocity.z);
@@ -425,7 +430,14 @@ export class GhostSystem {
         this._parryRangeMat.opacity = 0.18 + (1 - remaining) * 0.35;
       }
       const armR = this.pawn.mesh.userData?.armR;
-      if (armR) armR.rotation.x = -0.3 - (1 - remaining) * 1.4;
+      const armL = this.pawn.mesh.userData?.armL;
+      const hand = this.pawn.mesh.userData?.handR;
+      if (armL) armL.rotation.x = -0.8;
+      if (armR) {
+        armR.rotation.x = -1.2 - (1 - remaining) * 0.6;
+        armR.rotation.z = -0.9;
+      }
+      if (hand) hand.position.set(0, -0.5, 0.35);
       if (nowSec() < this._telegraphUntil) return;
       if (!this._attackFired) {
         this._attackFired = true;
@@ -448,9 +460,24 @@ export class GhostSystem {
           '#ff6b6b',
           0.4
         );
+        this.scene.spawnClawSwipe(
+          {
+            x: b.x + Math.sin(this._facing) * 0.9,
+            y: 1.15,
+            z: b.z + Math.cos(this._facing) * 0.9
+          },
+          this._facing,
+          '#9fc0a8',
+          0.45
+        );
         this._attackAnimTimer = 0.45;
         const arm = this.pawn.mesh.userData?.armR;
-        if (arm) arm.rotation.x = 1.5;
+        const hand = this.pawn.mesh.userData?.handR;
+        if (arm) {
+          arm.rotation.x = 1.5;
+          arm.rotation.z = -0.2;
+        }
+        if (hand) hand.position.set(0, -0.5, 0.7);
         if (
           dist < 2.6 &&
           playerPos.y - b.y < 0.8 &&
@@ -477,7 +504,7 @@ export class GhostSystem {
 
     this._attackCooldown -= dt;
     if (this._attackCooldown > 0) return;
-    if (dist < 1.0 || dist > 5) return;
+    if (dist < 0.8 || dist > 5) return;
     this._telegraphActive = true;
     this._attackFired = false;
     this._telegraphUntil = nowSec() + GAME_CONFIG.attackTelegraph;
@@ -533,11 +560,18 @@ export class GhostSystem {
     this.game.parryCount += 1;
     this.rage.addComposure(GAME_CONFIG.composureParry, 'parry');
     this.rage.addDrama(GAME_CONFIG.dramaParry, 'parry');
-    if (this.game.currentStage().id === 'insane') {
-      this.rage.reduce(15, 'parryInsane');
+    const stage = this.game.currentStage();
+    const rageCut = stage.id === 'insane' ? 15 : 8;
+    this.rage.reduce(rageCut, 'parry');
+    if (stage.id === 'insane') {
       this.events.emit('toast', {
         text: '满怒也能拼！它被你打回暴怒了！',
         ms: 2200
+      });
+    } else {
+      this.events.emit('toast', {
+        text: `拼刀成功！怒气 -${rageCut}`,
+        ms: 1400
       });
     }
     const p = this.playerPos();
@@ -563,7 +597,12 @@ export class GhostSystem {
     );
     this._attackAnimTimer = 0.3;
     const arm = this.pawn.mesh.userData?.armR;
-    if (arm) arm.rotation.x = 1.2;
+    const hand = this.pawn.mesh.userData?.handR;
+    if (arm) {
+      arm.rotation.x = 1.2;
+      arm.rotation.z = -0.2;
+    }
+    if (hand) hand.position.set(0, -0.5, 0.7);
     this.knockback((dx / len) * 9, (dz / len) * 9, 0.5);
     this._spinTimer = 0.8;
     this.game.stunnedUntil = nowSec() + 1.2;
@@ -882,6 +921,16 @@ export class GhostSystem {
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist > 1.15) return;
     const stage = this.game.currentStage();
+    if (
+      this.game.phase === 'investigate' &&
+      stage.id === 'insane' &&
+      !this._telegraphActive &&
+      dist <= 5
+    ) {
+      this._attackCooldown = 0;
+      this._updateAttack(0, playerPos);
+      return;
+    }
     const shouldCatch = this.game.phase === 'escape' || stage.id === 'insane';
     if (shouldCatch) {
       if (this.game.lives > 0) {
