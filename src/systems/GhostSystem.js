@@ -504,9 +504,10 @@ export class GhostSystem {
     }
 
     const stage = this.game.currentStage();
-    const attackRange = stage.id === 'insane' ? 9 : 6.5;
+    const highRage = stage.id === 'furious' || stage.id === 'insane';
+    const attackRange = highRage ? 9 : 6.5;
     if (this._attackCooldown > 0) {
-      this._attackCooldown -= dt * (stage.id === 'insane' ? 3 : 1);
+      this._attackCooldown -= dt * (highRage ? 3 : 1);
     }
     if (this._attackCooldown > 0) return;
     if (dist < 0.8 || dist > attackRange) return;
@@ -928,7 +929,7 @@ export class GhostSystem {
     const stage = this.game.currentStage();
     if (
       this.game.phase === 'investigate' &&
-      stage.id === 'insane' &&
+      (stage.id === 'furious' || stage.id === 'insane') &&
       !this._telegraphActive &&
       dist <= 5
     ) {
@@ -971,7 +972,7 @@ export class GhostSystem {
     if (
       !this._telegraphActive &&
       dist <= 1.6 &&
-      (stage.id === 'insane' || this._attackCooldown <= 1.5)
+      (stage.id === 'furious' || stage.id === 'insane' || this._attackCooldown <= 1.5)
     ) {
       this._attackCooldown = 0;
       this._updateAttack(0, playerPos);

@@ -27,6 +27,8 @@ export class PlayerSystem {
     this._flashCooldown = 0;
     this._whipCooldown = 0;
     this._dodgeCooldown = 0;
+    this._dodgeVX = 0;
+    this._dodgeVZ = 0;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
@@ -261,6 +263,10 @@ export class PlayerSystem {
     }
     if (nowSec() < this.game.playerStunUntil) {
       body.velocity.set(0, body.velocity.y, 0);
+      return;
+    }
+    if (nowSec() < this.game.dodgingUntil) {
+      body.velocity.set(this._dodgeVX, body.velocity.y, this._dodgeVZ);
       return;
     }
     if (this.game.ropeClimbing) {
@@ -1176,21 +1182,24 @@ export class PlayerSystem {
     const len = Math.hypot(dirX, dirZ) || 1;
     dirX /= len;
     dirZ /= len;
+    this._dodgeVX = dirX * GAME_CONFIG.dodgeSpeed;
+    this._dodgeVZ = dirZ * GAME_CONFIG.dodgeSpeed;
     this.pawn.body.velocity.set(
-      dirX * GAME_CONFIG.dodgeSpeed,
+      this._dodgeVX,
       this.pawn.body.velocity.y,
-      dirZ * GAME_CONFIG.dodgeSpeed
+      this._dodgeVZ
     );
     this._bonkCheck(dirX, dirZ);
   }
 
   _bonkCheck(dirX, dirZ) {
     const p = this.getPos();
+    const dashDist = GAME_CONFIG.dodgeSpeed * GAME_CONFIG.dodgeDuration;
     const from = new CANNON.Vec3(p.x, p.y + 0.4, p.z);
     const to = new CANNON.Vec3(
-      p.x + dirX * 1.2,
+      p.x + dirX * dashDist,
       p.y + 0.4,
-      p.z + dirZ * 1.2
+      p.z + dirZ * dashDist
     );
     const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD | GROUPS.PROP);
     if (!hit) return;
