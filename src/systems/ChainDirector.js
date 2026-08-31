@@ -161,7 +161,7 @@ export class ChainDirector {
 
   _onEscape(p) {
     if (!this._active) return;
-    if (this.game.chainPinned && p?.reason === 'sealed') {
+    if (this.game.chainPinned && (p?.reason === 'sealed' || p?.reason === 'finisher')) {
       this.game.chainTutorialDone = true;
       this._step = 'done';
       this.game.chainStep = 'done';

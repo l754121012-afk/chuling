@@ -216,12 +216,19 @@ body.playing canvas {
   box-shadow: 0 0 8px rgba(230, 57, 70, 0.8);
 }
 
-.battery-row {
+.battery-row,
+.composure-row,
+.drama-row {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 11px;
   color: #d6d0c2;
+}
+
+.composure-row,
+.drama-row {
+  margin-top: 8px;
 }
 
 .lives-row {
@@ -244,6 +251,8 @@ body.playing canvas {
 }
 
 .battery-shell,
+.composure-shell,
+.drama-shell,
 .stamina-shell {
   flex: 1;
   height: 8px;
@@ -253,11 +262,31 @@ body.playing canvas {
 }
 
 #battery-bar,
+#composure-bar,
+#drama-bar,
 #stamina-bar {
   height: 100%;
   width: 100%;
   background: #4caf50;
   transition: width 0.25s;
+}
+
+#composure-bar {
+  background: #b48cff;
+}
+
+#drama-bar {
+  background: #ffd166;
+}
+
+.composure-shell.broken {
+  background: #5a3b8a;
+  box-shadow: 0 0 10px rgba(180, 140, 255, 0.8);
+}
+
+.drama-shell.full {
+  background: #7a5b16;
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.8);
 }
 
 .phone.drained .phone-screen {
@@ -423,6 +452,32 @@ body.playing canvas {
 #crosshair.combo .tick-x::before,
 #crosshair.combo .tick-x::after {
   background: #c08bff;
+}
+
+#parry-hint {
+  position: absolute;
+  top: calc(50% + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: rgba(180, 20, 40, 0.92);
+  color: #fff2d8;
+  font-size: 15px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+  animation: parryPulse 0.5s ease-in-out infinite;
+}
+
+#parry-hint.show {
+  opacity: 1;
+}
+
+@keyframes parryPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.06); }
 }
 
 #item-hint {

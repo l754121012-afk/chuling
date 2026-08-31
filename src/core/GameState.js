@@ -10,6 +10,8 @@ export class GameState {
   reset() {
     this.phase = 'menu';
     this.rage = 0;
+    this.composure = 100;
+    this.drama = 0;
     this.ghostHp = GHOST_CONFIG.hpMax;
     this.stamina = GAME_CONFIG.staminaMax;
     this.battery = 100;
@@ -47,6 +49,15 @@ export class GameState {
     this.chainPinned = false;
     this.chainTutorialDone = false;
     this.pinnedUntil = 0;
+    this.broken = false;
+    this.brokenUntil = 0;
+    this.playerStunUntil = 0;
+    this.dodgingUntil = 0;
+    this.finisherDone = false;
+    this.dramaFullNotified = false;
+    this.parryCount = 0;
+    this.dodgeCount = 0;
+    this.kiteCount = 0;
     this.whipCooldownUntil = 0;
     this.whipMode = false;
     this.whipCombo = 0;

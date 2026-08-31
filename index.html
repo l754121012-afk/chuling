@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>除灵实习生 Phase 0</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="./styles.css?v=45" />
+  <link rel="stylesheet" href="./styles.css?v=46" />
   <script type="importmap">
     {
       "imports": {
@@ -47,6 +47,14 @@
             <span>手机电量</span>
             <div class="battery-shell"><div id="battery-bar"></div></div>
           </div>
+          <div class="composure-row">
+            <span>鬼心态</span>
+            <div class="composure-shell"><div id="composure-bar"></div></div>
+          </div>
+          <div class="drama-row">
+            <span>节目效果</span>
+            <div class="drama-shell"><div id="drama-bar"></div></div>
+          </div>
           <div class="lives-row">
             <span>容错</span>
             <span id="lives">♥♥♥</span>
@@ -64,6 +72,7 @@
       <div id="item-hint"></div>
 
       <div id="crosshair"><span class="tick-x"></span></div>
+      <div id="parry-hint">拼文具！左键</div>
       <div id="seal-status"></div>
       <div id="prompt"></div>
       <div id="speech"></div>
@@ -73,7 +82,7 @@
       <button id="fullscreen-btn" type="button" title="全屏">⛶</button>
       <div id="ghost-warning"><span class="warn-icon">⚠</span><span id="warn-label">愤怒</span></div>
       <div id="whip-hint"><span>G</span><span id="whip-label">鞭子</span><span id="whip-combo"></span></div>
-      <div id="hint">WASD 移动 · 点击画面锁定鼠标 · 左键/F 使用道具 · V 闪光 · G 鞭子模式 · E 互动 · X 下蹲 · Tab 手机</div>
+      <div id="hint">WASD 移动 · 点击画面锁定鼠标 · 左键/F 使用道具 · V 闪光 · G 鞭子模式 · R 闪避 · H 社死大招 · E 互动 · X 下蹲 · Tab 手机</div>
     </div>
 
     <div id="notebook" class="modal hidden">
@@ -101,6 +110,8 @@
           <span>X / Ctrl 下蹲爬行</span>
           <span>V 手机闪光</span>
           <span>G 鞭子模式（左键连抽）</span>
+          <span>R 狼狈闪身</span>
+          <span>H 社死大招</span>
           <span>E 互动</span>
           <span>Q 切换道具</span>
           <span>C 自制弹弓</span>
@@ -135,6 +146,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/main.js?v=45"></script>
+  <script type="module" src="./src/main.js?v=46"></script>
 </body>
 </html>

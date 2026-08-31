@@ -75,6 +75,15 @@ export class GhostSystem {
     this._disguiseMesh = null;
     this._disguiseUntil = 0;
     this._disguiseCooldown = rand(20, 30);
+    this._attackCooldown = rand(
+      GAME_CONFIG.ghostAttackCooldownMin,
+      GAME_CONFIG.ghostAttackCooldownMax
+    );
+    this._telegraphActive = false;
+    this._telegraphUntil = 0;
+    this._attackUntil = 0;
+    this._attackFired = false;
+    this._kiteCooldown = 0;
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
@@ -158,6 +167,8 @@ export class GhostSystem {
       this.pawn.body.velocity.set(0, 0, 0);
     } else if (this.game.chainStuck) {
       this.pawn.body.velocity.set(0, 0, 0);
+    } else if (this.game.broken) {
+      this.pawn.body.velocity.set(0, 0, 0);
     } else if (weakNow) {
       this.pawn.body.velocity.set(0, 0, 0);
       if (this.game.phase === 'escape') {
@@ -185,6 +196,8 @@ export class GhostSystem {
       this._spinTimer -= dt;
       this.pawn.mesh.rotation.y += dt * 14 * this._spinDir;
     }
+    this._updateAttack(dt, playerPos);
+    this._kiteCooldown = Math.max(0, this._kiteCooldown - dt);
 
     const speed = Math.hypot(body.velocity.x, body.velocity.z);
     this._footprintTimer -= dt;
@@ -307,6 +320,7 @@ export class GhostSystem {
     if (this.game.hiding) return;
     if (this._isPinned()) return;
     if (this.game.chainStuck) return;
+    if (this.game.broken) return;
     if (this.game.chainActive) return;
     if (this.game.weakUntil > nowSec()) return;
     this._dashCooldown -= dt;
@@ -336,6 +350,146 @@ export class GhostSystem {
     this._knockbackVX = vx;
     this._knockbackVZ = vz;
     this._knockbackTimer = duration;
+  }
+
+  _updateAttack(dt, playerPos) {
+    if (this.game.phase !== 'investigate') return;
+    if (
+      this.game.hiding ||
+      this.game.broken ||
+      this.game.chainActive ||
+      this.game.chainStuck ||
+      this._isPinned()
+    ) return;
+    const b = this.pawn.body.position;
+    const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+
+    if (this._telegraphActive) {
+      if (nowSec() < this._telegraphUntil) return;
+      if (!this._attackFired) {
+        this._attackFired = true;
+        this.audio?.play('whoosh');
+        this.events.emit('camera.shake', { amount: 0.18 });
+        if (
+          dist < 2.6 &&
+          playerPos.y - b.y < 0.8 &&
+          nowSec() >= this.game.dodgingUntil
+        ) {
+          this._doGhostSwipe(playerPos);
+        } else {
+          this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'dodgeAttack');
+          this.events.emit('toast', { text: '鬼扑空了！！', ms: 1200 });
+          this._speak('人呢？！', 1400);
+        }
+      }
+      if (nowSec() >= this._attackUntil) {
+        this._telegraphActive = false;
+        this._attackFired = false;
+        this._attackCooldown = rand(
+          GAME_CONFIG.ghostAttackCooldownMin,
+          GAME_CONFIG.ghostAttackCooldownMax
+        );
+      }
+      return;
+    }
+
+    this._attackCooldown -= dt;
+    if (this._attackCooldown > 0) return;
+    if (dist < 1.8 || dist > 5) return;
+    this._telegraphActive = true;
+    this._attackFired = false;
+    this._telegraphUntil = nowSec() + GAME_CONFIG.attackTelegraph;
+    this._attackUntil = nowSec() + GAME_CONFIG.attackTelegraph + GAME_CONFIG.attackWindup;
+    this._dashFlash = 0.3;
+    this.audio?.play('ghost');
+    this.events.emit('ghost.telegraph', { until: this._telegraphUntil });
+    this.events.emit('toast', {
+      text: this.game.whipMode
+        ? '鬼要出招了！左键拼文具，或按 R 闪开！'
+        : '鬼要出招了！按 G 切鞭子拼文具，或按 R 闪开！',
+      ms: 1400
+    });
+  }
+
+  _doGhostSwipe(playerPos) {
+    if (this._slapCooldown > 0) return;
+    this._slapCooldown = GAME_CONFIG.slapCooldown;
+    this.game.invincibleUntil = nowSec() + 1.0;
+    this.rage.add(GHOST_CONFIG.rage.slap, 'slap');
+    this.game.stamina = Math.max(0, this.game.stamina - 25);
+    if (this.playerBody) {
+      const b = this.pawn.body.position;
+      const dx = playerPos.x - b.x;
+      const dz = playerPos.z - b.z;
+      const len = Math.hypot(dx, dz) || 1;
+      this.playerBody.velocity.set((dx / len) * 7, 4, (dz / len) * 7);
+    }
+    this.audio?.play('slap');
+    this.events.emit('toast', { text: '鬼一巴掌呼过来！体力-25', ms: 1800 });
+    this.events.emit('player.hurt');
+    this.events.emit('camera.shake', { amount: 0.32 });
+    this.rage.addDrama(GAME_CONFIG.dramaHurt, 'hurt');
+    this._speak('别在教室里乱跑！', 1800);
+  }
+
+  parrySucceeded() {
+    if (!this._telegraphActive || nowSec() >= this._telegraphUntil) return false;
+    this._telegraphActive = false;
+    this._attackFired = false;
+    this._attackCooldown = rand(
+      GAME_CONFIG.ghostAttackCooldownMin,
+      GAME_CONFIG.ghostAttackCooldownMax
+    );
+    this.game.parryCount += 1;
+    this.rage.addComposure(GAME_CONFIG.composureParry, 'parry');
+    this.rage.addDrama(GAME_CONFIG.dramaParry, 'parry');
+    const p = this.playerPos();
+    const b = this.pawn.body.position;
+    const dx = b.x - p.x;
+    const dz = b.z - p.z;
+    const len = Math.hypot(dx, dz) || 1;
+    this.knockback((dx / len) * 9, (dz / len) * 9, 0.5);
+    this._spinTimer = 0.8;
+    this.game.stunnedUntil = nowSec() + 1.2;
+    this.events.emit('hitstop', { ms: 110 });
+    this.events.emit('slowmo', { ms: 280 });
+    this.events.emit('camera.shake', { amount: 0.4 });
+    this.events.emit('act.card', { title: '拼文具成功！！', line: '它的攻击被你弹开了！' });
+    this.audio?.play('whip');
+    this._speak('疼疼疼！！', 1600);
+    return true;
+  }
+
+  registerKnockdown() {
+    if (this.game.broken || !this.game.isPlaying()) return;
+    this.rage.addComposure(GAME_CONFIG.composureKnockdown, 'knockdown');
+    this.rage.addDrama(GAME_CONFIG.dramaKnockdown, 'knockdown');
+  }
+
+  _registerKite() {
+    if (this._kiteCooldown > 0 || !this.game.isPlaying()) return;
+    this._kiteCooldown = 8;
+    this.game.kiteCount += 1;
+    this.rage.addComposure(GAME_CONFIG.composureKite, 'kite');
+    this.rage.addDrama(GAME_CONFIG.dramaKite, 'kite');
+    this.events.emit('toast', { text: '你把它溜傻了！心态大幅下降', ms: 1800 });
+    this._speak('人呢？？人呢！！', 1600);
+  }
+
+  performFinisher() {
+    if (this.game.phase !== 'investigate') return;
+    if (!this.game.broken && !this.game.chainPinned) return;
+    this.game.broken = false;
+    this.game.finisherDone = true;
+    this.rage.addDrama(GAME_CONFIG.dramaFinisher, 'finisher');
+    this.events.emit('hitstop', { ms: 130 });
+    this.events.emit('slowmo', { ms: 500 });
+    this.events.emit('act.card', {
+      title: '喜剧处决！！',
+      line: choice(['钉进成绩单！', '塞进垃圾桶！！', '拖去擦黑板！！！'])
+    });
+    this.audio?.play('win');
+    this._sealSuccess('finisher');
   }
 
   _startDisguise(playerPos) {
@@ -450,6 +604,10 @@ export class GhostSystem {
     if (this.game.stunnedUntil > nowSec()) speed = 0;
     if (this._isPinned()) speed = 0;
     if (this.game.chainStuck) speed = 0;
+    if (this.game.broken) {
+      this._setVelocity(0, 0, 0);
+      return;
+    }
 
     if (this.game.chainActive && this.game.chainStep === 'lure') {
       const target = this._lastNoise;
@@ -477,6 +635,9 @@ export class GhostSystem {
       if (arrived) {
         this._lastSeen = null;
         this._searchTimer = 2.2;
+        const b = this.pawn.body.position;
+        const d = distance2D(playerPos.x, playerPos.z, b.x, b.z);
+        if (d > 5) this._registerKite();
       }
       return;
     }
@@ -592,9 +753,11 @@ export class GhostSystem {
     if (this._caught) return;
     if (this.game.hiding) return;
     if (this.game.chainStuck) return;
+    if (this.game.broken) return;
     if (this._isPinned()) return;
     if (this.game.ropeClimbing) return;
     if (this.game.ladderClimbing) return;
+    if (nowSec() < this.game.dodgingUntil) return;
     if (nowSec() < this.game.weakUntil) return;
     if (nowSec() < this.game.invincibleUntil) return;
     const b = this.pawn.body.position;
@@ -621,6 +784,7 @@ export class GhostSystem {
         this.events.emit('player.hurt');
         this.events.emit('camera.shake', { amount: 0.45 });
         this.events.emit('hitstop', { ms: 90 });
+        this.rage.addDrama(GAME_CONFIG.dramaHurt, 'caught');
         if (this.game.lives <= 0) {
           this._catchPlayer();
           return;
@@ -646,6 +810,7 @@ export class GhostSystem {
     this.audio?.play('slap');
     this.events.emit('toast', { text: '它扇了你一巴掌！体力-25', ms: 1800 });
     this.events.emit('player.hurt');
+    this.rage.addDrama(GAME_CONFIG.dramaHurt, 'slap');
     this.events.emit('camera.shake', { amount: 0.32 });
     this._speak('别在教室里乱跑！', 1800);
   }
@@ -725,7 +890,7 @@ export class GhostSystem {
     return 'wrong';
   }
 
-  _sealSuccess() {
+  _sealSuccess(reason = 'sealed') {
     this.game.sealed = true;
     this.game.rage = 100;
     this.game.phase = 'escape';
@@ -737,7 +902,7 @@ export class GhostSystem {
     this.audio?.play('gate');
     this.events.emit('hitstop', { ms: 120 });
     this.events.emit('slowmo', { ms: 450 });
-    this.events.emit('escape.start', { reason: 'sealed' });
+    this.events.emit('escape.start', { reason });
     this.events.emit('toast', { text: '封印成功！它被你钉在空气里了！快跑！', ms: 2600 });
     this._speak('你居然……咩————！！！', 2600);
   }

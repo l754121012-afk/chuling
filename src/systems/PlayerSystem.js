@@ -26,6 +26,7 @@ export class PlayerSystem {
     this.ghost = null;
     this._flashCooldown = 0;
     this._whipCooldown = 0;
+    this._dodgeCooldown = 0;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
@@ -128,11 +129,16 @@ export class PlayerSystem {
     this._handleInteractions();
     this._updatePendingCrush();
     this._handleItemControls();
-    if (this.game.whipMode && this.input.isLeftDown()) this._doWhip();
+    if (this.game.whipMode && this.input.isLeftDown()) {
+      if (!this._tryParry()) this._doWhip();
+    }
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
     this._whipCooldown = Math.max(0, this._whipCooldown - dt);
+    this._dodgeCooldown = Math.max(0, this._dodgeCooldown - dt);
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
     if (this.input.justPressed('KeyG')) this._toggleWhipMode();
+    if (this.input.justPressed('KeyR')) this._doDodge();
+    if (this.input.justPressed('KeyH')) this._doUltimate();
 
     if (this._pushTarget) {
       const pos = this.getPos();
@@ -249,6 +255,10 @@ export class PlayerSystem {
 
   _handleMovement(dt, body) {
     if (this.game.hiding || this.game.notebookOpen) {
+      body.velocity.set(0, body.velocity.y, 0);
+      return;
+    }
+    if (nowSec() < this.game.playerStunUntil) {
       body.velocity.set(0, body.velocity.y, 0);
       return;
     }
@@ -461,6 +471,23 @@ export class PlayerSystem {
     let best = null;
     let bestPriority = -1;
 
+    if (
+      this.ghost &&
+      (this.game.broken || this.game.chainPinned) &&
+      this.game.phase === 'investigate'
+    ) {
+      const gp = this.ghost.getPos();
+      const d = distance2D(pos.x, pos.z, gp.x, gp.z);
+      if (d < GAME_CONFIG.interactRadius + 0.4 && 6 > bestPriority) {
+        bestPriority = 6;
+        best = {
+          type: 'finisher',
+          label: '喜剧处决！E',
+          pos: { x: gp.x, y: gp.y + 0.8, z: gp.z }
+        };
+      }
+    }
+
     for (const pickup of this.items.pickups) {
       if (pickup.picked) continue;
       const d = distance2D(pos.x, pos.z, pickup.pos.x, pickup.pos.z);
@@ -571,7 +598,9 @@ export class PlayerSystem {
 
   _doInteract(target) {
     this.playPose('interact', 0.55);
-    if (target.type === 'item') {
+    if (target.type === 'finisher') {
+      this.ghost?.performFinisher();
+    } else if (target.type === 'item') {
       this.items.pickup(target.pickup);
     } else if (target.type === 'exit') {
       this.events.emit('game.win');
@@ -793,6 +822,7 @@ export class PlayerSystem {
     this.game.stunnedUntil = nowSec() + 2;
     this.ghost.damage(10, { rage: 5 });
     this.game.pinnedUntil = nowSec() + 12;
+    this.ghost.registerKnockdown();
     if (this.game.chainStuck) {
       this.game.chainStuck = false;
       this.game.chainPinned = true;
@@ -882,7 +912,7 @@ export class PlayerSystem {
     const usable = !this.game.notebookOpen && !this.game.hiding;
 
     if (this.game.whipMode) {
-      if (click && usable) this._doWhip();
+      if (click && usable && !this._tryParry()) this._doWhip();
     } else if (def.type === 'throw') {
       if (this.input.justRightPressed()) {
         this.aiming = !this.aiming;
@@ -1061,6 +1091,7 @@ export class PlayerSystem {
     if (combo % 5 === 0) {
       this.rage.add(12, 'whipBurst');
       this.ghost._speak('你居然敢抽我！！', 1800);
+      this.ghost.registerKnockdown();
       this.ghost._dashCooldown = 0;
       this.ghost._skillCooldown = 0;
       this.events.emit('act.card', {
@@ -1074,6 +1105,7 @@ export class PlayerSystem {
     this.game.whipCombo = 0;
     this.game.whipMisses += 1;
     this.game.stickyUntil = nowSec() + 0.6;
+    this.rage.addDrama(GAME_CONFIG.dramaWhiff, 'whiff');
     this.playPose('hurt', 0.4);
     this.audio?.play('whoosh');
     this.events.emit('camera.shake', { amount: 0.1 });
@@ -1082,6 +1114,121 @@ export class PlayerSystem {
       text: '抽空了！自己绊了一下，鬼看过来了！',
       ms: 1600
     });
+  }
+
+  _tryParry() {
+    if (!this.ghost || !this.ghost._telegraphActive) return false;
+    const pp = this.getPos();
+    const gp = this.ghost.getPos();
+    const dist = Math.hypot(gp.x - pp.x, gp.z - pp.z);
+    if (dist > GAME_CONFIG.parryRange) return false;
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    const dot = ((gp.x - pp.x) * fwdX + (gp.z - pp.z) * fwdZ) / (dist || 1);
+    if (dot < 0.3) return false;
+    this.playPose('use', 0.45);
+    return this.ghost.parrySucceeded();
+  }
+
+  _doDodge() {
+    if (this._dodgeCooldown > 0) return;
+    if (this.game.hiding || this.game.notebookOpen) return;
+    if (this.game.ropeClimbing || this.game.ladderClimbing) return;
+    if (nowSec() < this.game.playerStunUntil) return;
+    if (this.game.stamina < GAME_CONFIG.dodgeStaminaCost) {
+      this.events.emit('toast', { text: '没体力闪了！', ms: 1200 });
+      return;
+    }
+    this._dodgeCooldown = GAME_CONFIG.dodgeCooldown;
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.dodgeStaminaCost);
+    this.game.dodgingUntil = nowSec() + GAME_CONFIG.dodgeDuration;
+    this.game.dodgeCount += 1;
+    this.playPose('hurt', 0.35);
+    this.audio?.play('whoosh');
+    this.events.emit('camera.shake', { amount: 0.08 });
+    this.scene.spawnParticles(this.getPos(), '#d9c8a0');
+
+    const yaw = this.camera.yaw;
+    let moveX = 0;
+    let moveZ = 0;
+    if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
+    if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
+    if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
+    if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    const rightX = Math.cos(yaw);
+    const rightZ = -Math.sin(yaw);
+    let dirX = fwdX * moveZ + rightX * moveX;
+    let dirZ = fwdZ * moveZ + rightZ * moveX;
+    if (Math.hypot(dirX, dirZ) < 0.1) {
+      dirX = fwdX;
+      dirZ = fwdZ;
+    }
+    const len = Math.hypot(dirX, dirZ) || 1;
+    dirX /= len;
+    dirZ /= len;
+    this.pawn.body.velocity.set(
+      dirX * GAME_CONFIG.dodgeSpeed,
+      this.pawn.body.velocity.y,
+      dirZ * GAME_CONFIG.dodgeSpeed
+    );
+    this._bonkCheck(dirX, dirZ);
+  }
+
+  _bonkCheck(dirX, dirZ) {
+    const p = this.getPos();
+    const from = new CANNON.Vec3(p.x, p.y + 0.4, p.z);
+    const to = new CANNON.Vec3(
+      p.x + dirX * 1.2,
+      p.y + 0.4,
+      p.z + dirZ * 1.2
+    );
+    const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD | GROUPS.PROP);
+    if (!hit) return;
+    if (Math.random() < GAME_CONFIG.dodgeBonkChance) {
+      this.game.playerStunUntil = nowSec() + 1.1;
+      this.game.dodgingUntil = 0;
+      this.pawn.body.velocity.set(0, this.pawn.body.velocity.y, 0);
+      this.audio?.play('slap');
+      this.events.emit('camera.shake', { amount: 0.28 });
+      this.events.emit('toast', { text: '疼疼疼！！撞到实心障碍了！', ms: 1600 });
+      this.rage.addDrama(GAME_CONFIG.dramaWhiff, 'bonk');
+    }
+  }
+
+  _doUltimate() {
+    if (this.game.drama < GAME_CONFIG.dramaMax) return;
+    this.game.drama = 0;
+    this.game.dramaFullNotified = false;
+    this.audio?.play('whip');
+    this.events.emit('hitstop', { ms: 120 });
+    this.events.emit('slowmo', { ms: 350 });
+    this.events.emit('camera.shake', { amount: 0.5 });
+    this.playPose('use', 0.6);
+    this.events.emit('act.card', {
+      title: '社死大招 · 夺命连环鞭！',
+      line: '三连抽！它被抽到怀疑鬼生！'
+    });
+    if (!this.ghost) return;
+    const pp = this.getPos();
+    const gp = this.ghost.getPos();
+    const dx = gp.x - pp.x;
+    const dz = gp.z - pp.z;
+    const len = Math.hypot(dx, dz) || 1;
+    if (len > 6) {
+      this.events.emit('toast', { text: '鬼离太远，你对着空气抽了三鞭！', ms: 1600 });
+      return;
+    }
+    this.ghost.knockback((dx / len) * 12, (dz / len) * 12, 0.7);
+    this.ghost._spinTimer = 1.2;
+    this.ghost._dashFlash = 0.5;
+    this.rage.add(10, 'ultimate');
+    this.ghost.registerKnockdown();
+    this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
+    this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
+    this.events.emit('toast', { text: '夺命连环鞭！！', ms: 1600 });
   }
 
   _cycleItem() {

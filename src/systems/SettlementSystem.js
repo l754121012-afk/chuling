@@ -28,6 +28,9 @@ export class SettlementSystem {
     if (game.maxWhipCombo >= 10) push('鞭神连击奖金', 8000);
     else if (game.maxWhipCombo >= 5) push('鞭法表演奖金', 3000);
     else if (game.maxWhipCombo >= 3) push('小小抽打奖金', 1000);
+    if (game.finisherDone) push('喜剧处决奖金', 5000);
+    if (game.parryCount >= 3) push('拼文具表演奖', 2000);
+    if (game.kiteCount >= 3) push('溜鬼大师奖', 2000);
 
     if (game.phase === 'lost') {
       push('死亡抚恤金', 0);

@@ -551,6 +551,7 @@ export class ItemSystem {
         this.audio?.play('splat');
         this.events.emit('toast', { text: '鬼被修正带黏住了！', ms: 1800 });
         this.ghost._speak('这是什么？！', 1600);
+        this.ghost.registerKnockdown();
       }
       if (zone.type === 'mine' && ghostDist < zone.radius && !zone.used) {
         zone.used = true;
@@ -568,6 +569,7 @@ export class ItemSystem {
         this.scene.spawnHitRing({ x: zone.pos.x, y: 0.5, z: zone.pos.z }, '#ff6b6b');
         this.events.emit('toast', { text: '地雷炸了！鬼被弹飞了！', ms: 1800 });
         this.ghost._speak('咩————？！', 1500);
+        this.ghost.registerKnockdown();
       }
       if (zone.type === 'glue') {
         if (ghostDist < zone.radius) {

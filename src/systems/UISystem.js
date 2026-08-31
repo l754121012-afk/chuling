@@ -1,4 +1,5 @@
 import { ITEM_DEFS } from '../config/items.js';
+import { GAME_CONFIG } from '../config/game.js';
 import { CLUE_TEXT } from './ClueSystem.js';
 
 export class UISystem {
@@ -10,6 +11,7 @@ export class UISystem {
     this._speechTimer = null;
     this._flashTimer = null;
     this._actCardTimer = null;
+    this._parryTimer = null;
     this._registerEvents();
   }
 
@@ -23,6 +25,8 @@ export class UISystem {
       rageSegments: [...document.querySelectorAll('.rage-seg')],
       stageLabel: document.getElementById('stage-label'),
       battery: document.getElementById('battery-bar'),
+      composureBar: document.getElementById('composure-bar'),
+      dramaBar: document.getElementById('drama-bar'),
       stamina: document.getElementById('stamina-bar'),
       objective: document.getElementById('objective'),
       inventory: document.getElementById('inventory'),
@@ -47,6 +51,7 @@ export class UISystem {
       whipLabel: document.getElementById('whip-label'),
       whipCombo: document.getElementById('whip-combo'),
       crosshair: document.getElementById('crosshair'),
+      parryHint: document.getElementById('parry-hint'),
       itemHint: document.getElementById('item-hint'),
       lives: document.getElementById('lives'),
       sealStatus: document.getElementById('seal-status'),
@@ -169,6 +174,14 @@ export class UISystem {
     this.el.stageLabel.textContent = `恶灵：${stage.label}`;
     this.el.battery.style.width = `${game.battery}%`;
     this.el.phone.classList.toggle('drained', game.battery <= 0);
+    if (this.el.composureBar) {
+      this.el.composureBar.style.width = `${game.composure}%`;
+      this.el.composureBar.parentElement?.classList.toggle('broken', game.broken);
+    }
+    if (this.el.dramaBar) {
+      this.el.dramaBar.style.width = `${game.drama}%`;
+      this.el.dramaBar.parentElement?.classList.toggle('full', game.drama >= GAME_CONFIG.dramaMax);
+    }
     this.el.stamina.style.width = `${game.stamina}%`;
     if (this.el.lives) {
       this.el.lives.innerHTML = [0, 1, 2]
@@ -386,6 +399,16 @@ export class UISystem {
       }, 340);
     });
     this.events.on('act.card', p => this.showActCard(p.title, p.line));
+    this.events.on('ghost.telegraph', () => this.showParryHint());
+  }
+
+  showParryHint() {
+    if (!this.el.parryHint) return;
+    this.el.parryHint.classList.add('show');
+    clearTimeout(this._parryTimer);
+    this._parryTimer = setTimeout(() => {
+      this.el.parryHint.classList.remove('show');
+    }, 750);
   }
 
   showActCard(title, line) {
