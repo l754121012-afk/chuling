@@ -172,7 +172,8 @@ export class SchoolScene {
       position: { x: shelf.x, y: 1.0, z: shelf.z },
       mass: 45,
       group: GROUPS.PROP,
-      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM,
+      type: CANNON.Body.KINEMATIC
     });
     shelfBody.quaternion.setFromEuler(0, shelf.rotY, 0);
     shelfBody.angularDamping = 0.6;

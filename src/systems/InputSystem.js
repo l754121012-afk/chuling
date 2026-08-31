@@ -155,6 +155,10 @@ export class InputSystem {
     return this.keys.has(code);
   }
 
+  isLeftDown() {
+    return this._down;
+  }
+
   isRightDown() {
     return this._rightDown;
   }

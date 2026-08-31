@@ -48,6 +48,7 @@ export class GameState {
     this.chainTutorialDone = false;
     this.pinnedUntil = 0;
     this.whipCooldownUntil = 0;
+    this.whipMode = false;
     this.whipCombo = 0;
     this.maxWhipCombo = 0;
     this.whipHits = 0;

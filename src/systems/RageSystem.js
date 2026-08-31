@@ -26,7 +26,12 @@ export class RageSystem {
     const prev = this._stage;
     const dist = distance2D(playerPos.x, playerPos.z, ghostPos.x, ghostPos.z);
     if (this.game.hiding) {
-      this.game.rage = clamp(this.game.rage - GHOST_CONFIG.rage.hide * dt, 0, 100);
+      const hidePenalty = this.game.lockerHideCount >= 2 ? 0.5 : 1;
+      this.game.rage = clamp(
+        this.game.rage - GHOST_CONFIG.rage.hide * hidePenalty * dt,
+        0,
+        100
+      );
     } else if (dist > 9 && !this.game.notebookOpen) {
       this.game.rage = clamp(this.game.rage - GHOST_CONFIG.rage.quiet * dt, 0, 100);
     }

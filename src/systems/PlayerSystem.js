@@ -128,10 +128,11 @@ export class PlayerSystem {
     this._handleInteractions();
     this._updatePendingCrush();
     this._handleItemControls();
+    if (this.game.whipMode && this.input.isLeftDown()) this._doWhip();
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
     this._whipCooldown = Math.max(0, this._whipCooldown - dt);
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
-    if (this.input.justPressed('KeyG')) this._doWhip();
+    if (this.input.justPressed('KeyG')) this._toggleWhipMode();
 
     if (this._pushTarget) {
       const pos = this.getPos();
@@ -497,7 +498,11 @@ export class PlayerSystem {
         bestPriority = 2;
         best = {
           type: 'locker',
-          label: this.game.hiding ? '从柜子里出来' : '躲进柜子',
+          label: this.game.hiding
+            ? '从柜子里出来'
+            : this.game.lockerHideCount >= GAME_CONFIG.maxLockerHides
+              ? '柜子已被记住'
+              : '躲进柜子',
           pos: { x: this.refs.locker.pos.x, y: 2.2, z: this.refs.locker.pos.z }
         };
       }
@@ -633,6 +638,11 @@ export class PlayerSystem {
       this.pawn.body.velocity.set(0, 0, 0);
       this.events.emit('toast', { text: '离开梯子', ms: 1000 });
     } else if (target.type === 'locker') {
+      if (!this.game.hiding && this.game.lockerHideCount >= GAME_CONFIG.maxLockerHides) {
+        this.events.emit('toast', { text: '鬼已经记住这个柜子了，再躲也没用！', ms: 2200 });
+        this.audio?.play('slap');
+        return;
+      }
       this.game.hiding = !this.game.hiding;
       if (this.game.hiding) {
         this.game.lockerHideCount += 1;
@@ -693,6 +703,10 @@ export class PlayerSystem {
           this.events.emit('toast', { text: '鬼还离书架太远，先把它引到黄色圈里！', ms: 1800 });
           return;
         }
+      }
+      if (prop.body.type !== CANNON.Body.DYNAMIC) {
+        prop.body.type = CANNON.Body.DYNAMIC;
+        prop.body.mass = 45;
       }
       const pos = this.getPos();
       const dirX = prop.body.position.x - pos.x;
@@ -867,7 +881,9 @@ export class PlayerSystem {
     const click = this.input.consumeClick() || this.input.justPressed('KeyF');
     const usable = !this.game.notebookOpen && !this.game.hiding;
 
-    if (def.type === 'throw') {
+    if (this.game.whipMode) {
+      if (click && usable) this._doWhip();
+    } else if (def.type === 'throw') {
       if (this.input.justRightPressed()) {
         this.aiming = !this.aiming;
         if (!this.aiming) this._comboReady = false;
@@ -892,7 +908,7 @@ export class PlayerSystem {
       this.items.useEquipped();
     }
 
-    if (this.input.justPressed('KeyC')) {
+    if (!this.game.whipMode && this.input.justPressed('KeyC')) {
       if (def.type === 'throw' && this.game.hasItem('pen') && this.game.hasItem('rubber')) {
         this.aiming = true;
         this._comboReady = true;
@@ -955,6 +971,25 @@ export class PlayerSystem {
     } else {
       this.events.emit('toast', { text: '闪光灯亮了，但没照到鬼', ms: 1200 });
     }
+  }
+
+  _toggleWhipMode() {
+    if (!this.game.isPlaying()) return;
+    if (this.game.hiding || this.game.notebookOpen) return;
+    if (this.game.ropeClimbing || this.game.ladderClimbing) return;
+    this.game.whipMode = !this.game.whipMode;
+    this.game.whipCombo = 0;
+    this.aiming = false;
+    this._comboReady = false;
+    this.events.emit('aim.changed', { aiming: false, combo: false });
+    this.audio?.play('click');
+    this.playPose(this.game.whipMode ? 'use' : 'idle', 0.3);
+    this.events.emit('toast', {
+      text: this.game.whipMode
+        ? '鞭子模式：按住或点击左键连抽，再按 G 关闭'
+        : '鞭子模式已关闭',
+      ms: 2000
+    });
   }
 
   _doWhip() {

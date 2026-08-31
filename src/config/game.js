@@ -20,6 +20,7 @@ export const GAME_CONFIG = {
   whipRageBase: 5,
   whipKnockback: 7,
   whipSpinDuration: 0.55,
+  maxLockerHides: 2,
   noiseRunRadius: 14,
   noiseThrowRadius: 12,
   noiseBreakRadius: 16,

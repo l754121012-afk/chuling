@@ -44,6 +44,7 @@ export class UISystem {
       warning: document.getElementById('ghost-warning'),
       warningLabel: document.getElementById('warn-label'),
       whipHint: document.getElementById('whip-hint'),
+      whipLabel: document.getElementById('whip-label'),
       whipCombo: document.getElementById('whip-combo'),
       crosshair: document.getElementById('crosshair'),
       itemHint: document.getElementById('item-hint'),
@@ -203,6 +204,10 @@ export class UISystem {
       this.el.whipHint.classList.toggle('ready', ready);
       this.el.whipHint.classList.toggle('cooldown', !ready);
       this.el.whipHint.classList.toggle('combo', comboActive);
+      this.el.whipHint.classList.toggle('active', game.whipMode);
+      if (this.el.whipLabel) {
+        this.el.whipLabel.textContent = game.whipMode ? '模式中·左键连抽' : '鞭子';
+      }
       if (this.el.whipCombo) {
         this.el.whipCombo.textContent = comboActive ? `x${game.whipCombo}` : '';
       }
