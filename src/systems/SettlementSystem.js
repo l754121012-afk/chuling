@@ -24,6 +24,7 @@ export class SettlementSystem {
     if (game.damages.includes('trash')) push('垃圾桶维修费', -1000);
     if (game.damages.includes('plant')) push('盆栽赔偿', -2000);
     if (game.damages.includes('glass')) push('玻璃赔偿', -5000);
+    if (game.chainTutorialDone) push('完美连锁演出奖金', 3000);
 
     if (game.phase === 'lost') {
       push('死亡抚恤金', 0);

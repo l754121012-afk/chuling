@@ -415,6 +415,8 @@ export class ItemSystem {
     const result = this.ghost.sealAttempt();
     if (result === 'miss') {
       this.events.emit('toast', { text: '太远了，够不着。', ms: 1200 });
+    } else if (result === 'blocked') {
+      // ChainDirector already delivered the tutorial prompt.
     } else if (result === 'wrong' && !this._backupSpawned && !this._hasWorldStapler()) {
       this._backupTimer = nowSec() + 20;
       this.events.emit('toast', { text: '备用订书机将在 20 秒后刷新', ms: 2200 });

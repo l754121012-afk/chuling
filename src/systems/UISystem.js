@@ -203,6 +203,17 @@ export class UISystem {
         ? `鬼虚弱了：快跑向出口！剩余 ${Math.ceil(game.escapeTimer)} 秒`
         : `它追上来了！快跑！剩余 ${Math.ceil(game.escapeTimer)} 秒`;
     }
+    if (game.chainActive && game.chainStep !== 'done') {
+      const steps = {
+        place: game.hasItem('tape')
+          ? '连锁教学：把修正带画进黄色圈里（教室西侧书架旁）'
+          : '连锁教学：先拿修正带，再画进黄色圈里',
+        lure: '连锁教学：鬼走向陷阱了，按 G 挑衅或等它踩上去',
+        shelf: '连锁教学：它黏住了！推倒书架把它压扁！',
+        seal: '连锁教学：它被压扁了！用订书机封印！'
+      };
+      return steps[game.chainStep] || steps.place;
+    }
     const hasNote = game.hasClue('note');
     const hasBoard = game.hasClue('blackboard');
     if (game.staplerBroken) return '订书机坏了：打空灵体值，或等备用订书机刷新';

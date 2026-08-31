@@ -188,6 +188,44 @@ export class SchoolScene {
       offsetY: 1.0
     });
 
+    const chainSpot = this.L.chainTrapSpot;
+    const chainSpotMesh = new THREE.Mesh(
+      new THREE.RingGeometry(chainSpot.r - 0.3, chainSpot.r, 30),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe08a,
+        transparent: true,
+        opacity: 0.75,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    chainSpotMesh.rotation.x = -Math.PI / 2;
+    chainSpotMesh.position.set(chainSpot.x, 0.04, chainSpot.z);
+    chainSpotMesh.visible = false;
+    this.group.add(chainSpotMesh);
+    refs.chainSpot = {
+      x: chainSpot.x,
+      z: chainSpot.z,
+      r: chainSpot.r,
+      mesh: chainSpotMesh
+    };
+
+    const shelfMarker = new THREE.Mesh(
+      new THREE.RingGeometry(1.0, 1.3, 30),
+      new THREE.MeshBasicMaterial({
+        color: 0xf4a261,
+        transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    shelfMarker.rotation.x = -Math.PI / 2;
+    shelfMarker.position.set(shelf.x, 0.05, shelf.z);
+    shelfMarker.visible = false;
+    this.group.add(shelfMarker);
+    refs.chainShelfMarker = { mesh: shelfMarker };
+
     const lockerPos = this.L.lockers;
     const lockerMesh = makePropMesh('lockers');
     lockerMesh.position.set(lockerPos.x, 0, lockerPos.z);

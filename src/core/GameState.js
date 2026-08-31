@@ -41,6 +41,11 @@ export class GameState {
     this.runTime = 0;
     this.lockerHideCount = 0;
     this.crateRouteComplete = false;
+    this.chainActive = false;
+    this.chainStep = 'idle';
+    this.chainStuck = false;
+    this.chainPinned = false;
+    this.chainTutorialDone = false;
   }
 
   addItem(id, n = 1) {

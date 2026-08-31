@@ -21,6 +21,7 @@ export const LEVEL_CONFIG = {
   ],
   teacherDesk: { x: 9.2, z: -5.2, rotY: 0.3 },
   bookshelf: { x: -10.4, z: -3.0, rotY: 0.2 },
+  chainTrapSpot: { x: -10.6, z: -4.8, r: 0.9 },
   lockers: { x: 8.8, z: 2.2, rotY: -0.3 },
   trashCan: { x: 0, z: 3.6 },
   blackboard: { x: 0, z: -6.86, y: 1.85, w: 4.4, h: 1.25 },

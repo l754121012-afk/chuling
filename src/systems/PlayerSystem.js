@@ -677,6 +677,18 @@ export class PlayerSystem {
 
   _kickProp(prop) {
     if (prop.type === 'bookshelf') {
+      if (this.game.chainActive && this.game.chainStep !== 'shelf') {
+        this.events.emit('toast', { text: '别急着推！先让鬼踩中修正带！', ms: 1800 });
+        return;
+      }
+      if (this.game.chainActive && this.game.chainStep === 'shelf' && this.ghost) {
+        const gp = this.ghost.getPos();
+        const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
+        if (gd >= 2.5) {
+          this.events.emit('toast', { text: '鬼还离书架太远，先把它引到黄色圈里！', ms: 1800 });
+          return;
+        }
+      }
       const pos = this.getPos();
       const dirX = prop.body.position.x - pos.x;
       const dirZ = prop.body.position.z - pos.z;
@@ -702,6 +714,10 @@ export class PlayerSystem {
         if (gd < 2.5) {
           this.game.stunnedUntil = nowSec() + 2;
           this.ghost.damage(10, { rage: 5 });
+          if (this.game.chainStuck) {
+            this.game.chainStuck = false;
+            this.game.chainPinned = true;
+          }
           this.events.emit('toast', { text: '书架把鬼砸扁了！！', ms: 1800 });
           this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');
           this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');

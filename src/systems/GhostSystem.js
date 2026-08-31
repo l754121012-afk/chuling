@@ -140,7 +140,12 @@ export class GhostSystem {
     this._flash = Math.max(0, this._flash - dt);
     const weakNow = this.game.weakUntil > nowSec();
     const baseScale = this._flash > 0 ? 1.22 : this._dashFlash > 0 ? 1.28 : 1;
-    this.pawn.mesh.scale.set(baseScale, weakNow ? baseScale * 0.72 : baseScale, baseScale);
+    const squashed = this.game.chainPinned;
+    this.pawn.mesh.scale.set(
+      squashed ? baseScale * 1.18 : baseScale,
+      squashed ? baseScale * 0.5 : weakNow ? baseScale * 0.72 : baseScale,
+      squashed ? baseScale * 1.18 : baseScale
+    );
     this._dashFlash = Math.max(0, this._dashFlash - dt);
 
     if (weakNow) {
@@ -228,6 +233,7 @@ export class GhostSystem {
       (stage.id === 'angry' || stage.id === 'furious' || stage.id === 'insane') &&
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
+      !this.game.chainActive &&
       !this.game.ropeClimbing &&
       !this._disguiseActive
     ) {
@@ -254,6 +260,7 @@ export class GhostSystem {
       (stage.id === 'angry' || stage.id === 'furious' || stage.id === 'insane') &&
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
+      !this.game.chainActive &&
       !this.game.ropeClimbing &&
       !this._ambushActive
     ) {
@@ -283,6 +290,7 @@ export class GhostSystem {
 
   _tryDash(dt, playerPos) {
     if (this.game.hiding) return;
+    if (this.game.chainActive) return;
     if (this.game.weakUntil > nowSec()) return;
     this._dashCooldown -= dt;
     if (this._dashCooldown > 0) return;
@@ -423,6 +431,12 @@ export class GhostSystem {
     if (this.game.weakUntil > nowSec()) speed = 0;
     if (this.game.slowedUntil > nowSec()) speed *= 0.45;
     if (this.game.stunnedUntil > nowSec()) speed = 0;
+
+    if (this.game.chainActive && this.game.chainStep === 'lure') {
+      const target = this._lastNoise;
+      if (target) this._goTo(target, speed, dt);
+      return;
+    }
 
     if (stage.id === 'furious' || stage.id === 'insane') {
       this._chase(playerPos, speed, dt);
@@ -656,6 +670,15 @@ export class GhostSystem {
     const dist = distance2D(b.x, b.z, p.x, p.z);
     if (dist > 2.4) return 'miss';
 
+    if (this.game.chainActive && !this.game.chainPinned) {
+      this.events.emit('toast', {
+        text: '订书机抖得厉害：主管说的三件套还没做完！',
+        ms: 2200
+      });
+      this._speak('你想干嘛？！', 1600);
+      return 'blocked';
+    }
+
     const stage = this.game.currentStage();
     const dx = p.x - b.x;
     const dz = p.z - b.z;
@@ -665,7 +688,7 @@ export class GhostSystem {
     const behind = dot < -0.25;
     const stealthy = (stage.id === 'calm' || stage.id === 'annoyed') && !this.game.hiding;
 
-    if (this.game.hasClue('note') && stealthy && behind) {
+    if (this.game.hasClue('note') && ((stealthy && behind) || this.game.chainPinned)) {
       this._sealSuccess();
       return 'success';
     }

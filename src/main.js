@@ -15,6 +15,7 @@ import { PlayerSystem } from './systems/PlayerSystem.js';
 import { ClueSystem } from './systems/ClueSystem.js';
 import { SettlementSystem } from './systems/SettlementSystem.js';
 import { UISystem } from './systems/UISystem.js';
+import { ChainDirector } from './systems/ChainDirector.js';
 import { nowSec } from './core/Utils.js';
 
 const canvas = document.getElementById('game-canvas');
@@ -95,6 +96,14 @@ ghost.createPawn(refs.ghostSpawn);
 items.spawnPickups();
 
 const settlement = new SettlementSystem();
+const chain = new ChainDirector({
+  scene: school,
+  events,
+  game,
+  ghost,
+  items,
+  audio
+});
 let phoneRang = false;
 let firstScareAt = 0;
 
@@ -156,6 +165,7 @@ events.on('game.start', () => {
   game.equipped = 'pen';
   items.resetBackup();
   items.syncHand();
+  chain.reset();
   audio.init();
   ui.toggleNotebook(false);
   ui.sync(game);
@@ -245,7 +255,9 @@ window.__game = {
   items,
   player,
   camera: cameraSys,
-  events
+  events,
+  scene: school,
+  chain
 };
 
 let last = nowSec();
@@ -265,6 +277,7 @@ function tick() {
     const p2 = player.getPos();
     ghost.update(simDt, p2);
     items.update(simDt, p2, ghost.getPos());
+    chain.update(simDt);
     rage.update(simDt, p2, ghost.getPos());
     school.update(simDt, game);
 
