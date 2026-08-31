@@ -39,6 +39,7 @@ export class GameState {
     this.act3Started = false;
     this.runStart = 0;
     this.runTime = 0;
+    this.lockerHideCount = 0;
   }
 
   addItem(id, n = 1) {

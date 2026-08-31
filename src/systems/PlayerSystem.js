@@ -611,6 +611,7 @@ export class PlayerSystem {
     } else if (target.type === 'locker') {
       this.game.hiding = !this.game.hiding;
       if (this.game.hiding) {
+        this.game.lockerHideCount += 1;
         this._hideRestorePos = {
           x: this.pawn.body.position.x,
           y: this.pawn.body.position.y,
@@ -643,8 +644,12 @@ export class PlayerSystem {
       }
       this.audio?.play('click');
       this.events.emit('toast', {
-        text: this.game.hiding ? '躲进柜子了，暴怒值缓慢下降' : '从柜子里出来',
-        ms: 1600
+        text: this.game.hiding
+          ? this.game.lockerHideCount >= 2
+            ? '鬼记住了这个柜子！它守在外面！暴怒值缓慢下降'
+            : '躲进柜子了，暴怒值缓慢下降'
+          : '从柜子里出来',
+        ms: 1800
       });
     } else if (target.type === 'prop') {
       this._kickProp(target.prop);

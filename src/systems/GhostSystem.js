@@ -3,7 +3,7 @@ import * as CANNON from 'cannon-es';
 import { GHOST_CONFIG, stageForRage } from '../config/ghost.js';
 import { GAME_CONFIG } from '../config/game.js';
 import { GROUPS, makeBody, syncMeshToBody, v3 } from '../core/Physics.js';
-import { makeGhostMesh, makeWeakPointMarker } from '../core/PlaceholderAssets.js';
+import { makeGhostMesh, makeWeakPointMarker, makePropMesh } from '../core/PlaceholderAssets.js';
 import { choice, clamp, distance2D, nowSec, rand } from '../core/Utils.js';
 
 const GHOST_VISUALS = {
@@ -69,6 +69,10 @@ export class GhostSystem {
     this._ambushUntil = 0;
     this._ambushActive = false;
     this._ambushSpeed = 0;
+    this._disguiseActive = false;
+    this._disguiseMesh = null;
+    this._disguiseUntil = 0;
+    this._disguiseCooldown = rand(20, 30);
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
@@ -173,7 +177,8 @@ export class GhostSystem {
 
     if (this.game.hiding) {
       this._hiddenTimer += dt;
-      if (this._hiddenTimer > 2.5) {
+      const hideThreshold = this.game.lockerHideCount >= 2 ? 6 : 2.5;
+      if (this._hiddenTimer > hideThreshold) {
         this._lastSeen = null;
         this._lastNoise = null;
         this._searchTimer = 0;
@@ -223,7 +228,8 @@ export class GhostSystem {
       (stage.id === 'furious' || stage.id === 'insane') &&
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
-      !this.game.ropeClimbing
+      !this.game.ropeClimbing &&
+      !this._disguiseActive
     ) {
       this._skillCooldown = rand(12, 18);
       this._ambushActive = true;
@@ -232,6 +238,26 @@ export class GhostSystem {
       this._ambushSpeed = cfg.speed * 2.2;
       this.audio?.play('whoosh');
       this.events.emit('toast', { text: '它消失了……', ms: 1200 });
+    }
+
+    this._disguiseCooldown -= dt;
+    if (this._disguiseActive) {
+      const distToPlayer = distance2D(body.position.x, body.position.z, playerPos.x, playerPos.z);
+      if (nowSec() >= this._disguiseUntil || distToPlayer < 2.6) {
+        this._revealDisguise(playerPos);
+      } else {
+        body.velocity.set(0, 0, 0);
+      }
+    } else if (
+      this._disguiseCooldown <= 0 &&
+      (stage.id === 'furious' || stage.id === 'insane') &&
+      this.game.phase === 'investigate' &&
+      !this.game.hiding &&
+      !this.game.ropeClimbing &&
+      !this._ambushActive
+    ) {
+      const distToPlayer = distance2D(body.position.x, body.position.z, playerPos.x, playerPos.z);
+      if (distToPlayer > 6) this._startDisguise(playerPos);
     }
 
     const trying = Math.hypot(body.velocity.x, body.velocity.z) > 0.3;
@@ -284,6 +310,49 @@ export class GhostSystem {
     this._knockbackVX = vx;
     this._knockbackVZ = vz;
     this._knockbackTimer = duration;
+  }
+
+  _startDisguise(playerPos) {
+    const p = playerPos;
+    const ang = Math.random() * Math.PI * 2;
+    const d = rand(4, 7);
+    const x = clamp(
+      p.x + Math.cos(ang) * d,
+      this.scene.L.classroom.minX + 1,
+      this.scene.L.classroom.maxX - 1
+    );
+    const z = clamp(
+      p.z + Math.sin(ang) * d,
+      this.scene.L.classroom.minZ + 1,
+      this.scene.L.classroom.maxZ - 1
+    );
+    this.pawn.body.position.set(x, 1.2, z);
+    this.pawn.body.velocity.set(0, 0, 0);
+    this.pawn.mesh.visible = false;
+    this._disguiseMesh = makePropMesh('trashCan');
+    this._disguiseMesh.position.set(x, 0, z);
+    this.scene.group.add(this._disguiseMesh);
+    this._disguiseActive = true;
+    this._disguiseUntil = nowSec() + 10;
+    this._disguiseCooldown = rand(25, 40);
+    this.audio?.play('ghost');
+    this.events.emit('toast', { text: '它消失了……教室里多了一个垃圾桶？', ms: 2000 });
+  }
+
+  _revealDisguise(playerPos) {
+    if (this._disguiseMesh) {
+      this.scene.group.remove(this._disguiseMesh);
+      this._disguiseMesh = null;
+    }
+    this.pawn.mesh.visible = true;
+    this._disguiseActive = false;
+    const b = this.pawn.body.position;
+    b.x = playerPos.x;
+    b.z = playerPos.z;
+    this.audio?.play('ghost');
+    this.events.emit('camera.shake', { amount: 0.4 });
+    this.events.emit('hitstop', { ms: 80 });
+    this.events.emit('toast', { text: '那个垃圾桶是鬼！！', ms: 1800 });
   }
 
   _applyStageVisual(stage, dt) {
