@@ -241,13 +241,13 @@ export class GhostSystem {
       this._attackAnimTimer -= dt;
       if (armR) {
         const t = 1 - Math.max(0, this._attackAnimTimer) / 0.45;
-        armR.rotation.x = Math.sin(t * Math.PI) * 1.5;
+        armR.rotation.x = Math.sin(t * Math.PI) * 2.2;
         armR.rotation.z = -0.2;
       }
-      if (handR) handR.position.set(0, -0.5, 0.7);
+      if (handR) handR.position.set(0, -0.9, 1.0);
     } else if (armR && !this._telegraphActive && Math.abs(armR.rotation.x) > 0.01) {
       armR.rotation.x = 0;
-      armR.rotation.z = -0.5;
+      armR.rotation.z = -0.75;
       if (handR) handR.position.set(0, -0.66, 0);
     }
 
@@ -433,12 +433,12 @@ export class GhostSystem {
       const armL = this.pawn.mesh.userData?.armL;
       const hand = this.pawn.mesh.userData?.handR;
       const t = 1 - remaining;
-      if (armL) armL.rotation.x = -0.8;
+      if (armL) armL.rotation.x = -1.6;
       if (armR) {
-        armR.rotation.x = -1.5 + t * 2.7;
+        armR.rotation.x = -2.6 + t * 4.8;
         armR.rotation.z = -0.9 + t * 0.7;
       }
-      if (hand) hand.position.set(0, -0.5, -0.35 + t * 1.05);
+      if (hand) hand.position.set(0, 0.6 - t * 1.5, -0.6 + t * 1.6);
       if (nowSec() < this._telegraphUntil) return;
       if (!this._attackFired) {
         this._attackFired = true;
@@ -463,9 +463,9 @@ export class GhostSystem {
         );
         this.scene.spawnClawSwipe(
           {
-            x: b.x + Math.sin(this._facing) * 0.9,
-            y: 1.15,
-            z: b.z + Math.cos(this._facing) * 0.9
+            x: b.x + Math.sin(this._facing) * 1.0,
+            y: 0.95,
+            z: b.z + Math.cos(this._facing) * 1.0
           },
           this._facing,
           '#9fc0a8',
@@ -475,10 +475,10 @@ export class GhostSystem {
         const arm = this.pawn.mesh.userData?.armR;
         const hand = this.pawn.mesh.userData?.handR;
         if (arm) {
-          arm.rotation.x = 1.5;
+          arm.rotation.x = 2.2;
           arm.rotation.z = -0.2;
         }
-        if (hand) hand.position.set(0, -0.5, 0.7);
+        if (hand) hand.position.set(0, -0.9, 1.0);
         if (
           dist < 2.6 &&
           playerPos.y - b.y < 0.8 &&
@@ -504,7 +504,7 @@ export class GhostSystem {
     }
 
     const stage = this.game.currentStage();
-    const attackRange = stage.id === 'insane' ? 8 : 5;
+    const attackRange = stage.id === 'insane' ? 9 : 6.5;
     if (this._attackCooldown > 0) {
       this._attackCooldown -= dt * (stage.id === 'insane' ? 3 : 1);
     }
@@ -604,10 +604,10 @@ export class GhostSystem {
     const arm = this.pawn.mesh.userData?.armR;
     const hand = this.pawn.mesh.userData?.handR;
     if (arm) {
-      arm.rotation.x = 1.2;
+      arm.rotation.x = 2.2;
       arm.rotation.z = -0.2;
     }
-    if (hand) hand.position.set(0, -0.5, 0.7);
+    if (hand) hand.position.set(0, -0.9, 1.0);
     this.knockback((dx / len) * 9, (dz / len) * 9, 0.5);
     this._spinTimer = 0.8;
     this.game.stunnedUntil = nowSec() + 1.2;

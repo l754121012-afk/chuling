@@ -32,6 +32,14 @@ export class ChainDirector {
     this._tryStart();
     this._refreshMarkers();
     if (!this._active) return;
+    if (this._bookshelf()?.used && this._step !== 'shelf' && !this.game.chainPinned) {
+      this.events.emit('toast', {
+        text: '书架先倒了，连锁教学取消，压制打法照常生效！',
+        ms: 2200
+      });
+      this._deactivate();
+      return;
+    }
 
     if (this.game.chainPinned) {
       this._step = 'seal';

@@ -674,6 +674,14 @@ export class PlayerSystem {
         return;
       }
       this.game.hiding = !this.game.hiding;
+      if (this.ghost) {
+        if (this.game.hiding) {
+          this.ghost._telegraphActive = false;
+          this.ghost._hideAttackRings?.();
+        } else {
+          this.ghost._attackCooldown = Math.min(this.ghost._attackCooldown, 1.5);
+        }
+      }
       if (this.game.hiding) {
         this.game.lockerHideCount += 1;
         this._hideRestorePos = {
@@ -722,18 +730,6 @@ export class PlayerSystem {
 
   _kickProp(prop) {
     if (prop.type === 'bookshelf') {
-      if (this.game.chainActive && this.game.chainStep !== 'shelf') {
-        this.events.emit('toast', { text: '别急着推！先让鬼踩中修正带！', ms: 1800 });
-        return;
-      }
-      if (this.game.chainActive && this.game.chainStep === 'shelf' && this.ghost) {
-        const gp = this.ghost.getPos();
-        const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
-        if (gd >= 3.6) {
-          this.events.emit('toast', { text: '鬼还离书架太远，先把它引到黄色圈里！', ms: 1800 });
-          return;
-        }
-      }
       if (prop.body.type !== CANNON.Body.DYNAMIC) {
         prop.body.type = CANNON.Body.DYNAMIC;
         prop.body.mass = 45;
@@ -816,7 +812,7 @@ export class PlayerSystem {
     if (this._shelfCrushApplied || !this.ghost) return false;
     const gp = this.ghost.getPos();
     const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
-    if (gd > 3.6) return false;
+    if (gd > 4.2) return false;
     this._shelfCrushApplied = true;
     this._pendingCrushUntil = 0;
     this._pendingCrushProp = null;
@@ -824,7 +820,7 @@ export class PlayerSystem {
     this.ghost.damage(10, { rage: 5 });
     this.game.pinnedUntil = nowSec() + 12;
     this.ghost.registerKnockdown();
-    if (this.game.chainStuck) {
+    if (this.game.chainActive || this.game.chainStuck) {
       this.game.chainStuck = false;
       this.game.chainPinned = true;
     }

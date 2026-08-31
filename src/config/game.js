@@ -29,7 +29,7 @@ export const GAME_CONFIG = {
   dodgeCooldown: 0.8,
   dodgeBonkChance: 0.5,
   parryRange: 4.2,
-  attackTelegraph: 0.75,
+  attackTelegraph: 1.0,
   attackWindup: 0.35,
   ghostAttackCooldownMin: 4,
   ghostAttackCooldownMax: 8,
