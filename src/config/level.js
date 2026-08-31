@@ -39,6 +39,7 @@ export const LEVEL_CONFIG = {
     { x: 6.4, z: -3.2 },
     { x: -1.5, z: 3.2 }
   ],
+  crateTarget: { x: 8.0, z: -1.8, r: 1.3 },
   highCatwalk: [
     { from: { x: 10.2, z: -1.5 }, to: { x: 10.2, z: 4.6 }, y: 4.0 },
     { from: { x: 10.2, z: 4.6 }, to: { x: 0, z: 4.6 }, y: 4.0 }
@@ -73,10 +74,8 @@ export const LEVEL_CONFIG = {
     { id: 'pen', x: 4, y: 0.78, z: -4.8 },
     { id: 'glue', x: 0, y: 0.78, z: -4.8 },
     { id: 'stapler', x: 9.2, y: 1.95, z: -5.15 },
-    { id: 'eraser', x: 9.2, y: 1.95, z: -4.9 },
     { id: 'crossbow', x: 8.8, y: 2.0, z: 2.2 },
     { id: 'tape', x: 4, y: 0.78, z: -4.8 },
-    { id: 'rubber', x: 0, y: 0.78, z: -1.8 },
     { id: 'pen', x: 0, y: 0.06, z: 10.0 },
     { id: 'mine', x: 0, y: 0.06, z: 10.0 }
   ]

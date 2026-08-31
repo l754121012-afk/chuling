@@ -356,6 +356,22 @@ export class SchoolScene {
         offsetY: 0
       });
     }
+
+    const crateTarget = this.L.crateTarget;
+    const targetMarker = new THREE.Mesh(
+      new THREE.RingGeometry(crateTarget.r - 0.35, crateTarget.r, 30),
+      new THREE.MeshBasicMaterial({
+        color: 0xf4d35e,
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    targetMarker.rotation.x = -Math.PI / 2;
+    targetMarker.position.set(crateTarget.x, 0.03, crateTarget.z);
+    this.group.add(targetMarker);
+    refs.crateTarget = { x: crateTarget.x, z: crateTarget.z, r: crateTarget.r };
   }
 
   _addVerticalProps(refs) {

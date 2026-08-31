@@ -106,18 +106,22 @@ events.on('hitstop', p => {
 events.on('slowmo', p => {
   game.slowmoUntil = Math.max(game.slowmoUntil, nowSec() + (p?.ms ?? 400) / 1000);
 });
+events.on('escape.start', () => {
+  events.emit('act.card', { title: '第 4 幕 · 逃出生天', line: '它被钉住了！跑！！' });
+});
 events.on('ghost.stage', p => {
   const beats = {
-    annoyed: { audio: 'chalk', text: '粉笔在黑板上划出刺耳声！它猛地转头！！', color: '#f4d35e' },
-    angry: { audio: 'shake', text: '课桌全部震动起来，它开始砸东西了！！', color: '#f4a261' },
-    furious: { audio: 'slam', text: '所有柜门同时炸响！它彻底暴怒了！！', color: '#e63946' },
-    insane: { audio: 'heartbeat', text: '心跳声震耳欲聋……它已经疯了！！！', color: '#9b5de5' }
+    annoyed: { audio: 'chalk', text: '粉笔在黑板上划出刺耳声！它猛地转头！！', color: '#f4d35e', card: '第 2 幕 · 不悦' },
+    angry: { audio: 'shake', text: '课桌全部震动起来，它开始砸东西了！！', color: '#f4a261', card: '第 3 幕 · 愤怒' },
+    furious: { audio: 'slam', text: '所有柜门同时炸响！它彻底暴怒了！！', color: '#e63946', card: '第 3 幕 · 暴怒' },
+    insane: { audio: 'heartbeat', text: '心跳声震耳欲聋……它已经疯了！！！', color: '#9b5de5', card: '第 3 幕 · 狂乱' }
   };
   const beat = beats[p.stage.id];
   if (beat) {
     audio.play(beat.audio);
     events.emit('camera.shake', { amount: 0.18 });
     events.emit('beat.flash', { color: beat.color });
+    events.emit('act.card', { title: beat.card, line: beat.text });
     events.emit('toast', { text: beat.text, ms: 2000 });
   }
   if (
@@ -149,7 +153,6 @@ events.on('game.start', () => {
   document.body.classList.add('playing');
   player.resetHiding();
   game.addItem('pen', 2);
-  game.addItem('rubber', 1);
   game.equipped = 'pen';
   items.resetBackup();
   items.syncHand();
@@ -295,6 +298,7 @@ function tick() {
       text: '灯闪了一下……它出现在你身后！快躲起来！先找线索，再拿订书机。',
       ms: 3200
     });
+    events.emit('act.card', { title: '第 2 幕 · 它来了', line: '灯闪了一下，它就在你身后！' });
   }
   if (
     game.isPlaying() &&

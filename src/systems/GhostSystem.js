@@ -225,7 +225,7 @@ export class GhostSystem {
       }
     } else if (
       this._skillCooldown <= 0 &&
-      (stage.id === 'furious' || stage.id === 'insane') &&
+      (stage.id === 'angry' || stage.id === 'furious' || stage.id === 'insane') &&
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
       !this.game.ropeClimbing &&
@@ -242,6 +242,7 @@ export class GhostSystem {
 
     this._disguiseCooldown -= dt;
     if (this._disguiseActive) {
+      if (this._disguiseMesh) this._disguiseMesh.rotation.y += dt * 1.5;
       const distToPlayer = distance2D(body.position.x, body.position.z, playerPos.x, playerPos.z);
       if (nowSec() >= this._disguiseUntil || distToPlayer < 2.6) {
         this._revealDisguise(playerPos);
@@ -250,7 +251,7 @@ export class GhostSystem {
       }
     } else if (
       this._disguiseCooldown <= 0 &&
-      (stage.id === 'furious' || stage.id === 'insane') &&
+      (stage.id === 'angry' || stage.id === 'furious' || stage.id === 'insane') &&
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
       !this.game.ropeClimbing &&
@@ -334,7 +335,7 @@ export class GhostSystem {
     this.scene.group.add(this._disguiseMesh);
     this._disguiseActive = true;
     this._disguiseUntil = nowSec() + 10;
-    this._disguiseCooldown = rand(25, 40);
+    this._disguiseCooldown = rand(14, 22);
     this.audio?.play('ghost');
     this.events.emit('toast', { text: '它消失了……教室里多了一个垃圾桶？', ms: 2000 });
   }

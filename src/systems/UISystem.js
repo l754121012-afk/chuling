@@ -9,6 +9,7 @@ export class UISystem {
     this._toastTimer = null;
     this._speechTimer = null;
     this._flashTimer = null;
+    this._actCardTimer = null;
     this._registerEvents();
   }
 
@@ -48,7 +49,10 @@ export class UISystem {
       sealStatus: document.getElementById('seal-status'),
       flashOverlay: document.getElementById('flash-overlay'),
       fullscreenBtn: document.getElementById('fullscreen-btn'),
-      bestRecord: document.getElementById('best-record')
+      bestRecord: document.getElementById('best-record'),
+      actCard: document.getElementById('act-card'),
+      actTitle: document.getElementById('act-title'),
+      actLine: document.getElementById('act-line')
     };
     this._buildInventory();
 
@@ -352,5 +356,14 @@ export class UISystem {
         this.el.flashOverlay.style.removeProperty('--flash-color');
       }, 340);
     });
+    this.events.on('act.card', p => this.showActCard(p.title, p.line));
+  }
+
+  showActCard(title, line) {
+    this.el.actTitle.textContent = title;
+    this.el.actLine.textContent = line;
+    this.el.actCard.classList.remove('hidden');
+    clearTimeout(this._actCardTimer);
+    this._actCardTimer = setTimeout(() => this.el.actCard.classList.add('hidden'), 2400);
   }
 }

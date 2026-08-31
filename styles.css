@@ -81,6 +81,41 @@ body.playing canvas {
   opacity: 0.9;
 }
 
+#act-card {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 88vw);
+  padding: 18px 24px;
+  border-radius: 8px;
+  background: rgba(20, 22, 28, 0.88);
+  border: 1px solid rgba(244, 211, 94, 0.6);
+  color: #f4efe4;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 0 28px rgba(244, 211, 94, 0.25);
+  animation: actPulse 0.9s ease-in-out infinite;
+}
+
+#act-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffd166;
+  margin-bottom: 6px;
+}
+
+#act-line {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #e9e2d2;
+}
+
+@keyframes actPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.02); }
+}
+
 #ghost-warning {
   position: absolute;
   top: max(64px, env(safe-area-inset-top));

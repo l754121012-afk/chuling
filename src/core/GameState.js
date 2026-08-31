@@ -40,6 +40,7 @@ export class GameState {
     this.runStart = 0;
     this.runTime = 0;
     this.lockerHideCount = 0;
+    this.crateRouteComplete = false;
   }
 
   addItem(id, n = 1) {

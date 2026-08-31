@@ -4,7 +4,7 @@ import { GAME_CONFIG } from '../config/game.js';
 import { ITEM_DEFS } from '../config/items.js';
 import { GROUPS, makeBody, syncMeshToBody } from '../core/Physics.js';
 import { makePlayerMesh } from '../core/PlaceholderAssets.js';
-import { clamp, distance2D, nowSec, rand } from '../core/Utils.js';
+import { choice, clamp, distance2D, nowSec, rand } from '../core/Utils.js';
 
 export class PlayerSystem {
   constructor({
@@ -25,6 +25,7 @@ export class PlayerSystem {
     this.phoneLight = null;
     this.ghost = null;
     this._flashCooldown = 0;
+    this._tauntCooldown = 0;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
@@ -124,7 +125,9 @@ export class PlayerSystem {
     this._handleInteractions();
     this._handleItemControls();
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
+    this._tauntCooldown = Math.max(0, this._tauntCooldown - dt);
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
+    if (this.input.justPressed('KeyG')) this._doTaunt();
 
     if (this._pushTarget) {
       const pos = this.getPos();
@@ -140,6 +143,22 @@ export class PlayerSystem {
         this._pushTarget.body.position.x += v.x * dt;
         this._pushTarget.body.position.z += v.z * dt;
         this._pushTarget.body.aabbNeedsUpdate = true;
+        if (!this.game.crateRouteComplete && this.refs.crateTarget) {
+          const t = this.refs.crateTarget;
+          const td = distance2D(
+            this._pushTarget.body.position.x,
+            this._pushTarget.body.position.z,
+            t.x,
+            t.z
+          );
+          if (td < t.r) {
+            this.game.crateRouteComplete = true;
+            this.audio?.play('gate');
+            this.events.emit('toast', { text: '箱子到位！高台路线打通！', ms: 2200 });
+            this.scene.spawnParticles({ x: t.x, y: 0.6, z: t.z }, '#f4d35e');
+            this.scene.spawnHitRing({ x: t.x, y: 0.5, z: t.z }, '#f4d35e');
+          }
+        }
       } else {
         this._pushTarget = null;
         this._pushMove = null;
@@ -658,21 +677,36 @@ export class PlayerSystem {
 
   _kickProp(prop) {
     if (prop.type === 'bookshelf') {
+      const pos = this.getPos();
+      const dirX = prop.body.position.x - pos.x;
+      const dirZ = prop.body.position.z - pos.z;
+      const dirLen = Math.hypot(dirX, dirZ) || 1;
       if (!prop.used) {
         prop.used = true;
         this.game.damages.push('bookshelf');
       }
       prop.body.applyImpulse(
-        new CANNON.Vec3(rand(-3, 3), 4.5, rand(-3, 3)),
+        new CANNON.Vec3((dirX / dirLen) * 3, 4.5, (dirZ / dirLen) * 3),
         new CANNON.Vec3(prop.body.position.x, 0.4, prop.body.position.z)
       );
-      prop.body.angularVelocity.set(rand(-2, 2), 0.6, rand(-1.5, 1.5));
+      prop.body.angularVelocity.set((dirZ / dirLen) * 1.5, 0.6, -(dirX / dirLen) * 1.5);
       prop.body.collisionFilterGroup = GROUPS.WORLD;
       prop.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM;
       this.rage.add(12, 'break');
       this.events.emit('noise', { pos: this.getPos(), radius: GAME_CONFIG.noiseBreakRadius, rage: 0 });
       this.events.emit('toast', { text: '书架倒了！赔偿 8000 円！', ms: 2200 });
       this.audio?.play('hit');
+      if (this.ghost) {
+        const gp = this.ghost.getPos();
+        const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
+        if (gd < 2.5) {
+          this.game.stunnedUntil = nowSec() + 2;
+          this.ghost.damage(10, { rage: 5 });
+          this.events.emit('toast', { text: '书架把鬼砸扁了！！', ms: 1800 });
+          this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');
+          this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#c94f3d');
+        }
+      }
     } else if (prop.type === 'trash') {
       if (!prop.used) {
         prop.used = true;
@@ -874,6 +908,24 @@ export class PlayerSystem {
       this.ghost._speak('眼睛！！', 1500);
     } else {
       this.events.emit('toast', { text: '闪光灯亮了，但没照到鬼', ms: 1200 });
+    }
+  }
+
+  _doTaunt() {
+    if (this._tauntCooldown > 0) return;
+    this._tauntCooldown = 2;
+    this.playPose('use', 0.5);
+    this.audio?.play('bleat');
+    const lines = ['主管！我在这里！！', '来抓我啊！笨蛋！', '你倒是追啊！！'];
+    this.events.emit('toast', { text: choice(lines), ms: 1600 });
+    this.events.emit('noise', { pos: this.getPos(), radius: 14, rage: 1 });
+    if (this.ghost) {
+      const gp = this.ghost.getPos();
+      const pp = this.getPos();
+      const dx = gp.x - pp.x;
+      const dz = gp.z - pp.z;
+      this.ghost._facing = Math.atan2(dx, dz);
+      this.ghost._lastNoise = { x: pp.x, z: pp.z };
     }
   }
 
