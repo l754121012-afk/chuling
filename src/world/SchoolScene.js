@@ -774,8 +774,8 @@ export class SchoolScene {
     if (this.ambientLight) this.ambientLight.intensity = 0.22 * (1 - d * 0.92);
     if (this.sunLight) this.sunLight.intensity = 0.35 * (1 - d * 0.96);
     if (this.threeScene?.fog) {
-      this.threeScene.fog.near = 2 + d * 5;
-      this.threeScene.fog.far = 8 + d * 14;
+      this.threeScene.fog.near = 7 - d * 5;
+      this.threeScene.fog.far = 22 - d * 14;
     }
   }
 

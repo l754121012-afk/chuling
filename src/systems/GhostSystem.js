@@ -544,11 +544,11 @@ export class GhostSystem {
     if (dist > attackRange) return;
 
     const scareThreshold = stage.id === 'insane'
-      ? 40
+      ? GAME_CONFIG.scareThresholdInsane
       : stage.id === 'furious'
-        ? 32
+        ? GAME_CONFIG.scareThresholdFurious
         : stage.id === 'angry'
-          ? 25
+          ? GAME_CONFIG.scareThresholdAngry
           : 0;
     if (
       scareThreshold > 0 &&
@@ -596,11 +596,14 @@ export class GhostSystem {
     const dz = playerPos.z - b.z;
     const len = Math.hypot(dx, dz) || 1;
     this._chargeActive = true;
-    this._chargeWindupUntil = nowSec() + 0.45;
-    this._chargeUntil = this._chargeWindupUntil + 0.55;
+    this._chargeWindupUntil = nowSec() + GAME_CONFIG.chargeWindup;
+    this._chargeUntil = this._chargeWindupUntil + GAME_CONFIG.chargeDuration;
     this._chargeDirX = dx / len;
     this._chargeDirZ = dz / len;
-    this._chargeSpeed = Math.max(6, (stage.speed || 2.6) * 3.2);
+    this._chargeSpeed = Math.max(
+      7,
+      (stage.speed || 2.6) * GAME_CONFIG.chargeSpeedMultiplier
+    );
     this._chargeHitDone = false;
     this._dashFlash = 0.35;
     this.audio?.play('whoosh');
@@ -637,7 +640,7 @@ export class GhostSystem {
   }
 
   _doGhostChargeHit(playerPos) {
-    this.game.stamina = Math.max(0, this.game.stamina - 30);
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.chargeStaminaCost);
     this.game.playerStunUntil = nowSec() + 1.2;
     this.game.dodgingUntil = 0;
     if (this.playerBody) {
@@ -648,7 +651,10 @@ export class GhostSystem {
       this.playerBody.velocity.set((dx / len) * 11, 4, (dz / len) * 11);
     }
     this.audio?.play('slap');
-    this.events.emit('toast', { text: '被撞飞了！体力-30，僵直了！', ms: 1600 });
+    this.events.emit('toast', {
+      text: `被撞飞了！体力-${GAME_CONFIG.chargeStaminaCost}，僵直了！`,
+      ms: 1600
+    });
     this.events.emit('player.hurt');
     this.events.emit('camera.shake', { amount: 0.42 });
     this.events.emit('hitstop', { ms: 80 });
@@ -747,7 +753,7 @@ export class GhostSystem {
     this._slapCooldown = GAME_CONFIG.slapCooldown;
     this.game.invincibleUntil = nowSec() + 1.0;
     this.rage.add(GHOST_CONFIG.rage.slap, 'slap');
-    this.game.stamina = Math.max(0, this.game.stamina - 25);
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.swipeStaminaCost);
     if (this.playerBody) {
       const b = this.pawn.body.position;
       const dx = playerPos.x - b.x;
@@ -756,7 +762,10 @@ export class GhostSystem {
       this.playerBody.velocity.set((dx / len) * 7, 4, (dz / len) * 7);
     }
     this.audio?.play('slap');
-    this.events.emit('toast', { text: '鬼一巴掌呼过来！体力-25', ms: 1800 });
+    this.events.emit('toast', {
+      text: `鬼一巴掌呼过来！体力-${GAME_CONFIG.swipeStaminaCost}`,
+      ms: 1800
+    });
     this.events.emit('player.hurt');
     this.events.emit('camera.shake', { amount: 0.32 });
     this.rage.addDrama(GAME_CONFIG.dramaHurt, 'hurt');
