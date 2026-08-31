@@ -84,6 +84,11 @@ export class GhostSystem {
     this._attackUntil = 0;
     this._attackFired = false;
     this._kiteCooldown = 0;
+    this._attackAnimTimer = 0;
+    this._telegraphRing = null;
+    this._telegraphRingMat = null;
+    this._parryRangeRing = null;
+    this._parryRangeMat = null;
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
@@ -130,6 +135,38 @@ export class GhostSystem {
     mesh.add(range);
     this._rangeRing = range;
     this._rangeRingMat = rangeMat;
+
+    const attackRing = new THREE.Mesh(
+      new THREE.RingGeometry(2.4, 2.6, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xff6b6b,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    attackRing.rotation.x = -Math.PI / 2;
+    attackRing.visible = false;
+    this.scene.group.add(attackRing);
+    this._telegraphRing = attackRing;
+    this._telegraphRingMat = attackRing.material;
+
+    const parryRing = new THREE.Mesh(
+      new THREE.RingGeometry(4.0, 4.2, 40),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd166,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    parryRing.rotation.x = -Math.PI / 2;
+    parryRing.visible = false;
+    this.scene.group.add(parryRing);
+    this._parryRangeRing = parryRing;
+    this._parryRangeMat = parryRing.material;
 
     return this.pawn;
   }
@@ -198,6 +235,16 @@ export class GhostSystem {
     }
     this._updateAttack(dt, playerPos);
     this._kiteCooldown = Math.max(0, this._kiteCooldown - dt);
+    const armR = this.pawn.mesh.userData?.armR;
+    if (this._attackAnimTimer > 0) {
+      this._attackAnimTimer -= dt;
+      if (armR) {
+        const t = 1 - Math.max(0, this._attackAnimTimer) / 0.45;
+        armR.rotation.x = Math.sin(t * Math.PI) * 1.5;
+      }
+    } else if (armR && Math.abs(armR.rotation.x) > 0.01) {
+      armR.rotation.x = 0;
+    }
 
     const speed = Math.hypot(body.velocity.x, body.velocity.z);
     this._footprintTimer -= dt;
@@ -365,11 +412,35 @@ export class GhostSystem {
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
 
     if (this._telegraphActive) {
+      const remaining = Math.max(0, this._telegraphUntil - nowSec()) / GAME_CONFIG.attackTelegraph;
+      if (this._telegraphRing) {
+        this._telegraphRing.position.set(b.x, 0.06, b.z);
+        this._telegraphRing.visible = true;
+        this._telegraphRing.scale.setScalar(0.85 + remaining * 0.3);
+        this._telegraphRingMat.opacity = 0.3 + (1 - remaining) * 0.45;
+      }
+      if (this._parryRangeRing) {
+        this._parryRangeRing.position.set(playerPos.x, 0.05, playerPos.z);
+        this._parryRangeRing.visible = true;
+        this._parryRangeMat.opacity = 0.18 + (1 - remaining) * 0.35;
+      }
+      const armR = this.pawn.mesh.userData?.armR;
+      if (armR) armR.rotation.x = -0.3 - (1 - remaining) * 1.4;
       if (nowSec() < this._telegraphUntil) return;
       if (!this._attackFired) {
         this._attackFired = true;
         this.audio?.play('whoosh');
         this.events.emit('camera.shake', { amount: 0.18 });
+        this._hideAttackRings();
+        this.scene.spawnSlashTrail(
+          { x: b.x, y: 0, z: b.z },
+          { x: playerPos.x, y: 0, z: playerPos.z },
+          '#ff6b6b',
+          0.45
+        );
+        this._attackAnimTimer = 0.45;
+        const arm = this.pawn.mesh.userData?.armR;
+        if (arm) arm.rotation.x = 1.5;
         if (
           dist < 2.6 &&
           playerPos.y - b.y < 0.8 &&
@@ -385,6 +456,7 @@ export class GhostSystem {
       if (nowSec() >= this._attackUntil) {
         this._telegraphActive = false;
         this._attackFired = false;
+        this._hideAttackRings();
         this._attackCooldown = rand(
           GAME_CONFIG.ghostAttackCooldownMin,
           GAME_CONFIG.ghostAttackCooldownMax
@@ -403,12 +475,19 @@ export class GhostSystem {
     this._dashFlash = 0.3;
     this.audio?.play('ghost');
     this.events.emit('ghost.telegraph', { until: this._telegraphUntil });
+    if (this._telegraphRing) this._telegraphRing.visible = true;
+    if (this._parryRangeRing) this._parryRangeRing.visible = true;
     this.events.emit('toast', {
       text: this.game.whipMode
         ? '鬼要出招了！左键拼文具，或按 R 闪开！'
         : '鬼要出招了！按 G 切鞭子拼文具，或按 R 闪开！',
       ms: 1400
     });
+  }
+
+  _hideAttackRings() {
+    if (this._telegraphRing) this._telegraphRing.visible = false;
+    if (this._parryRangeRing) this._parryRangeRing.visible = false;
   }
 
   _doGhostSwipe(playerPos) {
@@ -436,6 +515,7 @@ export class GhostSystem {
     if (!this._telegraphActive || nowSec() >= this._telegraphUntil) return false;
     this._telegraphActive = false;
     this._attackFired = false;
+    this._hideAttackRings();
     this._attackCooldown = rand(
       GAME_CONFIG.ghostAttackCooldownMin,
       GAME_CONFIG.ghostAttackCooldownMax
@@ -448,6 +528,19 @@ export class GhostSystem {
     const dx = b.x - p.x;
     const dz = b.z - p.z;
     const len = Math.hypot(dx, dz) || 1;
+    this.scene.spawnSlashTrail(
+      { x: p.x, y: 0, z: p.z },
+      { x: b.x, y: 0, z: b.z },
+      '#ffffff',
+      0.5
+    );
+    this.scene.spawnHitRing(
+      { x: (p.x + b.x) / 2, y: 1, z: (p.z + b.z) / 2 },
+      '#ffffff'
+    );
+    this._attackAnimTimer = 0.3;
+    const arm = this.pawn.mesh.userData?.armR;
+    if (arm) arm.rotation.x = 1.2;
     this.knockback((dx / len) * 9, (dz / len) * 9, 0.5);
     this._spinTimer = 0.8;
     this.game.stunnedUntil = nowSec() + 1.2;

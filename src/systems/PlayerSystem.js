@@ -1082,6 +1082,12 @@ export class PlayerSystem {
     this.ghost._dashFlash = 0.25;
     this.ghost.damage(1, { rage: 0 });
     this.audio?.play('whip');
+    this.scene.spawnSlashTrail(
+      { x: pp.x, y: 0, z: pp.z },
+      { x: gp.x, y: 0, z: gp.z },
+      '#ffd166',
+      0.35
+    );
     this.events.emit('hitstop', { ms: 60 });
     this.events.emit('camera.shake', { amount: 0.22 });
     this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#f4d35e');
@@ -1109,6 +1115,16 @@ export class PlayerSystem {
     this.playPose('hurt', 0.4);
     this.audio?.play('whoosh');
     this.events.emit('camera.shake', { amount: 0.1 });
+    const pp = this.getPos();
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    this.scene.spawnSlashTrail(
+      { x: pp.x, y: 0, z: pp.z },
+      { x: pp.x + fwdX * 2, y: 0, z: pp.z + fwdZ * 2 },
+      '#d9c8a0',
+      0.3
+    );
     this.events.emit('noise', { pos: this.getPos(), radius: 12, rage: 3 });
     this.events.emit('toast', {
       text: '抽空了！自己绊了一下，鬼看过来了！',
@@ -1228,6 +1244,12 @@ export class PlayerSystem {
     this.ghost.registerKnockdown();
     this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
     this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
+    this.scene.spawnSlashTrail(
+      { x: pp.x, y: 0, z: pp.z },
+      { x: gp.x, y: 0, z: gp.z },
+      '#ffd166',
+      0.6
+    );
     this.events.emit('toast', { text: '夺命连环鞭！！', ms: 1600 });
   }
 

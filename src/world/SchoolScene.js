@@ -821,6 +821,25 @@ export class SchoolScene {
     this.particles.push({ mesh: ring, ttl: 0.45, ring: true });
   }
 
+  spawnSlashTrail(from, to, color = '#ffd166', duration = 0.4) {
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const len = Math.hypot(dx, dz) || 0.1;
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(len, 0.04, 0.32),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false
+      })
+    );
+    mesh.position.set((from.x + to.x) / 2, 0.12, (from.z + to.z) / 2);
+    mesh.rotation.y = Math.atan2(dx, dz);
+    this.group.add(mesh);
+    this.particles.push({ mesh, ttl: duration, maxTtl: duration, trail: true });
+  }
+
   update(dt, game) {
     const currentStage = game.currentStage();
     if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {
@@ -858,6 +877,8 @@ export class SchoolScene {
       } else if (p.ring) {
         p.mesh.scale.setScalar(1 + (0.45 - p.ttl) * 6);
         p.mesh.material.opacity = Math.max(0, p.ttl / 0.45);
+      } else if (p.trail) {
+        p.mesh.material.opacity = Math.max(0, p.ttl / p.maxTtl);
       }
     }
 

@@ -361,6 +361,8 @@ export function makeGhostMesh() {
   group.userData.ghostMat = ghostMat;
   group.userData.aura = aura;
   group.userData.flames = flames;
+  group.userData.armL = armL;
+  group.userData.armR = armR;
   group.userData.assetKey = 'ghost';
   return group;
 }
