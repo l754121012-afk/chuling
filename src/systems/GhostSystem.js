@@ -431,7 +431,6 @@ export class GhostSystem {
     if (
       this.game.hiding ||
       this.game.broken ||
-      this.game.chainActive ||
       this.game.chainStuck ||
       this._isPinned()
     ) return;
