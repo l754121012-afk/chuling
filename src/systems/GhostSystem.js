@@ -83,6 +83,15 @@ export class GhostSystem {
     this._telegraphUntil = 0;
     this._attackUntil = 0;
     this._attackFired = false;
+    this._chargeActive = false;
+    this._chargeUntil = 0;
+    this._chargeDirX = 0;
+    this._chargeDirZ = 0;
+    this._chargeSpeed = 0;
+    this._chargeHitDone = false;
+    this._scareActive = false;
+    this._scareUntil = 0;
+    this._lastScareAt = -20;
     this._kiteCooldown = 0;
     this._attackAnimTimer = 0;
     this._telegraphRing = null;
@@ -218,6 +227,14 @@ export class GhostSystem {
     } else if (this._dashTimer > 0) {
       this._dashTimer -= dt;
       this._setVelocity(this._dashDirX * this._dashSpeed, this._dashDirZ * this._dashSpeed, dt);
+    } else if (this._chargeActive) {
+      this.pawn.body.velocity.set(
+        this._chargeDirX * this._chargeSpeed,
+        0,
+        this._chargeDirZ * this._chargeSpeed
+      );
+    } else if (this._scareActive || this._telegraphActive) {
+      this.pawn.body.velocity.set(0, 0, 0);
     } else {
       this._tryDash(dt, playerPos);
       if (this.game.phase === 'escape') {
@@ -413,6 +430,14 @@ export class GhostSystem {
       this.game.chainStuck ||
       this._isPinned()
     ) return;
+    if (this._chargeActive) {
+      this._updateCharge(dt, playerPos);
+      return;
+    }
+    if (this._scareActive) {
+      this._updateScare(dt, playerPos);
+      return;
+    }
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
 
@@ -505,12 +530,44 @@ export class GhostSystem {
 
     const stage = this.game.currentStage();
     const highRage = stage.id === 'furious' || stage.id === 'insane';
-    const attackRange = highRage ? 9 : 6.5;
+    const rangeMap = { calm: 4, annoyed: 4.5, angry: 5.5, furious: 7, insane: 9 };
+    const attackRange = rangeMap[stage.id] || 5;
     if (this._attackCooldown > 0) {
       this._attackCooldown -= dt * (highRage ? 3 : 1);
     }
     if (this._attackCooldown > 0) return;
     if (dist < 0.8 || dist > attackRange) return;
+
+    const scareThreshold = stage.id === 'insane'
+      ? 40
+      : stage.id === 'furious'
+        ? 32
+        : stage.id === 'angry'
+          ? 25
+          : 0;
+    if (
+      scareThreshold > 0 &&
+      this.game.stamina < scareThreshold &&
+      nowSec() - this._lastScareAt > 10
+    ) {
+      this._startScare(playerPos);
+      return;
+    }
+    const chargeChance = {
+      calm: 0,
+      annoyed: 0,
+      angry: 0.22,
+      furious: 0.35,
+      insane: 0.45
+    }[stage.id] || 0;
+    if (dist > 2.2 && Math.random() < chargeChance) {
+      this._startCharge(playerPos, stage);
+      return;
+    }
+    this._startSwipe(playerPos);
+  }
+
+  _startSwipe(playerPos) {
     this._telegraphActive = true;
     this._attackFired = false;
     this._telegraphUntil = nowSec() + GAME_CONFIG.attackTelegraph;
@@ -522,10 +579,150 @@ export class GhostSystem {
     if (this._parryRangeRing) this._parryRangeRing.visible = true;
     this.events.emit('toast', {
       text: this.game.whipMode
-        ? '鬼要出招了！左键拼文具，或按 R 闪开！'
-        : '鬼要出招了！按 G 切鞭子拼文具，或按 R 闪开！',
+        ? '鬼要挥爪了！左键拼文具，或按 R 闪开！'
+        : '鬼要挥爪了！按 G 切鞭子拼文具，或按 R 闪开！',
       ms: 1400
     });
+  }
+
+  _startCharge(playerPos, stage) {
+    const b = this.pawn.body.position;
+    const dx = playerPos.x - b.x;
+    const dz = playerPos.z - b.z;
+    const len = Math.hypot(dx, dz) || 1;
+    this._chargeActive = true;
+    this._chargeUntil = nowSec() + 0.55;
+    this._chargeDirX = dx / len;
+    this._chargeDirZ = dz / len;
+    this._chargeSpeed = Math.max(6, (stage.speed || 2.6) * 3.2);
+    this._chargeHitDone = false;
+    this._dashFlash = 0.35;
+    this.audio?.play('whoosh');
+    if (this._telegraphRing) {
+      this._telegraphRing.position.set(b.x, 0.06, b.z);
+      this._telegraphRing.visible = true;
+    }
+    this.events.emit('toast', { text: '它要撞过来了！按 R 闪开！', ms: 1400 });
+  }
+
+  _updateCharge(dt, playerPos) {
+    const b = this.pawn.body.position;
+    const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+    if (!this._chargeHitDone && dist < 1.25 && nowSec() >= this.game.dodgingUntil) {
+      this._chargeHitDone = true;
+      this._doGhostChargeHit(playerPos);
+    } else if (nowSec() < this.game.dodgingUntil && dist < 1.6) {
+      this._chargeHitDone = true;
+      this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'dodgeCharge');
+      this.events.emit('toast', { text: '你闪开了撞击！！', ms: 1200 });
+    }
+    if (nowSec() >= this._chargeUntil) {
+      this._chargeActive = false;
+      this._hideAttackRings();
+      this._attackCooldown = rand(
+        GAME_CONFIG.ghostAttackCooldownMin,
+        GAME_CONFIG.ghostAttackCooldownMax
+      );
+    }
+  }
+
+  _doGhostChargeHit(playerPos) {
+    this.game.stamina = Math.max(0, this.game.stamina - 30);
+    if (this.playerBody) {
+      const b = this.pawn.body.position;
+      const dx = playerPos.x - b.x;
+      const dz = playerPos.z - b.z;
+      const len = Math.hypot(dx, dz) || 1;
+      this.playerBody.velocity.set((dx / len) * 11, 4, (dz / len) * 11);
+    }
+    this.audio?.play('slap');
+    this.events.emit('toast', { text: '被撞飞了！体力-30', ms: 1600 });
+    this.events.emit('player.hurt');
+    this.events.emit('camera.shake', { amount: 0.42 });
+    this.events.emit('hitstop', { ms: 80 });
+    this.rage.addDrama(GAME_CONFIG.dramaHurt, 'charge');
+    this._speak('让开！！', 1400);
+  }
+
+  _startScare(playerPos) {
+    this._scareActive = true;
+    this._scareUntil = nowSec() + 0.9;
+    this._dashFlash = 0.4;
+    this.audio?.play('ghost');
+    if (this._telegraphRing) {
+      const b = this.pawn.body.position;
+      this._telegraphRing.position.set(b.x, 0.06, b.z);
+      this._telegraphRing.visible = true;
+    }
+    this.events.emit('toast', {
+      text: '它要鬼脸震慑了！快闪开或用 V 闪光打断！',
+      ms: 1800
+    });
+  }
+
+  _updateScare(dt, playerPos) {
+    if (nowSec() < this.game.dodgingUntil || nowSec() < this.game.stunnedUntil) {
+      this._scareActive = false;
+      this._hideAttackRings();
+      this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'scareBreak');
+      this.events.emit('toast', { text: '鬼脸震慑被打破了！！', ms: 1400 });
+      this._attackCooldown = rand(
+        GAME_CONFIG.ghostAttackCooldownMin,
+        GAME_CONFIG.ghostAttackCooldownMax
+      );
+      return;
+    }
+    if (nowSec() < this._scareUntil) return;
+    const b = this.pawn.body.position;
+    const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+    this._scareActive = false;
+    this._hideAttackRings();
+    this._lastScareAt = nowSec();
+    this._attackCooldown = rand(
+      GAME_CONFIG.ghostAttackCooldownMin,
+      GAME_CONFIG.ghostAttackCooldownMax
+    );
+    if (dist <= 3.0 && playerPos.y - b.y < 0.8 && nowSec() >= this.game.dodgingUntil) {
+      this._capturePlayer(playerPos);
+    } else {
+      this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'scareMiss');
+      this.events.emit('toast', { text: '鬼脸扑空了！', ms: 1200 });
+    }
+  }
+
+  _capturePlayer(playerPos) {
+    if (this._caught) return;
+    if (this.game.lives > 0) {
+      this.game.lives -= 1;
+      this.game.invincibleUntil = nowSec() + 2.2;
+      if (this.playerBody) {
+        const b = this.pawn.body.position;
+        const dx = playerPos.x - b.x;
+        const dz = playerPos.z - b.z;
+        const len = Math.hypot(dx, dz) || 1;
+        this.playerBody.velocity.set((dx / len) * 9, 4, (dz / len) * 9);
+      }
+      this._lastSeen = null;
+      this._lastNoise = null;
+      this._searchTimer = 0;
+      this._waypoint = this._pointAwayFromLocker();
+      this.audio?.play('slap');
+      this.events.emit('player.hurt');
+      this.events.emit('camera.shake', { amount: 0.45 });
+      this.events.emit('hitstop', { ms: 90 });
+      this.rage.addDrama(GAME_CONFIG.dramaHurt, 'caught');
+      if (this.game.lives <= 0) {
+        this._catchPlayer();
+        return;
+      }
+      this.events.emit('toast', {
+        text: `它把你抓住了！还剩 ${this.game.lives} 次机会`,
+        ms: 2200
+      });
+      this._speak('你跑不掉的……咦，你好臭。', 1800);
+      return;
+    }
+    this._catchPlayer();
   }
 
   _hideAttackRings() {
@@ -937,64 +1134,9 @@ export class GhostSystem {
       this._updateAttack(0, playerPos);
       return;
     }
-    const shouldCatch = this.game.phase === 'escape';
-    if (shouldCatch) {
-      if (this.game.lives > 0) {
-        this.game.lives -= 1;
-        this.game.invincibleUntil = nowSec() + 2.2;
-        if (this.playerBody) {
-          const dx = playerPos.x - b.x;
-          const dz = playerPos.z - b.z;
-          const len = Math.hypot(dx, dz) || 1;
-          this.playerBody.velocity.set((dx / len) * 9, 4, (dz / len) * 9);
-        }
-        this._lastSeen = null;
-        this._lastNoise = null;
-        this._searchTimer = 0;
-        this._waypoint = this._pointAwayFromLocker();
-        this.audio?.play('slap');
-        this.events.emit('player.hurt');
-        this.events.emit('camera.shake', { amount: 0.45 });
-        this.events.emit('hitstop', { ms: 90 });
-        this.rage.addDrama(GAME_CONFIG.dramaHurt, 'caught');
-        if (this.game.lives <= 0) {
-          this._catchPlayer();
-          return;
-        }
-        this.events.emit('toast', { text: `它把你举起来闻了闻！还剩 ${this.game.lives} 次机会`, ms: 2200 });
-        this._speak('你跑不掉的……咦，你好臭。', 1800);
-        return;
-      }
-      this._catchPlayer();
-      return;
+    if (this.game.phase === 'escape') {
+      this._capturePlayer(playerPos);
     }
-    if (stage.id === 'calm' || stage.id === 'annoyed') return;
-    if (
-      !this._telegraphActive &&
-      dist <= 1.6 &&
-      (stage.id === 'furious' || stage.id === 'insane' || this._attackCooldown <= 1.5)
-    ) {
-      this._attackCooldown = 0;
-      this._updateAttack(0, playerPos);
-      return;
-    }
-    if (this._slapCooldown > 0) return;
-    this._slapCooldown = GAME_CONFIG.slapCooldown;
-    this.game.invincibleUntil = nowSec() + 1.0;
-    this.rage.add(GHOST_CONFIG.rage.slap, 'slap');
-    this.game.stamina = Math.max(0, this.game.stamina - 25);
-    if (this.playerBody) {
-      const dx = playerPos.x - b.x;
-      const dz = playerPos.z - b.z;
-      const len = Math.hypot(dx, dz) || 1;
-      this.playerBody.velocity.set((dx / len) * 7, 4, (dz / len) * 7);
-    }
-    this.audio?.play('slap');
-    this.events.emit('toast', { text: '它扇了你一巴掌！体力-25', ms: 1800 });
-    this.events.emit('player.hurt');
-    this.rage.addDrama(GAME_CONFIG.dramaHurt, 'slap');
-    this.events.emit('camera.shake', { amount: 0.32 });
-    this._speak('别在教室里乱跑！', 1800);
   }
 
   _updateTargetingUI(playerPos) {
