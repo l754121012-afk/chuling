@@ -25,6 +25,9 @@ export class SettlementSystem {
     if (game.damages.includes('plant')) push('盆栽赔偿', -2000);
     if (game.damages.includes('glass')) push('玻璃赔偿', -5000);
     if (game.chainTutorialDone) push('完美连锁演出奖金', 3000);
+    if (game.maxWhipCombo >= 10) push('鞭神连击奖金', 8000);
+    else if (game.maxWhipCombo >= 5) push('鞭法表演奖金', 3000);
+    else if (game.maxWhipCombo >= 3) push('小小抽打奖金', 1000);
 
     if (game.phase === 'lost') {
       push('死亡抚恤金', 0);

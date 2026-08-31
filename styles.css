@@ -547,7 +547,7 @@ body.playing canvas {
   cursor: pointer;
 }
 
-#taunt-hint {
+#whip-hint {
   position: absolute;
   right: max(14px, env(safe-area-inset-right));
   bottom: 58px;
@@ -563,7 +563,7 @@ body.playing canvas {
   pointer-events: none;
 }
 
-#taunt-hint span {
+#whip-hint span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -575,17 +575,33 @@ body.playing canvas {
   font-weight: 700;
 }
 
-#taunt-hint.cooldown {
+#whip-combo {
+  min-width: 0 !important;
+  height: auto !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #c94f3d !important;
+  color: #fff !important;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+#whip-hint.cooldown {
   opacity: 0.45;
   border-color: #3d434c;
 }
 
-#taunt-hint.ready {
+#whip-hint.ready {
   border-color: #f4a261;
-  animation: tauntPulse 1s ease-in-out infinite;
+  animation: whipPulse 1s ease-in-out infinite;
 }
 
-@keyframes tauntPulse {
+#whip-hint.combo {
+  border-color: #c94f3d;
+  box-shadow: 0 0 14px rgba(201, 79, 61, 0.65);
+}
+
+@keyframes whipPulse {
   0%, 100% { box-shadow: 0 0 6px rgba(244, 162, 97, 0.3); }
   50% { box-shadow: 0 0 14px rgba(244, 162, 97, 0.8); }
 }

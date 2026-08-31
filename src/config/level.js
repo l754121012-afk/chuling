@@ -20,8 +20,8 @@ export const LEVEL_CONFIG = {
     { x: 6, z: 1.4, rotY: 0 }
   ],
   teacherDesk: { x: 9.2, z: -5.2, rotY: 0.3 },
-  bookshelf: { x: -10.4, z: -3.0, rotY: 0.2 },
-  chainTrapSpot: { x: -10.6, z: -4.8, r: 0.9 },
+  bookshelf: { x: -2.5, z: -3.5, rotY: 0.2 },
+  chainTrapSpot: { x: -1.5, z: -4.6, r: 0.9 },
   lockers: { x: 8.8, z: 2.2, rotY: -0.3 },
   trashCan: { x: 0, z: 3.6 },
   blackboard: { x: 0, z: -6.86, y: 1.85, w: 4.4, h: 1.25 },
@@ -37,10 +37,9 @@ export const LEVEL_CONFIG = {
   ],
   plant: { x: 10.3, z: 2.0 },
   crates: [
-    { x: 6.4, z: -3.2 },
-    { x: -1.5, z: 3.2 }
+    { x: -8.2, z: -4.2 }
   ],
-  crateTarget: { x: 8.0, z: -1.8, r: 1.3 },
+  crateTarget: { x: -5.7, z: -2.5, r: 1.1 },
   highCatwalk: [
     { from: { x: 10.2, z: -1.5 }, to: { x: 10.2, z: 4.6 }, y: 4.0 },
     { from: { x: 10.2, z: 4.6 }, to: { x: 0, z: 4.6 }, y: 4.0 }

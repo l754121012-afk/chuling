@@ -60,6 +60,8 @@ export class GhostSystem {
     this._dashDirZ = 0;
     this._dashSpeed = 0;
     this._dashFlash = 0;
+    this._spinTimer = 0;
+    this._spinDir = 1;
     this._knockbackTimer = 0;
     this._knockbackVX = 0;
     this._knockbackVZ = 0;
@@ -154,6 +156,8 @@ export class GhostSystem {
 
     if (this._isPinned()) {
       this.pawn.body.velocity.set(0, 0, 0);
+    } else if (this.game.chainStuck) {
+      this.pawn.body.velocity.set(0, 0, 0);
     } else if (weakNow) {
       this.pawn.body.velocity.set(0, 0, 0);
       if (this.game.phase === 'escape') {
@@ -175,6 +179,11 @@ export class GhostSystem {
       } else {
         this._investigateAI(dt, playerPos);
       }
+    }
+
+    if (this._spinTimer > 0) {
+      this._spinTimer -= dt;
+      this.pawn.mesh.rotation.y += dt * 14 * this._spinDir;
     }
 
     const speed = Math.hypot(body.velocity.x, body.velocity.z);
@@ -297,6 +306,7 @@ export class GhostSystem {
   _tryDash(dt, playerPos) {
     if (this.game.hiding) return;
     if (this._isPinned()) return;
+    if (this.game.chainStuck) return;
     if (this.game.chainActive) return;
     if (this.game.weakUntil > nowSec()) return;
     this._dashCooldown -= dt;
@@ -439,6 +449,7 @@ export class GhostSystem {
     if (this.game.slowedUntil > nowSec()) speed *= 0.45;
     if (this.game.stunnedUntil > nowSec()) speed = 0;
     if (this._isPinned()) speed = 0;
+    if (this.game.chainStuck) speed = 0;
 
     if (this.game.chainActive && this.game.chainStep === 'lure') {
       const target = this._lastNoise;
@@ -580,6 +591,7 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this.game.hiding) return;
+    if (this.game.chainStuck) return;
     if (this._isPinned()) return;
     if (this.game.ropeClimbing) return;
     if (this.game.ladderClimbing) return;

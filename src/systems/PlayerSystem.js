@@ -4,7 +4,7 @@ import { GAME_CONFIG } from '../config/game.js';
 import { ITEM_DEFS } from '../config/items.js';
 import { GROUPS, makeBody, syncMeshToBody } from '../core/Physics.js';
 import { makePlayerMesh } from '../core/PlaceholderAssets.js';
-import { choice, clamp, distance2D, nowSec, rand } from '../core/Utils.js';
+import { clamp, distance2D, nowSec, rand } from '../core/Utils.js';
 
 export class PlayerSystem {
   constructor({
@@ -25,7 +25,7 @@ export class PlayerSystem {
     this.phoneLight = null;
     this.ghost = null;
     this._flashCooldown = 0;
-    this._tauntCooldown = 0;
+    this._whipCooldown = 0;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
@@ -129,9 +129,9 @@ export class PlayerSystem {
     this._updatePendingCrush();
     this._handleItemControls();
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
-    this._tauntCooldown = Math.max(0, this._tauntCooldown - dt);
+    this._whipCooldown = Math.max(0, this._whipCooldown - dt);
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
-    if (this.input.justPressed('KeyG')) this._doTaunt();
+    if (this.input.justPressed('KeyG')) this._doWhip();
 
     if (this._pushTarget) {
       const pos = this.getPos();
@@ -158,7 +158,7 @@ export class PlayerSystem {
           if (td < t.r) {
             this.game.crateRouteComplete = true;
             this.audio?.play('gate');
-            this.events.emit('toast', { text: '箱子到位！高台路线打通！', ms: 2200 });
+            this.events.emit('toast', { text: '箱子到位！踩着箱子跳上柱子，抓绳索！', ms: 2600 });
             this.scene.spawnParticles({ x: t.x, y: 0.6, z: t.z }, '#f4d35e');
             this.scene.spawnHitRing({ x: t.x, y: 0.5, z: t.z }, '#f4d35e');
           }
@@ -689,7 +689,7 @@ export class PlayerSystem {
       if (this.game.chainActive && this.game.chainStep === 'shelf' && this.ghost) {
         const gp = this.ghost.getPos();
         const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
-        if (gd >= 3.2) {
+        if (gd >= 3.6) {
           this.events.emit('toast', { text: '鬼还离书架太远，先把它引到黄色圈里！', ms: 1800 });
           return;
         }
@@ -772,7 +772,7 @@ export class PlayerSystem {
     if (this._shelfCrushApplied || !this.ghost) return false;
     const gp = this.ghost.getPos();
     const gd = Math.hypot(gp.x - prop.body.position.x, gp.z - prop.body.position.z);
-    if (gd > 3.2) return false;
+    if (gd > 3.6) return false;
     this._shelfCrushApplied = true;
     this._pendingCrushUntil = 0;
     this._pendingCrushProp = null;
@@ -957,25 +957,96 @@ export class PlayerSystem {
     }
   }
 
-  _doTaunt() {
-    if (this._tauntCooldown > 0) return;
-    this._tauntCooldown = 2;
-    this.game.tauntCooldownUntil = nowSec() + 2;
-    this.playPose('use', 0.5);
-    this.audio?.play('bleat');
-    const lines = ['主管！我在这里！！', '来抓我啊！笨蛋！', '你倒是追啊！！'];
-    this.events.emit('toast', { text: choice(lines), ms: 1600 });
-    this.events.emit('noise', { pos: this.getPos(), radius: 14, rage: 1 });
-    if (this.ghost) {
-      const gp = this.ghost.getPos();
-      const pp = this.getPos();
-      const dx = gp.x - pp.x;
-      const dz = gp.z - pp.z;
-      this.ghost._facing = Math.atan2(dx, dz);
-      this.ghost._lastNoise = { x: pp.x, z: pp.z };
-      this.ghost._dashFlash = 0.25;
-      this.ghost._speak('你喊什么喊！！', 1500);
+  _doWhip() {
+    if (this._whipCooldown > 0) return;
+    if (this.game.hiding || this.game.notebookOpen) return;
+    if (this.game.ropeClimbing || this.game.ladderClimbing) return;
+    if (this.game.stamina < GAME_CONFIG.whipStaminaCost) {
+      this.events.emit('toast', { text: '没力气抽了！先喘口气', ms: 1300 });
+      return;
     }
+
+    this._whipCooldown = GAME_CONFIG.whipCooldown;
+    this.game.whipCooldownUntil = nowSec() + GAME_CONFIG.whipCooldown;
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.whipStaminaCost);
+    this.playPose('use', 0.4);
+
+    if (this.game.whipComboUntil < nowSec()) this.game.whipCombo = 0;
+    if (!this.ghost) {
+      this._whipMiss();
+      return;
+    }
+    if (this.ghost._isPinned() || this.game.chainStuck) {
+      this.game.whipCombo = 0;
+      this.events.emit('toast', {
+        text: this.game.chainStuck ? '它都被修正带黏住了，别抽了！' : '它都被压扁了，别鞭尸了！',
+        ms: 1400
+      });
+      this.audio?.play('whoosh');
+      return;
+    }
+
+    const pp = this.getPos();
+    const gp = this.ghost.getPos();
+    const dx = gp.x - pp.x;
+    const dz = gp.z - pp.z;
+    const dist = Math.hypot(dx, dz);
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
+    if (dist > GAME_CONFIG.whipRange || dist < 0.5 || dot < GAME_CONFIG.whipCone) {
+      this._whipMiss();
+      return;
+    }
+
+    this.game.whipCombo += 1;
+    this.game.whipHits += 1;
+    this.game.maxWhipCombo = Math.max(this.game.maxWhipCombo, this.game.whipCombo);
+    this.game.whipComboUntil = nowSec() + GAME_CONFIG.whipComboWindow;
+    const combo = this.game.whipCombo;
+    const rageAmount = GAME_CONFIG.whipRageBase + (combo >= 10 ? 8 : combo >= 5 ? 5 : 0);
+    this.rage.add(rageAmount, 'whip');
+    this.ghost.knockback(
+      (dx / dist) * GAME_CONFIG.whipKnockback,
+      (dz / dist) * GAME_CONFIG.whipKnockback,
+      0.35
+    );
+    this.ghost._spinTimer = GAME_CONFIG.whipSpinDuration;
+    this.ghost._spinDir = dx >= 0 ? 1 : -1;
+    this.ghost._dashFlash = 0.25;
+    this.ghost.damage(1, { rage: 0 });
+    this.audio?.play('whip');
+    this.events.emit('hitstop', { ms: 60 });
+    this.events.emit('camera.shake', { amount: 0.22 });
+    this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#f4d35e');
+    this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#f4d35e');
+    this.events.emit('toast', { text: `啪！连击 x${combo}`, ms: 1100 });
+
+    if (combo % 5 === 0) {
+      this.rage.add(12, 'whipBurst');
+      this.ghost._speak('你居然敢抽我！！', 1800);
+      this.ghost._dashCooldown = 0;
+      this.ghost._skillCooldown = 0;
+      this.events.emit('act.card', {
+        title: `第 ${combo} 连击 · 它火了！！`,
+        line: '鬼的能力提升了，别抽太爽忘记跑！'
+      });
+    }
+  }
+
+  _whipMiss() {
+    this.game.whipCombo = 0;
+    this.game.whipMisses += 1;
+    this.game.stickyUntil = nowSec() + 0.6;
+    this.playPose('hurt', 0.4);
+    this.audio?.play('whoosh');
+    this.events.emit('camera.shake', { amount: 0.1 });
+    this.events.emit('noise', { pos: this.getPos(), radius: 12, rage: 3 });
+    this.events.emit('toast', {
+      text: '抽空了！自己绊了一下，鬼看过来了！',
+      ms: 1600
+    });
   }
 
   _cycleItem() {

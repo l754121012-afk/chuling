@@ -55,7 +55,7 @@ export class ChainDirector {
       this.audio?.play('click');
       this.events.emit('act.card', {
         title: '连锁第一环 · 黏住它',
-        line: '修正带就位！用 G 挑衅，或者等它自己踩上来。'
+        line: '修正带就位！用 G 抽它赶过去，或者等它自己踩上来。'
       });
       this.events.emit('toast', { text: '修正带陷阱就位！鬼马上就要倒霉了！', ms: 2200 });
       return;
@@ -109,7 +109,7 @@ export class ChainDirector {
         const gp = this.ghost.getPos();
         const bp = { x: bookshelf.body.position.x, z: bookshelf.body.position.z };
         const gd = Math.hypot(gp.x - bp.x, gp.z - bp.z);
-        if (gd > 3.0) {
+        if (gd > 3.6) {
           this._dragTimer = 1.0;
           const spot = this._chainSpot();
           this.ghost.pawn.body.position.set(spot.x, 1.2, spot.z);

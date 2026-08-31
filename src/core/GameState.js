@@ -47,7 +47,12 @@ export class GameState {
     this.chainPinned = false;
     this.chainTutorialDone = false;
     this.pinnedUntil = 0;
-    this.tauntCooldownUntil = 0;
+    this.whipCooldownUntil = 0;
+    this.whipCombo = 0;
+    this.maxWhipCombo = 0;
+    this.whipHits = 0;
+    this.whipMisses = 0;
+    this.whipComboUntil = 0;
   }
 
   addItem(id, n = 1) {

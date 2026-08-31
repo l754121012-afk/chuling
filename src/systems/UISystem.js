@@ -43,7 +43,8 @@ export class UISystem {
       vignette: document.getElementById('danger-vignette'),
       warning: document.getElementById('ghost-warning'),
       warningLabel: document.getElementById('warn-label'),
-      tauntHint: document.getElementById('taunt-hint'),
+      whipHint: document.getElementById('whip-hint'),
+      whipCombo: document.getElementById('whip-combo'),
       crosshair: document.getElementById('crosshair'),
       itemHint: document.getElementById('item-hint'),
       lives: document.getElementById('lives'),
@@ -195,10 +196,16 @@ export class UISystem {
             : '左键在脚下放置陷阱';
       this.el.itemHint.textContent = `${def.name}：${usage}`;
     }
-    if (this.el.tauntHint) {
-      const ready = game.tauntCooldownUntil <= performance.now() / 1000;
-      this.el.tauntHint.classList.toggle('ready', ready);
-      this.el.tauntHint.classList.toggle('cooldown', !ready);
+    if (this.el.whipHint) {
+      const now = performance.now() / 1000;
+      const ready = game.whipCooldownUntil <= now;
+      const comboActive = game.whipCombo >= 2 && game.whipComboUntil > now;
+      this.el.whipHint.classList.toggle('ready', ready);
+      this.el.whipHint.classList.toggle('cooldown', !ready);
+      this.el.whipHint.classList.toggle('combo', comboActive);
+      if (this.el.whipCombo) {
+        this.el.whipCombo.textContent = comboActive ? `x${game.whipCombo}` : '';
+      }
     }
   }
 
@@ -214,7 +221,7 @@ export class UISystem {
         place: game.hasItem('tape')
           ? '连锁教学：把修正带画进黄色圈里（教室西侧书架旁）'
           : '连锁教学：先拿修正带，再画进黄色圈里',
-        lure: '连锁教学：鬼走向陷阱了，按 G 挑衅或等它踩上去',
+        lure: '连锁教学：鬼走向陷阱了，用 G 抽它或等它踩上去',
         shelf: '连锁教学：它黏住了！推倒书架把它压扁！',
         seal: '连锁教学：它被压扁了！用订书机封印！'
       };

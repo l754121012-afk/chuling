@@ -47,6 +47,10 @@ export class AudioSystem {
     const t = ctx.currentTime;
 
     if (name === 'whoosh') this._noise(t, 0.22, 0.18, 'bandpass', 900, 1.2, 3600);
+    else if (name === 'whip') {
+      this._noise(t, 0.1, 0.3, 'bandpass', 3600, 3, 800);
+      this._tone(t, 1700, 0.09, 'sine', 0.16, 260);
+    }
     else if (name === 'hit') this._tone(t, 160, 0.16, 'sine', 0.32, 70);
     else if (name === 'splat') this._noise(t, 0.3, 0.25, 'lowpass', 700, 0.8, 180);
     else if (name === 'stapler') {
