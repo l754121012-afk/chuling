@@ -337,7 +337,7 @@ export function makeGhostMesh() {
   });
   const makeGhostHand = () => {
     const hand = new THREE.Group();
-    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), handMat);
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), handMat);
     hand.add(palm);
     for (let i = -1; i <= 1; i++) {
       const claw = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.36, 8), clawMat);
@@ -349,21 +349,21 @@ export function makeGhostMesh() {
   };
 
   const armLGroup = new THREE.Group();
-  armLGroup.position.set(-0.55, 1.35, 0);
-  armLGroup.rotation.z = 0.5;
-  const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), ghostMat);
-  armLMesh.position.y = -0.25;
+  armLGroup.position.set(-0.75, 1.35, 0);
+  armLGroup.rotation.z = 0.75;
+  const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 8), ghostMat);
+  armLMesh.position.y = -0.3;
   const handL = makeGhostHand();
-  handL.position.set(0, -0.58, 0);
+  handL.position.set(0, -0.66, 0);
   armLGroup.add(armLMesh, handL);
 
   const armRGroup = new THREE.Group();
-  armRGroup.position.set(0.55, 1.35, 0);
-  armRGroup.rotation.z = -0.5;
-  const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), ghostMat);
-  armRMesh.position.y = -0.25;
+  armRGroup.position.set(0.75, 1.35, 0);
+  armRGroup.rotation.z = -0.75;
+  const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 8), ghostMat);
+  armRMesh.position.y = -0.3;
   const handR = makeGhostHand();
-  handR.position.set(0, -0.58, 0);
+  handR.position.set(0, -0.66, 0);
   armRGroup.add(armRMesh, handR);
 
   const aura = new THREE.Mesh(

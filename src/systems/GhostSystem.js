@@ -248,7 +248,7 @@ export class GhostSystem {
     } else if (armR && !this._telegraphActive && Math.abs(armR.rotation.x) > 0.01) {
       armR.rotation.x = 0;
       armR.rotation.z = -0.5;
-      if (handR) handR.position.set(0, -0.58, 0);
+      if (handR) handR.position.set(0, -0.66, 0);
     }
 
     const speed = Math.hypot(body.velocity.x, body.velocity.z);

@@ -913,7 +913,11 @@ export class SchoolScene {
       p.ttl -= dt;
       if (p.ttl <= 0) {
         this.group.remove(p.mesh);
-        p.mesh.material.dispose();
+        if (p.group) {
+          for (const child of p.mesh.children) child.material?.dispose();
+        } else {
+          p.mesh.material?.dispose();
+        }
         this.particles.splice(i, 1);
       } else if (p.ring) {
         p.mesh.scale.setScalar(1 + (0.45 - p.ttl) * 6);
