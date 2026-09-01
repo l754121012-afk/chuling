@@ -60,7 +60,7 @@ input.onLockError = () => {
 };
 const cameraSys = new CameraSystem(camera, school);
 const rage = new RageSystem(game, events, audio);
-const ghost = new GhostSystem({ scene: school, physics, events, game, rage, audio });
+const ghost = new GhostSystem({ scene: school, physics, events, game, rage, audio, economy });
 const player = new PlayerSystem({
   scene: school,
   physics,
@@ -171,6 +171,8 @@ events.on('game.start', () => {
   chain.reset();
   audio.init();
   ui.toggleNotebook(false);
+  ui.closeShop();
+  ui.toggleBackpack(false);
   ui.sync(game);
   events.emit('toast', { text: '实习开始：先找线索，别惊动它。主管：这一单预计到手 12 円。', ms: 3200 });
   audio.play('click');

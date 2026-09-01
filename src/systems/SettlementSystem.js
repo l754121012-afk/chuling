@@ -37,6 +37,14 @@ export class SettlementSystem {
       push('精神损失费', -20000);
       push('违约金', -10000);
     }
+    if (game.damageWaiver) {
+      for (const row of rows) {
+        if (row.amount < 0 && row.label !== '基本工资') {
+          row.amount = Math.ceil(row.amount / 2);
+        }
+      }
+      total = rows.reduce((sum, row) => sum + row.amount, 0);
+    }
 
     let finalLine;
     let rating = 'C';

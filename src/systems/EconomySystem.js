@@ -10,7 +10,11 @@ const POINTS_SHOP = {
   start_mine: { name: '尖叫地雷补给（+1）', cost: 500, icon: '地雷' },
   battery_pack: { name: '手机电池扩容', cost: 600, icon: '🔋' },
   stamina_boost: { name: '更结实的鞋', cost: 800, icon: '鞋' },
-  discount_card: { name: '百元店会员卡', cost: 2000, icon: '卡' }
+  discount_card: { name: '百元店会员卡', cost: 2000, icon: '卡' },
+  stamina_potion: { name: '体力恢复药（开局+30）', cost: 400, icon: '饭' },
+  free_pass: { name: '主管免责卡（一次捕获无效）', cost: 1200, icon: '卡' },
+  damage_waiver: { name: '赔偿减免券（赔偿减半）', cost: 1500, icon: '券' },
+  double_points: { name: '积分双倍券（下一局）', cost: 1000, icon: 'x2' }
 };
 
 const RELIC_SHOP = {
@@ -18,7 +22,15 @@ const RELIC_SHOP = {
   sweat_spray: { name: '止汗喷雾（体力回复+）', cost: 3, icon: '💨' },
   mine_upgrade: { name: '尖叫地雷升级（开局+1）', cost: 4, icon: '地雷' },
   auto_tape: { name: '自动修正带（开局+1）', cost: 5, icon: '▤' },
-  office_vip: { name: '办公室装修（VIP打工）', cost: 3, icon: '🪑' }
+  office_vip: { name: '办公室装修（VIP打工）', cost: 3, icon: '🪑' },
+  finisher_fan: { name: '新处决：挂到吊扇', cost: 2, icon: '风扇' },
+  finisher_report: { name: '新处决：用成绩单扇脸', cost: 2, icon: '成绩单' },
+  ghost_hat: { name: '鬼帽子（皮肤）', cost: 2, icon: '帽' },
+  phone_face: { name: '手机表情包（皮肤）', cost: 2, icon: '表情' },
+  office_plant: { name: '办公室盆栽', cost: 3, icon: '盆栽' },
+  auto_tape2: { name: '自动修正带 II（开局+2）', cost: 6, icon: '▤' },
+  mine_upgrade2: { name: '尖叫地雷升级 II（开局+2）', cost: 6, icon: '地雷' },
+  resign_key: { name: '隐藏辞职结局钥匙', cost: 8, icon: '钥匙' }
 };
 
 export class EconomySystem {
@@ -52,7 +64,8 @@ export class EconomySystem {
 
   award(game, settlement) {
     const ratingBonus = { S: 10, A: 6, B: 3, C: 1, D: 0 }[settlement.rating] || 0;
-    const points = Math.max(0, Math.floor(settlement.total / 500)) + ratingBonus;
+    let points = Math.max(0, Math.floor(settlement.total / 500)) + ratingBonus;
+    if (game.doublePoints) points *= 2;
     let chance = 0.04 + ratingBonus * 0.02;
     if (game.finisherDone) chance += 0.25;
     if (game.parryCount >= 3) chance += 0.15;
@@ -104,6 +117,12 @@ export class EconomySystem {
     if (u.battery_pack) game.batteryMax = 120;
     if (u.stamina_boost) game.staminaMax = GAME_CONFIG.staminaMax + 5;
     if (u.sweat_spray) game.staminaRegenBonus = 2;
+    if (u.stamina_potion) game.stamina = Math.min(game.staminaMax, game.stamina + 30);
+    if (u.free_pass) game.freePass = 1;
+    if (u.damage_waiver) game.damageWaiver = true;
+    if (u.double_points) game.doublePoints = true;
+    if (u.auto_tape2) game.addItem('tape', 2);
+    if (u.mine_upgrade2) game.addItem('mine', 2);
   }
 
   get points() {

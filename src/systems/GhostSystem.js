@@ -30,13 +30,14 @@ const GHOST_VISUALS = {
 };
 
 export class GhostSystem {
-  constructor({ scene, physics, events, game, rage, audio }) {
+  constructor({ scene, physics, events, game, rage, audio, economy }) {
     this.scene = scene;
     this.physics = physics;
     this.events = events;
     this.game = game;
     this.rage = rage;
     this.audio = audio;
+    this.economy = economy;
     this.pawn = null;
     this.playerPos = () => ({ x: 0, y: 0, z: 0 });
     this.playerBody = null;
@@ -870,6 +871,15 @@ export class GhostSystem {
 
   _capturePlayer(playerPos) {
     if (this._caught) return;
+    if (this.game.freePass > 0) {
+      this.game.freePass -= 1;
+      this.game.invincibleUntil = nowSec() + 1.0;
+      this.events.emit('toast', { text: '主管免责卡生效！这次不算！', ms: 2000 });
+      this.events.emit('danmaku', {
+        text: choice(['免责卡救命！！', '主管这次没扣钱！'])
+      });
+      return;
+    }
     if (this.game.lives > 0) {
       this.game.lives -= 1;
       this.game.invincibleUntil = nowSec() + 2.2;
@@ -1031,11 +1041,20 @@ export class GhostSystem {
     this.events.emit('slowmo', { ms: 500 });
     this.events.emit('act.card', {
       title: '喜剧处决！！',
-      line: choice(['钉进成绩单！', '塞进垃圾桶！！', '拖去擦黑板！！！'])
+      line: choice(this._finisherLines())
     });
     this.events.emit('danmaku.burst');
     this.audio?.play('win');
     this._sealSuccess('finisher');
+  }
+
+  _finisherLines() {
+    const lines = ['钉进成绩单！', '塞进垃圾桶！！', '拖去擦黑板！！！'];
+    const u = this.economy?.unlocks || {};
+    if (u.finisher_toilet) lines.push('塞进马桶冲走！！');
+    if (u.finisher_fan) lines.push('挂到吊扇上转圈！！');
+    if (u.finisher_report) lines.push('用成绩单扇它脸！！');
+    return lines;
   }
 
   _startDisguise(playerPos) {

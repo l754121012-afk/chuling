@@ -392,7 +392,7 @@ export class PlayerSystem {
     const sprint = this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight');
     const canSprint = sprint && this.game.stamina > GAME_CONFIG.staminaMinToSprint;
     const sticky = this.game.stickyUntil > nowSec();
-    this.crouching = this.input.isDown('KeyX') || this.input.isDown('ControlLeft');
+    this.crouching = this.input.isDown('KeyC') || this.input.isDown('ControlLeft');
     const baseSpeed = canSprint ? GAME_CONFIG.sprintSpeed : GAME_CONFIG.walkSpeed;
     const speed = baseSpeed * (sticky ? 0.6 : 1) * (this.crouching ? 0.55 : 1);
 

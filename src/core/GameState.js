@@ -63,6 +63,9 @@ export class GameState {
     this.chargingUntil = 0;
     this.finisherDone = false;
     this.dramaFullNotified = false;
+    this.freePass = 0;
+    this.damageWaiver = false;
+    this.doublePoints = false;
     this.parryCount = 0;
     this.dodgeCount = 0;
     this.kiteCount = 0;
