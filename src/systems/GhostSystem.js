@@ -426,23 +426,25 @@ export class GhostSystem {
     if (this._dashCooldown > 0) return;
     const stage = this.game.currentStage();
     const idx = GHOST_CONFIG.stages.findIndex(s => s.id === stage.id);
-    if (idx < 2) return;
     const b = this.pawn.body.position;
     const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
     if (dist < 2.5 || dist > 14) return;
     if (Math.random() > dt * 0.55) return;
-    const speed = (GHOST_CONFIG.stages[idx].speed || 2.6) * 1.8;
+    const micro = idx < 2;
+    const speed = micro
+      ? (GHOST_CONFIG.stages[idx].speed || 1.35) * 1.35
+      : (GHOST_CONFIG.stages[idx].speed || 2.6) * 1.8;
     const dx = playerPos.x - b.x;
     const dz = playerPos.z - b.z;
     const len = Math.hypot(dx, dz) || 1;
     this._dashDirX = dx / len;
     this._dashDirZ = dz / len;
     this._dashSpeed = speed;
-    this._dashTimer = 0.38;
-    this._dashCooldown = rand(2.8, 5.5);
-    this._dashFlash = 0.3;
+    this._dashTimer = micro ? 0.22 : 0.38;
+    this._dashCooldown = micro ? rand(4, 8) : rand(2.8, 5.5);
+    this._dashFlash = micro ? 0.2 : 0.3;
     this.audio?.play('whoosh');
-    this.events.emit('toast', { text: '鬼突然加速了！', ms: 1100 });
+    if (!micro) this.events.emit('toast', { text: '鬼突然加速了！', ms: 1100 });
   }
 
   knockback(vx, vz, duration = 0.45) {
@@ -613,7 +615,8 @@ export class GhostSystem {
       furious: 0.35,
       insane: 0.4
     }[stage.id] || 0;
-    if (dist > 2.2 && Math.random() < chargeChance) {
+    const preferredCharge = dist > 3.5 && chargeChance > 0 ? 0.65 : chargeChance;
+    if (dist > 2.2 && Math.random() < preferredCharge) {
       this._startCharge(playerPos, stage);
       return;
     }
@@ -1196,7 +1199,11 @@ export class GhostSystem {
       this._setVelocity(0, 0, 0);
       return;
     }
-    if (this.game.huntActive || this.game.ghostSpeedBoostUntil > nowSec()) {
+    if (
+      this.game.huntActive ||
+      this.game.bellPhaseActive ||
+      this.game.ghostSpeedBoostUntil > nowSec()
+    ) {
       speed *= 1.25;
     }
 

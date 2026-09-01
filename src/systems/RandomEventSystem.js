@@ -30,6 +30,11 @@ export class RandomEventSystem {
     this.game.huntUntil = 0;
     this.game.huntDone = false;
     this.game.desperate = false;
+    this.game.bellPhaseActive = false;
+    this.game.bellPhaseUntil = 0;
+    this.game.bellCircle = null;
+    this.game.bellCharge = 0;
+    this.game.bellPhaseIndex = 0;
     this.game.rebelItem = Math.random() < 0.6
       ? ['pen', 'glue', 'tape', 'crossbow', 'mine'][Math.floor(Math.random() * 5)]
       : null;
@@ -39,6 +44,7 @@ export class RandomEventSystem {
     this._clearSupplyDrop();
     this._blackoutPending = false;
     this.events.emit('hunt.end');
+    this.events.emit('bell.end');
   }
 
   _rollEvents() {
@@ -80,6 +86,17 @@ export class RandomEventSystem {
         line: '最后机会：鞭子火力全开，拼刀窗口变宽！'
       });
       this.audio?.play('heartbeat');
+    }
+
+    if (
+      !this.game.bellPhaseActive &&
+      this.game.bellPhaseIndex < GAME_CONFIG.bellPhaseTimes.length &&
+      nowSec() - this.game.runStart >= GAME_CONFIG.bellPhaseTimes[this.game.bellPhaseIndex]
+    ) {
+      this._startBellPhase();
+    }
+    if (this.game.bellPhaseActive) {
+      this._updateBellPhase(dt);
     }
 
     if (this._blackoutPending && this.game.lightsOutUntil <= nowSec()) {
@@ -370,5 +387,88 @@ export class RandomEventSystem {
     this.audio?.play('heartbeat');
     this.events.emit('toast', { text: '猎杀时刻！！活过 8 秒！', ms: 2200 });
     this.events.emit('camera.shake', { amount: 0.35 });
+  }
+
+  _startBellPhase() {
+    this.game.bellPhaseActive = true;
+    this.game.bellPhaseUntil = nowSec() + GAME_CONFIG.bellPhaseDuration;
+    this.game.bellCharge = 0;
+    const c = this.scene.L.classroom;
+    const x = rand(c.minX + 2, c.maxX - 2);
+    const z = rand(c.minZ + 2, c.maxZ - 2);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(GAME_CONFIG.bellCircleRadius - 0.2, GAME_CONFIG.bellCircleRadius, 40),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd166,
+        transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.05, z);
+    this.scene.group.add(ring);
+    const beam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.08, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.35 })
+    );
+    beam.position.set(x, 4, z);
+    this.scene.group.add(beam);
+    this.game.bellCircle = { x, z, ring, beam };
+    this.events.emit('bell.start');
+    this.events.emit('act.card', {
+      title: '下课铃响了！！',
+      line: '值日点出现：站进去 2 秒拉响铃声，能反制它！'
+    });
+    this.events.emit('beat.flash', { color: '#4cc9f0' });
+    this.audio?.play('phone');
+  }
+
+  _updateBellPhase(dt) {
+    if (nowSec() >= this.game.bellPhaseUntil) {
+      this._endBellPhase(false);
+      return;
+    }
+    const circle = this.game.bellCircle;
+    if (!circle) return;
+    const p = this.player.getPos();
+    if (distance2D(p.x, p.z, circle.x, circle.z) < GAME_CONFIG.bellCircleRadius) {
+      this.game.bellCharge += dt;
+      if (this.game.bellCharge >= GAME_CONFIG.bellChargeTime) {
+        this._completeBell(circle);
+      }
+    } else {
+      this.game.bellCharge = 0;
+    }
+  }
+
+  _completeBell(circle) {
+    this.ghost.stunnedUntil = nowSec() + 4;
+    this.rage.reduce(20, 'bell');
+    this.rage.addDrama(20, 'bell');
+    this.events.emit('hitstop', { ms: 120 });
+    this.events.emit('slowmo', { ms: 300 });
+    this.events.emit('camera.shake', { amount: 0.55 });
+    this.events.emit('danmaku.burst');
+    this.scene.spawnParticles({ x: circle.x, y: 1, z: circle.z }, '#ffd166');
+    this.events.emit('toast', { text: '值日铃响了！！鬼被震晕！', ms: 2000 });
+    this._endBellPhase(true);
+  }
+
+  _endBellPhase(used) {
+    this.game.bellPhaseActive = false;
+    const circle = this.game.bellCircle;
+    if (circle) {
+      this.scene.group.remove(circle.ring);
+      this.scene.group.remove(circle.beam);
+    }
+    this.game.bellCircle = null;
+    this.game.bellCharge = 0;
+    this.game.bellPhaseIndex += 1;
+    this.events.emit('bell.end');
+    if (!used) {
+      this.events.emit('toast', { text: '值日点消失了，危机回落。', ms: 1400 });
+    }
   }
 }

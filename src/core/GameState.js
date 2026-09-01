@@ -47,6 +47,11 @@ export class GameState {
     this.ghostSpeedBoostUntil = 0;
     this.deskRampageUntil = 0;
     this.supplyDrop = null;
+    this.bellPhaseActive = false;
+    this.bellPhaseUntil = 0;
+    this.bellCircle = null;
+    this.bellCharge = 0;
+    this.bellPhaseIndex = 0;
     this.lastPlayerAction = '';
     this.lastActionAt = 0;
     this.rebelItem = null;
