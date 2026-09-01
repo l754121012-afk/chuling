@@ -983,6 +983,7 @@ export class SchoolScene {
 
   update(dt, game) {
     const currentStage = game.currentStage();
+    const rampage = game.deskRampageUntil > nowSec();
     if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {
       this._deskShakeUntil = nowSec() + 0.15;
     }
@@ -991,8 +992,8 @@ export class SchoolScene {
     }
     for (const d of this.refs?.desks || []) {
       if (nowSec() < this._deskShakeUntil) {
-        d.mesh.position.x = d.base.x + rand(-0.04, 0.04);
-        d.mesh.position.z = d.base.z + rand(-0.04, 0.04);
+        d.mesh.position.x = d.base.x + rand(-0.04, 0.04) * (rampage ? 3 : 1);
+        d.mesh.position.z = d.base.z + rand(-0.04, 0.04) * (rampage ? 3 : 1);
       } else {
         d.mesh.position.x = d.base.x;
         d.mesh.position.z = d.base.z;

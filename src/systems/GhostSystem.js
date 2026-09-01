@@ -546,6 +546,7 @@ export class GhostSystem {
         } else {
           this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'dodgeAttack');
           this.events.emit('toast', { text: '鬼扑空了！！', ms: 1200 });
+          this.events.emit('slowmo', { ms: 180 });
           this.events.emit('danmaku', {
             text: choice(['好闪！！', '鬼扑空了哈哈哈', '这走位有点东西'])
           });
@@ -677,6 +678,7 @@ export class GhostSystem {
       this._chargeHitDone = true;
       this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'dodgeCharge');
       this.events.emit('toast', { text: '你闪开了撞击！！', ms: 1200 });
+      this.events.emit('slowmo', { ms: 220 });
       this.events.emit('danmaku', {
         text: choice(['这闪避满分！', '撞击被闪开了！！', '主播会玩'])
       });
@@ -1188,6 +1190,9 @@ export class GhostSystem {
     if (this.game.broken) {
       this._setVelocity(0, 0, 0);
       return;
+    }
+    if (this.game.huntActive || this.game.ghostSpeedBoostUntil > nowSec()) {
+      speed *= 1.25;
     }
 
     if (this.game.chainActive && this.game.chainStep === 'lure') {

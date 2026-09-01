@@ -18,6 +18,7 @@ import { SettlementSystem } from './systems/SettlementSystem.js';
 import { UISystem } from './systems/UISystem.js';
 import { ChainDirector } from './systems/ChainDirector.js';
 import { EconomySystem } from './systems/EconomySystem.js';
+import { RandomEventSystem } from './systems/RandomEventSystem.js';
 import { nowSec } from './core/Utils.js';
 
 const canvas = document.getElementById('game-canvas');
@@ -128,6 +129,15 @@ const chain = new ChainDirector({
   items,
   audio
 });
+const randomEvents = new RandomEventSystem({
+  scene: school,
+  events,
+  game,
+  ghost,
+  player,
+  rage,
+  audio
+});
 let phoneRang = false;
 let firstScareAt = 0;
 
@@ -191,6 +201,7 @@ events.on('game.start', () => {
   items.resetBackup();
   items.syncHand();
   chain.reset();
+  randomEvents.reset();
   audio.init();
   ui.toggleNotebook(false);
   ui.closeShop();
@@ -295,7 +306,8 @@ window.__game = {
   events,
   scene: school,
   chain,
-  economy
+  economy,
+  randomEvents
 };
 
 let last = nowSec();
@@ -316,6 +328,7 @@ function tick() {
     ghost.update(simDt, p2);
     items.update(simDt, p2, ghost.getPos());
     chain.update(simDt);
+    randomEvents.update(simDt);
     rage.update(simDt, p2, ghost.getPos());
     school.update(simDt, game);
 

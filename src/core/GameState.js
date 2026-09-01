@@ -39,6 +39,14 @@ export class GameState {
     this.ropeClimbing = false;
     this.ladderClimbing = false;
     this.lightsOutUntil = 0;
+    this.randomEvents = [];
+    this.nextEventAt = 0;
+    this.huntActive = false;
+    this.huntUntil = 0;
+    this.huntDone = false;
+    this.ghostSpeedBoostUntil = 0;
+    this.deskRampageUntil = 0;
+    this.supplyDrop = null;
     this.hitstopUntil = 0;
     this.slowmoUntil = 0;
     this.firstScareDone = false;

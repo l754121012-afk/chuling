@@ -62,6 +62,7 @@ export class UISystem {
       loseRating: document.getElementById('lose-rating'),
       vignette: document.getElementById('danger-vignette'),
       darkOverlay: document.getElementById('dark-overlay'),
+      blackoutOverlay: document.getElementById('blackout-overlay'),
       warning: document.getElementById('ghost-warning'),
       warningLabel: document.getElementById('warn-label'),
       whipHint: document.getElementById('whip-hint'),
@@ -578,6 +579,14 @@ export class UISystem {
     this.events.on('ghost.telegraph', () => this.showParryHint());
     this.events.on('danmaku', p => this.showDanmaku(p.text));
     this.events.on('danmaku.burst', () => this.showDanmakuBurst());
+    this.events.on('blackout.start', () => {
+      this.el.blackoutOverlay?.classList.add('show');
+    });
+    this.events.on('blackout.end', () => {
+      this.el.blackoutOverlay?.classList.remove('show');
+    });
+    this.events.on('hunt.start', () => document.body.classList.add('hunt'));
+    this.events.on('hunt.end', () => document.body.classList.remove('hunt'));
   }
 
   showDanmaku(text) {
