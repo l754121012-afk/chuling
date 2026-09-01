@@ -1030,6 +1030,16 @@ body.playing canvas {
   font-size: 13px;
 }
 
+.settle-group {
+  margin-top: 10px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(201, 79, 61, 0.1);
+  color: var(--red-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .settle-row .plus {
   color: #2f7d43;
   font-weight: 700;

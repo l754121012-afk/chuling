@@ -187,8 +187,8 @@ events.on('game.win', () => {
   const winSettlement = settlement.calculate(game);
   const winEcon = economy.award(game, winSettlement);
   winSettlement.rows.push(
-    { label: '百元店积分', amount: winEcon.points },
-    { label: '灵异纪念品', amount: winEcon.relics }
+    { label: '百元店积分', amount: winEcon.points, currency: 'points' },
+    { label: '灵异纪念品', amount: winEcon.relics, currency: 'relic' }
   );
   ui.saveBest(game, winSettlement);
   ui.showBest();
@@ -205,8 +205,8 @@ events.on('game.lost', () => {
   const loseSettlement = settlement.calculate(game);
   const loseEcon = economy.award(game, loseSettlement);
   loseSettlement.rows.push(
-    { label: '百元店积分', amount: loseEcon.points },
-    { label: '灵异纪念品', amount: loseEcon.relics }
+    { label: '百元店积分', amount: loseEcon.points, currency: 'points' },
+    { label: '灵异纪念品', amount: loseEcon.relics, currency: 'relic' }
   );
   ui.saveBest(game, loseSettlement);
   ui.showBest();

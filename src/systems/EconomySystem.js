@@ -43,6 +43,7 @@ export class EconomySystem {
       const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
       if (raw && typeof raw.points === 'number') {
         return {
+          coins: Math.max(0, raw.coins || 0),
           points: Math.max(0, raw.points),
           relics: Math.max(0, raw.relics || 0),
           unlocks: raw.unlocks || {}
@@ -51,7 +52,7 @@ export class EconomySystem {
     } catch {
       // fall through to defaults
     }
-    return { points: 0, relics: 0, unlocks: {} };
+    return { coins: 0, points: 0, relics: 0, unlocks: {} };
   }
 
   save() {
@@ -74,6 +75,7 @@ export class EconomySystem {
     chance = Math.min(0.95, chance);
     const guaranteed = settlement.rating === 'S' && game.finisherDone;
     const relics = guaranteed ? 1 : Math.random() < chance ? 1 : 0;
+    this.state.coins += Math.max(0, Math.floor(settlement.total / 100));
     this.state.points += points;
     this.state.relics += relics;
     this.save();
@@ -127,6 +129,10 @@ export class EconomySystem {
 
   get points() {
     return this.state.points;
+  }
+
+  get coins() {
+    return this.state.coins;
   }
 
   get relics() {

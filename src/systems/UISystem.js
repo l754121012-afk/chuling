@@ -237,8 +237,8 @@ export class UISystem {
     const pointsMode = this._shopType === 'points';
     const items = pointsMode ? POINTS_SHOP : RELIC_SHOP;
     this.el.shopBalance.textContent = pointsMode
-      ? `百元店积分：${this.economy.points}`
-      : `灵异纪念品：${this.economy.relics}`;
+      ? `🛒 百元店积分：${this.economy.points} · 🪙 ${this.economy.coins}`
+      : `👻 灵异纪念品：${this.economy.relics}`;
     this.el.shopList.innerHTML = '';
     for (const [id, def] of Object.entries(items)) {
       const owned = !!this.economy.unlocks[id];
@@ -268,7 +268,7 @@ export class UISystem {
 
   renderEconomyBalance() {
     if (!this.el.economyBalance) return;
-    this.el.economyBalance.textContent = `百元店积分 ${this.economy.points} · 灵异纪念品 ${this.economy.relics}`;
+    this.el.economyBalance.textContent = `🪙 ${this.economy.coins} · 🛒 ${this.economy.points} · 👻 ${this.economy.relics}`;
   }
 
   sync(game) {
@@ -485,11 +485,28 @@ export class UISystem {
     const ratingEl = rowsEl === this.el.settlementRows ? this.el.settlementRating : this.el.loseRating;
     if (ratingEl) ratingEl.textContent = `节目效果评分：${settlement.rating} · ${settlement.title}`;
     rowsEl.innerHTML = '';
+    const groups = { coin: [], points: [], relic: [] };
     for (const row of settlement.rows) {
-      const div = document.createElement('div');
-      div.className = 'settle-row';
-      div.innerHTML = `<span>${row.label}</span><span class="${row.amount >= 0 ? 'plus' : 'minus'}">${row.amount >= 0 ? '+' : ''}${row.amount.toLocaleString()}</span>`;
-      rowsEl.appendChild(div);
+      (groups[row.currency || 'coin'] || groups.coin).push(row);
+    }
+    const headers = {
+      coin: '🪙 金币 / 工资',
+      points: '🛒 百元店积分',
+      relic: '👻 灵异纪念品'
+    };
+    for (const key of ['coin', 'points', 'relic']) {
+      const list = groups[key];
+      if (!list.length) continue;
+      const head = document.createElement('div');
+      head.className = 'settle-group';
+      head.textContent = headers[key];
+      rowsEl.appendChild(head);
+      for (const row of list) {
+        const div = document.createElement('div');
+        div.className = 'settle-row';
+        div.innerHTML = `<span>${row.label}</span><span class="${row.amount >= 0 ? 'plus' : 'minus'}">${row.amount >= 0 ? '+' : ''}${row.amount.toLocaleString()}</span>`;
+        rowsEl.appendChild(div);
+      }
     }
     totalEl.textContent = `${settlement.total.toLocaleString()} 円`;
     lineEl.textContent = settlement.finalLine;
