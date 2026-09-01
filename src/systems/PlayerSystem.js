@@ -62,6 +62,7 @@ export class PlayerSystem {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
     });
+    events.on('vote.choose', i => this._resolveVote(i));
   }
 
   createPawn() {
@@ -767,6 +768,10 @@ export class PlayerSystem {
         return;
       }
       this.game.hiding = !this.game.hiding;
+      if (this.game.hiding) {
+        this.game.lastPlayerAction = 'hide';
+        this.game.lastActionAt = nowSec();
+      }
       if (this.ghost) {
         if (this.game.hiding) {
           this.ghost._telegraphActive = false;
@@ -1102,6 +1107,8 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '没力气抽了！先喘口气', ms: 1300 });
       return;
     }
+    this.game.lastPlayerAction = 'whip';
+    this.game.lastActionAt = nowSec();
 
     this._whipCooldown = GAME_CONFIG.whipCooldown;
     this.game.whipCooldownUntil = nowSec() + GAME_CONFIG.whipCooldown;
@@ -1144,9 +1151,10 @@ export class PlayerSystem {
     const combo = this.game.whipCombo;
     const rageAmount = GAME_CONFIG.whipRageBase + (combo >= 10 ? 8 : combo >= 5 ? 5 : 0);
     this.rage.add(rageAmount, 'whip');
+    const kb = GAME_CONFIG.whipKnockback * (this.game.desperate ? 1.5 : 1);
     this.ghost.knockback(
-      (dx / dist) * GAME_CONFIG.whipKnockback,
-      (dz / dist) * GAME_CONFIG.whipKnockback,
+      (dx / dist) * kb,
+      (dz / dist) * kb,
       0.35
     );
     this.ghost._spinTimer = GAME_CONFIG.whipSpinDuration;
@@ -1192,6 +1200,10 @@ export class PlayerSystem {
     this.game.whipCombo = 0;
     this.game.whipMisses += 1;
     this.game.stickyUntil = nowSec() + 0.6;
+    if (this.game.desperate) {
+      this.game.stamina = Math.max(0, this.game.stamina - 10);
+      this.game.stickyUntil = nowSec() + 1.0;
+    }
     this.rage.addDrama(GAME_CONFIG.dramaWhiff, 'whiff');
     this.playPose('hurt', 0.4);
     this.audio?.play('whoosh');
@@ -1227,12 +1239,13 @@ export class PlayerSystem {
     const pp = this.getPos();
     const gp = this.ghost.getPos();
     const dist = Math.hypot(gp.x - pp.x, gp.z - pp.z);
-    if (dist > GAME_CONFIG.parryRange) return false;
+    const range = GAME_CONFIG.parryRange + (this.game.desperate ? 1.5 : 0);
+    if (dist > range) return false;
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
     const fwdZ = -Math.cos(yaw);
     const dot = ((gp.x - pp.x) * fwdX + (gp.z - pp.z) * fwdZ) / (dist || 1);
-    if (dot < 0.3) return false;
+    if (dot < (this.game.desperate ? 0.1 : 0.3)) return false;
     this.playPose('use', 0.45);
     return this.ghost.parrySucceeded();
   }
@@ -1247,6 +1260,8 @@ export class PlayerSystem {
       return;
     }
     this._dodgeCooldown = GAME_CONFIG.dodgeCooldown;
+    this.game.lastPlayerAction = 'dodge';
+    this.game.lastActionAt = nowSec();
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.dodgeStaminaCost);
     this.game.dodgingUntil = nowSec() + GAME_CONFIG.dodgeDuration;
     this.game.dodgeCount += 1;
@@ -1333,31 +1348,53 @@ export class PlayerSystem {
   }
 
   _doUltimate() {
+    if (this.game.voteActive) return;
     if (this.game.drama < GAME_CONFIG.dramaMax) return;
+    const pool = [
+      { id: 'whip', label: '夺命连环鞭' },
+      { id: 'recharge', label: '主管报销' },
+      { id: 'trip', label: '假摔引鬼' },
+      { id: 'broadcast', label: '社死广播' }
+    ];
+    const a = pool[Math.floor(Math.random() * pool.length)];
+    let b = pool[Math.floor(Math.random() * pool.length)];
+    while (b.id === a.id) b = pool[Math.floor(Math.random() * pool.length)];
+    this.game.voteOptions = [a, b];
+    this.game.voteActive = true;
+    this.events.emit('vote.start', { options: this.game.voteOptions });
+    this.audio?.play('click');
+  }
+
+  _resolveVote(index) {
+    if (!this.game.voteActive) return;
+    const opt = this.game.voteOptions[index];
+    this.game.voteActive = false;
+    this.game.voteOptions = [];
     this.game.drama = 0;
     this.game.dramaFullNotified = false;
+    this.events.emit('vote.end');
     this.audio?.play('whip');
     this.events.emit('hitstop', { ms: 120 });
     this.events.emit('slowmo', { ms: 350 });
     this.events.emit('camera.shake', { amount: 0.5 });
     this.playPose('use', 0.6);
     this.events.emit('act.card', {
-      title: '社死大招 · 夺命连环鞭！',
-      line: '三连抽！它被抽到怀疑鬼生！'
+      title: `观众投票 · ${opt.label}！`,
+      line: '观众的选择就是节目效果！'
     });
-    this.events.emit('danmaku', {
-      text: choice(['社死大招！！', '观众沸腾了！！', '这一鞭值回票价！'])
-    });
+    if (opt.id === 'whip') this._applyVoteWhip();
+    else if (opt.id === 'recharge') this._applyVoteRecharge();
+    else if (opt.id === 'trip') this._applyVoteTrip();
+    else this._applyVoteBroadcast();
+  }
+
+  _applyVoteWhip() {
     if (!this.ghost) return;
     const pp = this.getPos();
     const gp = this.ghost.getPos();
     const dx = gp.x - pp.x;
     const dz = gp.z - pp.z;
     const len = Math.hypot(dx, dz) || 1;
-    if (len > 6) {
-      this.events.emit('toast', { text: '鬼离太远，你对着空气抽了三鞭！', ms: 1600 });
-      return;
-    }
     this.ghost.knockback((dx / len) * 12, (dz / len) * 12, 0.7);
     this.ghost._spinTimer = 1.2;
     this.ghost._dashFlash = 0.5;
@@ -1365,19 +1402,26 @@ export class PlayerSystem {
     this.ghost.registerKnockdown();
     this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
     this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
-    this.scene.spawnSlashTrail(
-      { x: pp.x, y: 0, z: pp.z },
-      { x: gp.x, y: 0, z: gp.z },
-      '#ffd166',
-      0.6
-    );
-    this.scene.spawnAirSlash(
-      { x: pp.x, y: 1.25, z: pp.z },
-      { x: gp.x, y: 1.25, z: gp.z },
-      '#ffd166',
-      0.55
-    );
     this.events.emit('toast', { text: '夺命连环鞭！！', ms: 1600 });
+    this.events.emit('danmaku.burst');
+  }
+
+  _applyVoteRecharge() {
+    this.game.stamina = this.game.staminaMax;
+    this.game.addItem('pen', 1);
+    this.events.emit('toast', { text: '主管报销：体力回满，还送了支圆珠笔！', ms: 1800 });
+  }
+
+  _applyVoteTrip() {
+    if (!this.ghost) return;
+    this.game.stunnedUntil = nowSec() + 2.2;
+    this.ghost._speak('谁绊我？！', 1600);
+    this.events.emit('toast', { text: '假摔成功！鬼被绊倒了！', ms: 1800 });
+  }
+
+  _applyVoteBroadcast() {
+    this.rage.addComposure(40, 'broadcast');
+    this.events.emit('toast', { text: '社死广播！它心态崩了一大截！', ms: 1800 });
   }
 
   _cycleItem(dir = 1) {

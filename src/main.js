@@ -136,7 +136,8 @@ const randomEvents = new RandomEventSystem({
   ghost,
   player,
   rage,
-  audio
+  audio,
+  items
 });
 let phoneRang = false;
 let firstScareAt = 0;
@@ -380,6 +381,10 @@ function tick() {
 
   if (input.justPressed('Tab')) ui.toggleNotebook();
   if (input.justPressed('KeyB')) ui.toggleBackpack();
+  if (game.voteActive) {
+    if (input.justPressed('Digit1')) events.emit('vote.choose', 0);
+    if (input.justPressed('Digit2')) events.emit('vote.choose', 1);
+  }
   ui.sync(game);
   ui.updateSealStatus(player, ghost);
   cameraSys.update(input, player.getPos(), dt);

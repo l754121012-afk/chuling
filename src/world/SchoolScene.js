@@ -628,6 +628,45 @@ export class SchoolScene {
       mesh: chargerGroup,
       light: chargerLight
     };
+
+    const tank = this.L.fishTank;
+    const tankGroup = new THREE.Group();
+    const glass = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.8, 0.6),
+      new THREE.MeshStandardMaterial({
+        color: 0x9fd8e8,
+        transparent: true,
+        opacity: 0.35,
+        roughness: 0.2
+      })
+    );
+    glass.position.y = 0.5;
+    const water = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 0.25, 0.5),
+      material('#6fc3df', 0.8)
+    );
+    water.position.y = 0.5;
+    const seaHorseSign = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('海马', {
+          bg: '#0b3d4a',
+          fg: '#d9f7ff',
+          font: 'bold 64px "Microsoft YaHei", sans-serif',
+          width: 256,
+          height: 160,
+          lineHeight: 80,
+          pad: 8
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    seaHorseSign.position.set(0, 0.5, 0.32);
+    seaHorseSign.scale.set(0.5, 0.3, 1);
+    tankGroup.add(glass, water, seaHorseSign);
+    tankGroup.position.set(tank.x, 0, tank.z);
+    this.group.add(tankGroup);
+    refs.fishTank = { x: tank.x, z: tank.z, mesh: tankGroup };
   }
 
   _addRouteClutter(refs) {
@@ -979,6 +1018,29 @@ export class SchoolScene {
     group.rotation.y = yaw;
     this.group.add(group);
     this.particles.push({ mesh: group, ttl: duration, maxTtl: duration, group: true });
+  }
+
+  spawnHorse(pos) {
+    const group = new THREE.Group();
+    const bodyMat = material('#7c4a2d', 0.9);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.42, 1.1), bodyMat);
+    body.position.y = 0.75;
+    group.add(body);
+    const neck = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.7, 0.28), bodyMat);
+    neck.position.set(0, 1.15, -0.5);
+    group.add(neck);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.5), bodyMat);
+    head.position.set(0, 1.45, -0.85);
+    group.add(head);
+    for (const [x, z] of [[-0.28, 0.45], [0.28, 0.45], [-0.28, -0.45], [0.28, -0.45]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.55, 6), bodyMat);
+      leg.position.set(x, 0.28, z);
+      group.add(leg);
+    }
+    group.position.set(pos.x, 0, pos.z);
+    group.rotation.y = Math.random() * Math.PI * 2;
+    this.group.add(group);
+    this.particles.push({ mesh: group, ttl: 2.5, maxTtl: 2.5, group: true });
   }
 
   update(dt, game) {

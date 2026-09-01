@@ -604,6 +604,28 @@ body.playing canvas {
   color: #4a5560;
 }
 
+#vote-options {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+#vote-options button {
+  padding: 12px 14px;
+  border: 1px solid #a8a291;
+  border-radius: 6px;
+  background: #fffdf5;
+  color: var(--red-dark);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#vote-prompt {
+  padding: 12px 14px 0;
+  font-size: 13px;
+  color: #4a5560;
+}
+
 #crosshair {
   position: absolute;
   top: 50%;

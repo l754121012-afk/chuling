@@ -149,6 +149,21 @@ export class ItemSystem {
     if (!this.game.isPlaying() || this.game.notebookOpen || this.cooldown > 0) return;
     const def = this.game.equippedDef();
     if (!def) return;
+    if (this.game.rebelItem === def.id) {
+      const roll = Math.random();
+      if (roll < 0.35) {
+        this.game.consumeItem(def.id, 1);
+        this.events.emit('toast', { text: `${def.name} 造反了！直接报废！`, ms: 1400 });
+        this.events.emit('noise', { pos: this.playerPos(), radius: 10, rage: 3 });
+        this.events.emit('danmaku', { text: '道具造反了哈哈哈' });
+        this.cooldown = GAME_CONFIG.throwCooldown;
+        return;
+      } else if (roll < 0.7) {
+        this.game.stunnedUntil = Math.max(this.game.stunnedUntil, nowSec() + 1);
+        this.rage.addDrama(10, 'rebelHelp');
+        this.events.emit('toast', { text: `${def.name} 暴走但帮了你！鬼被绊了一下！`, ms: 1600 });
+      }
+    }
     if (def.type === 'throw') {
       this._throwItem(def, null);
     } else if (def.type === 'seal') {
@@ -244,7 +259,7 @@ export class ItemSystem {
       this._hitGhost(proj, hitPos);
       return;
     }
-    this._hitWorld(proj, hitPos);
+    this._hitWorld(proj, hitPos, other);
   }
 
   _hitGhost(proj, hitPos) {
@@ -320,7 +335,7 @@ export class ItemSystem {
     this._removeProjectile(proj);
   }
 
-  _hitWorld(proj, hitPos) {
+  _hitWorld(proj, hitPos, other) {
     if (proj.def.id === 'glue') {
       this._createGluePuddle(hitPos);
       this._removeProjectile(proj);
@@ -331,6 +346,13 @@ export class ItemSystem {
       this.events.emit('toast', { text: '剪刀插进天花板了！', ms: 1800 });
       this.audio?.play('hit');
       return;
+    }
+    const tank = this.scene.refs?.fishTank;
+    if (tank && distance2D(hitPos.x, hitPos.z, tank.x, tank.z) < 1.5) {
+      this.events.emit('pun.horse', { x: tank.x, y: 0, z: tank.z });
+    }
+    if ((other.collisionFilterGroup & GROUPS.PROP) !== 0 && Math.random() < 0.4) {
+      this.events.emit('env.chain', hitPos);
     }
     this._schedulePickup(proj.def.id, hitPos, 0.65);
     this._removeProjectile(proj);

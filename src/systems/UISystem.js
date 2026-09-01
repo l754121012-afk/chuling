@@ -46,6 +46,9 @@ export class UISystem {
       shopBtn: document.getElementById('shop-btn'),
       relicBtn: document.getElementById('relic-btn'),
       economyBalance: document.getElementById('economy-balance'),
+      voteModal: document.getElementById('vote-modal'),
+      votePrompt: document.getElementById('vote-prompt'),
+      voteOptions: document.getElementById('vote-options'),
       toast: document.getElementById('toast'),
       speech: document.getElementById('speech'),
       prompt: document.getElementById('prompt'),
@@ -587,6 +590,21 @@ export class UISystem {
     });
     this.events.on('hunt.start', () => document.body.classList.add('hunt'));
     this.events.on('hunt.end', () => document.body.classList.remove('hunt'));
+    this.events.on('vote.start', p => this.showVote(p.options));
+    this.events.on('vote.end', () => this.el.voteModal?.classList.add('hidden'));
+  }
+
+  showVote(options) {
+    if (!this.el.voteModal) return;
+    this.el.votePrompt.textContent = '3 秒内选择，观众想看这个！';
+    this.el.voteOptions.innerHTML = '';
+    options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = `${i + 1}. ${opt.label}`;
+      btn.addEventListener('click', () => this.events.emit('vote.choose', i));
+      this.el.voteOptions.appendChild(btn);
+    });
+    this.el.voteModal.classList.remove('hidden');
   }
 
   showDanmaku(text) {

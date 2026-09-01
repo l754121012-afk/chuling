@@ -47,6 +47,12 @@ export class GameState {
     this.ghostSpeedBoostUntil = 0;
     this.deskRampageUntil = 0;
     this.supplyDrop = null;
+    this.lastPlayerAction = '';
+    this.lastActionAt = 0;
+    this.rebelItem = null;
+    this.desperate = false;
+    this.voteActive = false;
+    this.voteOptions = [];
     this.hitstopUntil = 0;
     this.slowmoUntil = 0;
     this.firstScareDone = false;
