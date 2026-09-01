@@ -407,6 +407,7 @@ export class UISystem {
     this.events.on('act.card', p => this.showActCard(p.title, p.line));
     this.events.on('ghost.telegraph', () => this.showParryHint());
     this.events.on('danmaku', p => this.showDanmaku(p.text));
+    this.events.on('danmaku.burst', () => this.showDanmakuBurst());
   }
 
   showDanmaku(text) {
@@ -419,6 +420,25 @@ export class UISystem {
       this.el.danmaku.removeChild(this.el.danmaku.firstChild);
     }
     setTimeout(() => el.remove(), 2600);
+  }
+
+  showDanmakuBurst() {
+    if (!this.el.danmaku) return;
+    const lines = [
+      '666666', '666', '六六六！', '666 主播牛！', '6666666',
+      '这处决值了！', '666666！！', '观众全体起立！', '66666', '666 满分！'
+    ];
+    for (let i = 0; i < 22; i++) {
+      const el = document.createElement('div');
+      el.className = 'danmaku-burst';
+      el.textContent = lines[Math.floor(Math.random() * lines.length)];
+      el.style.top = `${10 + Math.random() * 24}%`;
+      el.style.animationDuration = `${0.8 + Math.random() * 1.1}s`;
+      el.style.animationDelay = `${Math.random() * 0.4}s`;
+      el.style.opacity = String(0.8 + Math.random() * 0.2);
+      this.el.danmaku.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
   }
 
   showParryHint() {

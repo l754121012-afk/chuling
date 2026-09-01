@@ -29,6 +29,7 @@ export class PlayerSystem {
     this._dodgeCooldown = 0;
     this._dodgeVX = 0;
     this._dodgeVZ = 0;
+    this._throwJumpUsed = false;
     this._noiseTimer = 0;
     this._itemCycle = Object.keys(ITEM_DEFS);
     this.pose = 'idle';
@@ -126,6 +127,7 @@ export class PlayerSystem {
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
 
     this._handleMovement(dt, body);
+    if (this.game.thrownUntil > nowSec()) this._checkThrowCollision();
     this._handleStamina(dt, body);
     this._checkFootprints(dt);
     this._handleInteractions();
@@ -275,6 +277,38 @@ export class PlayerSystem {
       body.velocity.set(0, body.velocity.y, 0);
       return;
     }
+    if (nowSec() < this.game.thrownUntil) {
+      let moveX = 0;
+      let moveZ = 0;
+      if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
+      if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
+      if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
+      if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
+      const yaw = this.camera.yaw;
+      const fwdX = -Math.sin(yaw);
+      const fwdZ = -Math.cos(yaw);
+      const rightX = Math.cos(yaw);
+      const rightZ = -Math.sin(yaw);
+      let dirX = fwdX * moveZ + rightX * moveX;
+      let dirZ = fwdZ * moveZ + rightZ * moveX;
+      if (Math.hypot(dirX, dirZ) < 0.1) {
+        body.velocity.x *= 0.98;
+        body.velocity.z *= 0.98;
+      } else {
+        const len = Math.hypot(dirX, dirZ) || 1;
+        body.velocity.x = (dirX / len) * GAME_CONFIG.throwControlSpeed;
+        body.velocity.z = (dirZ / len) * GAME_CONFIG.throwControlSpeed;
+      }
+      if (this.input.isDown('Space') && !this._throwJumpUsed) {
+        this._throwJumpUsed = true;
+        body.velocity.y = Math.max(body.velocity.y, 8);
+        body.velocity.x += fwdX * 3;
+        body.velocity.z += fwdZ * 3;
+        this.audio?.play('whoosh');
+      }
+      return;
+    }
+    this._throwJumpUsed = false;
     if (nowSec() < this.game.dodgingUntil) {
       body.velocity.set(this._dodgeVX, body.velocity.y, this._dodgeVZ);
       return;
@@ -1251,6 +1285,30 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '疼疼疼！！撞到实心障碍了！', ms: 1600 });
       this.rage.addDrama(GAME_CONFIG.dramaWhiff, 'bonk');
     }
+  }
+
+  _checkThrowCollision() {
+    const p = this.getPos();
+    const vx = this.pawn.body.velocity.x;
+    const vz = this.pawn.body.velocity.z;
+    const speed = Math.hypot(vx, vz);
+    if (speed < 0.5) return;
+    const dx = vx / speed;
+    const dz = vz / speed;
+    const from = new CANNON.Vec3(p.x, p.y + 0.5, p.z);
+    const to = new CANNON.Vec3(p.x + dx * 1.1, p.y + 0.5, p.z + dz * 1.1);
+    const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD | GROUPS.PROP);
+    if (!hit) return;
+    this.game.thrownUntil = 0;
+    this.game.thrownByGhost = false;
+    this.game.playerStunUntil = nowSec() + 1.2;
+    this.pawn.body.velocity.set(0, 0, 0);
+    this.audio?.play('slap');
+    this.events.emit('camera.shake', { amount: 0.35 });
+    this.events.emit('toast', { text: '撞到阻挡了！头晕落地！', ms: 1600 });
+    this.events.emit('danmaku', {
+      text: choice(['撞墙了哈哈哈', '抛飞变碰碰车！'])
+    });
   }
 
   _doUltimate() {

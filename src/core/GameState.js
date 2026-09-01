@@ -53,6 +53,8 @@ export class GameState {
     this.brokenUntil = 0;
     this.playerStunUntil = 0;
     this.dodgingUntil = 0;
+    this.thrownUntil = 0;
+    this.thrownByGhost = false;
     this.charging = false;
     this.chargingUntil = 0;
     this.finisherDone = false;

@@ -136,6 +136,27 @@ body.playing canvas {
   animation: danmakuIn 0.22s ease-out, danmakuOut 0.35s ease-in 2.1s forwards;
 }
 
+.danmaku-burst {
+  position: absolute;
+  left: 100%;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(20, 22, 28, 0.85);
+  color: #ffd166;
+  font-size: 14px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 6;
+  animation-name: burstFly;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes burstFly {
+  to { transform: translateX(-130vw); }
+}
+
 @keyframes danmakuIn {
   from { transform: translateX(20px); opacity: 0; }
   to { transform: none; opacity: 1; }

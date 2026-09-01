@@ -93,6 +93,12 @@ export class GhostSystem {
     this._scareActive = false;
     this._scareUntil = 0;
     this._lastScareAt = -20;
+    this._throwActive = false;
+    this._throwTelegraphUntil = 0;
+    this._throwComboUntil = 0;
+    this._throwHits = 0;
+    this._throwHitCooldownUntil = 0;
+    this._throwSpeed = 0;
     this._kiteCooldown = 0;
     this._attackAnimTimer = 0;
     this._telegraphRing = null;
@@ -238,6 +244,20 @@ export class GhostSystem {
           this._chargeDirZ * this._chargeSpeed
         );
       }
+    } else if (this._throwActive) {
+      if (nowSec() < this._throwTelegraphUntil) {
+        this.pawn.body.velocity.set(0, 0, 0);
+      } else {
+        const b = this.pawn.body.position;
+        const dx = playerPos.x - b.x;
+        const dz = playerPos.z - b.z;
+        const len = Math.hypot(dx, dz) || 1;
+        this.pawn.body.velocity.set(
+          (dx / len) * this._throwSpeed,
+          0,
+          (dz / len) * this._throwSpeed
+        );
+      }
     } else if (this._scareActive || this._telegraphActive) {
       this.pawn.body.velocity.set(0, 0, 0);
     } else {
@@ -336,6 +356,7 @@ export class GhostSystem {
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
       !this.game.chainActive &&
+      !this._throwActive &&
       !this.game.ropeClimbing &&
       !this._disguiseActive
     ) {
@@ -363,6 +384,7 @@ export class GhostSystem {
       this.game.phase === 'investigate' &&
       !this.game.hiding &&
       !this.game.chainActive &&
+      !this._throwActive &&
       !this.game.ropeClimbing &&
       !this._ambushActive
     ) {
@@ -395,6 +417,7 @@ export class GhostSystem {
     if (this._isPinned()) return;
     if (this.game.chainStuck) return;
     if (this.game.broken) return;
+    if (this._throwActive) return;
     if (this.game.chainActive) return;
     if (this.game.weakUntil > nowSec()) return;
     this._dashCooldown -= dt;
@@ -440,6 +463,10 @@ export class GhostSystem {
     }
     if (this._scareActive) {
       this._updateScare(dt, playerPos);
+      return;
+    }
+    if (this._throwActive) {
+      this._updateThrow(dt, playerPos);
       return;
     }
     const b = this.pawn.body.position;
@@ -560,6 +587,15 @@ export class GhostSystem {
       this._startScare(playerPos);
       return;
     }
+    const throwChance = stage.id === 'insane'
+      ? GAME_CONFIG.throwChanceInsane
+      : stage.id === 'furious'
+        ? GAME_CONFIG.throwChanceFurious
+        : 0;
+    if (dist < 4 && Math.random() < throwChance) {
+      this._startThrow(playerPos, stage);
+      return;
+    }
     const chargeChance = {
       calm: 0,
       annoyed: 0,
@@ -668,6 +704,119 @@ export class GhostSystem {
     this.events.emit('hitstop', { ms: 80 });
     this.rage.addDrama(GAME_CONFIG.dramaHurt, 'charge');
     this._speak('让开！！', 1400);
+  }
+
+  _startThrow(playerPos, stage) {
+    this._throwActive = true;
+    this._throwTelegraphUntil = nowSec() + 0.8;
+    this._throwComboUntil = 0;
+    this._throwHits = 0;
+    this._throwHitCooldownUntil = 0;
+    this._throwSpeed = Math.max(6, (stage.speed || 2.6) * 2.4);
+    this._dashFlash = 0.35;
+    this.audio?.play('ghost');
+    if (this._telegraphRing) {
+      const b = this.pawn.body.position;
+      this._telegraphRing.position.set(b.x, 0.06, b.z);
+      this._telegraphRing.visible = true;
+    }
+    const armL = this.pawn.mesh.userData?.armL;
+    const armR = this.pawn.mesh.userData?.armR;
+    const hand = this.pawn.mesh.userData?.handR;
+    if (armL) armL.rotation.x = -1.8;
+    if (armR) {
+      armR.rotation.x = -1.8;
+      armR.rotation.z = -0.2;
+    }
+    if (hand) hand.position.set(0, 0.7, 0.4);
+    this.events.emit('toast', {
+      text: '它要把你抛上天了！！快按方向键躲开！',
+      ms: 1800
+    });
+  }
+
+  _updateThrow(dt, playerPos) {
+    if (nowSec() < this._throwTelegraphUntil) return;
+    if (this._throwComboUntil === 0) {
+      const b = this.pawn.body.position;
+      const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+      if (dist > 4.5 || nowSec() < this.game.dodgingUntil) {
+        this._throwActive = false;
+        this._hideAttackRings();
+        this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'throwMiss');
+        this.events.emit('toast', { text: '它抓空了！！', ms: 1400 });
+        this.events.emit('danmaku', {
+          text: choice(['抛飞失败哈哈哈', '主播躲开了！！'])
+        });
+        this._attackCooldown = rand(
+          GAME_CONFIG.ghostAttackCooldownMin,
+          GAME_CONFIG.ghostAttackCooldownMax
+        );
+        return;
+      }
+      this._throwComboUntil = nowSec() + GAME_CONFIG.throwComboDuration;
+      this.game.thrownUntil = nowSec() + 2.4;
+      this.game.thrownByGhost = true;
+      const dx = playerPos.x - b.x;
+      const dz = playerPos.z - b.z;
+      const len = Math.hypot(dx, dz) || 1;
+      if (this.playerBody) {
+        this.playerBody.velocity.set(
+          (dx / len) * GAME_CONFIG.throwLaunchPower,
+          11,
+          (dz / len) * GAME_CONFIG.throwLaunchPower
+        );
+      }
+      this.events.emit('hitstop', { ms: 90 });
+      this.events.emit('camera.shake', { amount: 0.45 });
+      this.events.emit('toast', { text: '抛飞了！！空中三连击来了！', ms: 1800 });
+      this.events.emit('danmaku', {
+        text: choice(['上天了！！', '鬼会飞！！', '快按方向键躲！'])
+      });
+      return;
+    }
+    const b = this.pawn.body.position;
+    const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+    if (
+      this._throwHits < 3 &&
+      nowSec() >= this._throwHitCooldownUntil &&
+      dist < 2.4 &&
+      nowSec() >= this.game.dodgingUntil
+    ) {
+      this._throwHits += 1;
+      this._throwHitCooldownUntil = nowSec() + 0.35;
+      this._doThrowHit(playerPos);
+    }
+    if (nowSec() >= this._throwComboUntil || this.game.thrownUntil <= nowSec()) {
+      this._throwActive = false;
+      this._hideAttackRings();
+      this._attackCooldown = rand(
+        GAME_CONFIG.ghostAttackCooldownMin,
+        GAME_CONFIG.ghostAttackCooldownMax
+      );
+    }
+  }
+
+  _doThrowHit(playerPos) {
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.throwStaminaCostPerHit);
+    if (this.playerBody) {
+      const b = this.pawn.body.position;
+      const dx = playerPos.x - b.x;
+      const dz = playerPos.z - b.z;
+      const len = Math.hypot(dx, dz) || 1;
+      this.playerBody.velocity.set((dx / len) * 6, 5, (dz / len) * 6);
+    }
+    this.audio?.play('slap');
+    this.events.emit('toast', {
+      text: `空中三连击 x${this._throwHits}！体力-${GAME_CONFIG.throwStaminaCostPerHit}`,
+      ms: 1200
+    });
+    this.events.emit('camera.shake', { amount: 0.35 });
+    this.events.emit('hitstop', { ms: 70 });
+    this.rage.addDrama(GAME_CONFIG.dramaHurt, 'throwHit');
+    this.events.emit('danmaku', {
+      text: choice(['空中三连击！！', '这鬼会飞！', '666 打得好惨'])
+    });
   }
 
   _startScare(playerPos) {
@@ -884,6 +1033,7 @@ export class GhostSystem {
       title: '喜剧处决！！',
       line: choice(['钉进成绩单！', '塞进垃圾桶！！', '拖去擦黑板！！！'])
     });
+    this.events.emit('danmaku.burst');
     this.audio?.play('win');
     this._sealSuccess('finisher');
   }
@@ -1148,6 +1298,7 @@ export class GhostSystem {
   _catchOrSlap(playerPos) {
     if (this._caught) return;
     if (this._telegraphActive) return;
+    if (this._throwActive) return;
     if (this.game.hiding) return;
     if (this.game.chainStuck) return;
     if (this.game.broken) return;
