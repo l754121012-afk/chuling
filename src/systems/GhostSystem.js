@@ -598,9 +598,9 @@ export class GhostSystem {
       return;
     }
     const throwChance = stage.id === 'insane'
-      ? GAME_CONFIG.throwChanceInsane
+      ? 0.2
       : stage.id === 'furious'
-        ? GAME_CONFIG.throwChanceFurious
+        ? 0.15
         : 0;
     if (dist < 4 && Math.random() < throwChance) {
       this._startThrow(playerPos, stage);
@@ -609,9 +609,9 @@ export class GhostSystem {
     const chargeChance = {
       calm: 0,
       annoyed: 0,
-      angry: 0.22,
-      furious: 0.25,
-      insane: 0.28
+      angry: 0.3,
+      furious: 0.35,
+      insane: 0.4
     }[stage.id] || 0;
     if (dist > 2.2 && Math.random() < chargeChance) {
       this._startCharge(playerPos, stage);
@@ -940,7 +940,6 @@ export class GhostSystem {
   }
 
   _doGhostSwipe(playerPos) {
-    if (this._slapCooldown > 0) return;
     this._slapCooldown = GAME_CONFIG.slapCooldown;
     this.game.invincibleUntil = nowSec() + 1.0;
     this.rage.add(GHOST_CONFIG.rage.slap, 'slap');
@@ -973,6 +972,7 @@ export class GhostSystem {
       GAME_CONFIG.ghostAttackCooldownMax
     );
     this.game.parryCount += 1;
+    this.game.comboWindowUntil = nowSec() + 1.0;
     this.rage.addComposure(GAME_CONFIG.composureParry, 'parry');
     this.rage.addDrama(GAME_CONFIG.dramaParry, 'parry');
     const stage = this.game.currentStage();

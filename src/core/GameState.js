@@ -53,6 +53,9 @@ export class GameState {
     this.desperate = false;
     this.voteActive = false;
     this.voteOptions = [];
+    this.comboWindowUntil = 0;
+    this.speedBoostUntil = 0;
+    this.comboSkillDone = false;
     this.hitstopUntil = 0;
     this.slowmoUntil = 0;
     this.firstScareDone = false;

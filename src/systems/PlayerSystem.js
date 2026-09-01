@@ -26,6 +26,7 @@ export class PlayerSystem {
     this.ghost = null;
     this._flashCooldown = 0;
     this._whipCooldown = 0;
+    this._heavyCooldown = 0;
     this._dodgeCooldown = 0;
     this._dodgeVX = 0;
     this._dodgeVZ = 0;
@@ -144,6 +145,7 @@ export class PlayerSystem {
     }
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
     this._whipCooldown = Math.max(0, this._whipCooldown - dt);
+    this._heavyCooldown = Math.max(0, this._heavyCooldown - dt);
     this._dodgeCooldown = Math.max(0, this._dodgeCooldown - dt);
     if (this.game.charging && nowSec() >= this.game.chargingUntil) {
       this.game.charging = false;
@@ -402,7 +404,8 @@ export class PlayerSystem {
     const sticky = this.game.stickyUntil > nowSec();
     this.crouching = this.input.isDown('KeyC') || this.input.isDown('ControlLeft');
     const baseSpeed = canSprint ? GAME_CONFIG.sprintSpeed : GAME_CONFIG.walkSpeed;
-    const speed = baseSpeed * (sticky ? 0.6 : 1) * (this.crouching ? 0.55 : 1);
+    const speedBoost = this.game.speedBoostUntil > nowSec() ? 1.3 : 1;
+    const speed = baseSpeed * speedBoost * (sticky ? 0.6 : 1) * (this.crouching ? 0.55 : 1);
 
     body.velocity.set(dirX * speed, body.velocity.y, dirZ * speed);
     body.wakeUp();
@@ -1007,6 +1010,7 @@ export class PlayerSystem {
     const usable = !this.game.notebookOpen && !this.game.hiding;
 
     if (this.game.whipMode) {
+      if (this.input.justRightPressed()) this._doHeavyWhip();
       if (click && usable && !this._tryParry()) this._doWhip();
     } else if (def.type === 'throw') {
       if (this.input.justRightPressed()) {
@@ -1097,6 +1101,88 @@ export class PlayerSystem {
         : '鞭子模式已关闭',
       ms: 2000
     });
+  }
+
+  _doHeavyWhip() {
+    if (this._heavyCooldown > 0) return;
+    if (this.game.hiding || this.game.notebookOpen) return;
+    if (this.game.stamina < 30) {
+      this.events.emit('toast', { text: '体力不够重击！', ms: 1300 });
+      return;
+    }
+    if (this.game.comboWindowUntil > nowSec() && this.ghost) {
+      this._doComboSkill();
+      return;
+    }
+    this._heavyCooldown = 1.2;
+    this.game.stamina = Math.max(0, this.game.stamina - 30);
+    this.playPose('use', 0.6);
+    this.audio?.play('whip');
+    if (!this.ghost) return;
+    const pp = this.getPos();
+    const gp = this.ghost.getPos();
+    const dx = gp.x - pp.x;
+    const dz = gp.z - pp.z;
+    const dist = Math.hypot(dx, dz);
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
+    if (dist > 5.5 || dot < 0.35) {
+      this.events.emit('toast', { text: '重击挥空了！', ms: 1200 });
+      return;
+    }
+    const kb = 14 * (this.game.desperate ? 1.4 : 1);
+    this.ghost.knockback((dx / dist) * kb, (dz / dist) * kb, 0.55);
+    this.ghost._spinTimer = 1.2;
+    this.ghost._dashFlash = 0.4;
+    this.ghost.damage(3, { rage: 0 });
+    this.rage.add(10, 'heavy');
+    this.events.emit('hitstop', { ms: 90 });
+    this.events.emit('camera.shake', { amount: 0.4 });
+    this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#ffb86b');
+    this.scene.spawnAirSlash(
+      { x: pp.x, y: 1.25, z: pp.z },
+      { x: gp.x, y: 1.25, z: gp.z },
+      '#ffb86b',
+      0.5
+    );
+    this.events.emit('toast', { text: '重击！！', ms: 1200 });
+  }
+
+  _doComboSkill() {
+    this._heavyCooldown = 1.2;
+    this.game.comboWindowUntil = 0;
+    this.game.comboSkillDone = true;
+    this.game.speedBoostUntil = nowSec() + 4;
+    this.game.stamina = Math.max(0, this.game.stamina - 35);
+    this.playPose('use', 0.8);
+    this.audio?.play('whip');
+    this.events.emit('slowmo', { ms: 450 });
+    this.events.emit('hitstop', { ms: 140 });
+    this.events.emit('camera.shake', { amount: 0.65 });
+    this.events.emit('act.card', {
+      title: '连携技 · 陀螺撞飞！',
+      line: '拼刀接重击，把它抽成陀螺！'
+    });
+    this.events.emit('danmaku.burst');
+    if (this.ghost) {
+      const pp = this.getPos();
+      const gp = this.ghost.getPos();
+      const dx = gp.x - pp.x;
+      const dz = gp.z - pp.z;
+      const len = Math.hypot(dx, dz) || 1;
+      this.ghost.knockback((dx / len) * 18, (dz / len) * 18, 0.9);
+      this.ghost._spinTimer = 2.5;
+      this.ghost._dashFlash = 0.6;
+      this.game.stunnedUntil = nowSec() + 3;
+      this.ghost.damage(5, { rage: 0 });
+      this.pawn.body.velocity.set((dx / len) * 16, 4, (dz / len) * 16);
+      this._dodgeVX = (dx / len) * 16;
+      this._dodgeVZ = (dz / len) * 16;
+      this.game.dodgingUntil = nowSec() + 0.45;
+    }
+    this.events.emit('toast', { text: '连携技成功！！', ms: 1800 });
   }
 
   _doWhip() {

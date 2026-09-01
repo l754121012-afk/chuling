@@ -118,7 +118,6 @@ export class SchoolScene {
       mesh.position.set(desk.x, 0, desk.z);
       mesh.rotation.y = desk.rotY;
       this.group.add(mesh);
-      refs.desks.push({ mesh, base: { x: desk.x, z: desk.z } });
       const body = makeBody({
         shape: new CANNON.Box(v3(0.4, 0.38, 0.28)),
         position: { x: desk.x, y: 0.38, z: desk.z },
@@ -126,6 +125,7 @@ export class SchoolScene {
         mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
       });
       this.physics.add(body);
+      refs.desks.push({ mesh, body, base: { x: desk.x, z: desk.z }, slid: false });
     }
 
     const platform = this.L.platform;
@@ -818,6 +818,19 @@ export class SchoolScene {
     }
   }
 
+  slideRandomDesk() {
+    const desks = this.refs?.desks || [];
+    if (!desks.length) return;
+    const desk = desks[Math.floor(Math.random() * desks.length)];
+    const dx = rand(-3, 3);
+    const dz = rand(-3, 3);
+    desk.body.position.x = desk.base.x + dx;
+    desk.body.position.z = desk.base.z + dz;
+    desk.body.aabbNeedsUpdate = true;
+    desk.slid = true;
+    desk.mesh.position.set(desk.body.position.x, desk.body.position.y - 0.38, desk.body.position.z);
+  }
+
   applyCosmetics(unlocks = {}) {
     if (unlocks.office_plant && !this._plantCosmetic) {
       const x = this.L.charger.x + 1.4;
@@ -1053,7 +1066,9 @@ export class SchoolScene {
       this._lockerShakeUntil = nowSec() + 0.15;
     }
     for (const d of this.refs?.desks || []) {
-      if (nowSec() < this._deskShakeUntil) {
+      if (d.slid) {
+        d.mesh.position.set(d.body.position.x, d.body.position.y - 0.38, d.body.position.z);
+      } else if (nowSec() < this._deskShakeUntil) {
         d.mesh.position.x = d.base.x + rand(-0.04, 0.04) * (rampage ? 3 : 1);
         d.mesh.position.z = d.base.z + rand(-0.04, 0.04) * (rampage ? 3 : 1);
       } else {

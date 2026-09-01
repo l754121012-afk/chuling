@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GAME_CONFIG } from '../config/game.js';
 import { ITEM_DEFS } from '../config/items.js';
+import { makeTrapMesh } from '../core/PlaceholderAssets.js';
 import { distance2D, nowSec, rand } from '../core/Utils.js';
 
 const EVENTS = ['blackout', 'red_zone', 'desk_rampage', 'supply_drop', 'tape_revival', 'mimic'];
@@ -127,6 +128,12 @@ export class RandomEventSystem {
       this.game.lightsOutUntil = nowSec() + 2;
       this._blackoutPending = true;
       this.events.emit('blackout.start');
+      this.events.emit('act.card', { title: '怪谈事件 · 停电', line: '灯灭了，它换了位置！' });
+      this.events.emit('beat.flash', { color: '#11141a' });
+      const p = this.player.getPos();
+      if (this.player.pawn?.body) {
+        this.player.pawn.body.velocity.set(rand(-4, 4), 2, rand(-4, 4));
+      }
       this.audio?.play('heartbeat');
       this.events.emit('toast', { text: '啪——停电了！！', ms: 1600 });
       return;
@@ -149,6 +156,15 @@ export class RandomEventSystem {
       mesh.position.set(x, 0.05, z);
       this.scene.group.add(mesh);
       this._redZone = { x, z, r: 2.3, until: nowSec() + 8, mesh, toasted: false };
+      this.events.emit('act.card', { title: '怪谈事件 · 禁区红线', line: '红线内体力狂掉！' });
+      this.events.emit('beat.flash', { color: '#ff4d4d' });
+      const p = this.player.getPos();
+      if (distance2D(p.x, p.z, x, z) < this._redZone.r) {
+        const dx = p.x - x;
+        const dz = p.z - z;
+        const len = Math.hypot(dx, dz) || 1;
+        this.player.pawn?.body?.velocity.set((dx / len) * 9, 3, (dz / len) * 9);
+      }
       this.events.emit('toast', { text: '禁区红线出现了！！', ms: 1600 });
       this.audio?.play('chalk');
       return;
@@ -156,6 +172,11 @@ export class RandomEventSystem {
     if (type === 'desk_rampage') {
       this.game.deskRampageUntil = nowSec() + 6;
       this.game.ghostSpeedBoostUntil = nowSec() + 6;
+      this.scene.slideRandomDesk?.();
+      this.events.emit('act.card', { title: '怪谈事件 · 桌椅暴走', line: '路线变了，鬼也快了！' });
+      this.events.emit('beat.flash', { color: '#f4a261' });
+      const p = this.player.getPos();
+      this.player.pawn?.body?.velocity.set(rand(-3, 3), 2, rand(-3, 3));
       this.events.emit('toast', { text: '桌椅暴走了！鬼也变快了！！', ms: 1800 });
       this.audio?.play('shake');
       this.events.emit('camera.shake', { amount: 0.3 });
@@ -173,6 +194,8 @@ export class RandomEventSystem {
       mesh.position.set(x, 0.35, z);
       this.scene.group.add(mesh);
       this.game.supplyDrop = { x, z, id, until: nowSec() + 12, mesh };
+      this.events.emit('act.card', { title: '怪谈事件 · 主管空投', line: '补给来了，也可能是陷阱！' });
+      this.events.emit('beat.flash', { color: '#ffd166' });
       this.events.emit('toast', { text: '主管空投了一个补给箱！', ms: 1600 });
       this.audio?.play('gate');
       return;
@@ -184,14 +207,18 @@ export class RandomEventSystem {
         trap.pos.x = rand(c.minX + 2, c.maxX - 2);
         trap.pos.z = rand(c.minZ + 2, c.maxZ - 2);
         trap.mesh.position.set(trap.pos.x, 0.02, trap.pos.z);
+        this.scene.spawnParticles({ x: trap.pos.x, y: 0.5, z: trap.pos.z }, '#f4d35e');
         this.events.emit('toast', { text: '修正带活过来了！！自己挪走了！', ms: 1800 });
       } else {
         const c = this.scene.L.classroom;
         const x = rand(c.minX + 2, c.maxX - 2);
         const z = rand(c.minZ + 2, c.maxZ - 2);
+        const mesh = makeTrapMesh();
+        mesh.position.set(x, 0.02, z);
+        this.scene.group.add(mesh);
         this.items?.zones.push({
           type: 'trap',
-          mesh: null,
+          mesh,
           pos: { x, z },
           radius: 0.9,
           until: nowSec() + 60,
@@ -199,6 +226,8 @@ export class RandomEventSystem {
         });
         this.events.emit('toast', { text: '修正带自己画了一道陷阱线！', ms: 1800 });
       }
+      this.events.emit('act.card', { title: '怪谈事件 · 修正带复活', line: '它自己动了！' });
+      this.events.emit('beat.flash', { color: '#f4d35e' });
       this.audio?.play('splat');
       return;
     }
@@ -207,6 +236,7 @@ export class RandomEventSystem {
       const stage = this.game.currentStage();
       if (action === 'whip') {
         this.ghost._startCharge(this.player.getPos(), stage);
+        this.events.emit('beat.flash', { color: '#ff6b6b' });
         this.events.emit('toast', { text: '它学你挥鞭，反而撞过来了！！', ms: 1800 });
       } else if (action === 'hide') {
         this.events.emit('toast', { text: '它学你躲进柜子，然后重重关上门！！', ms: 1800 });
@@ -214,8 +244,10 @@ export class RandomEventSystem {
         this.rage.add(6, 'mimic');
       } else {
         this.ghost._startCharge(this.player.getPos(), stage);
+        this.events.emit('beat.flash', { color: '#ff6b6b' });
         this.events.emit('toast', { text: '它学会了你的走位，直接冲了过来！！', ms: 1800 });
       }
+      this.events.emit('act.card', { title: '怪谈事件 · 鬼学你操作', line: '它记住了你的动作！' });
       this.audio?.play('ghost');
     }
   }
