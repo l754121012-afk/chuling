@@ -81,6 +81,14 @@ export class UISystem {
       actLine: document.getElementById('act-line')
     };
     this._buildInventory();
+    if (this.economy?.unlocks?.phone_face) {
+      const head = this.el.phone?.querySelector('.phone-head span');
+      if (head) head.textContent = '安心手机 XD';
+    }
+    if (this.economy?.unlocks?.office_vip) {
+      const stamp = document.querySelector('.start-stamp');
+      if (stamp) stamp.textContent = 'PHASE 0 · VIP 打工人';
+    }
 
     document.getElementById('start-btn').addEventListener('click', () => {
       this.events.emit('game.start');

@@ -66,6 +66,7 @@ export class GameState {
     this.freePass = 0;
     this.damageWaiver = false;
     this.doublePoints = false;
+    this.resignUnlocked = false;
     this.parryCount = 0;
     this.dodgeCount = 0;
     this.kiteCount = 0;

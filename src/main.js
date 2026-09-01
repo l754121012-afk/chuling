@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PALETTE } from './config/palette.js';
+import { textTexture } from './core/PlaceholderAssets.js';
 import { GAME_CONFIG } from './config/game.js';
 import { EventBus } from './core/EventBus.js';
 import { GameState } from './core/GameState.js';
@@ -35,12 +36,13 @@ const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerH
 const events = new EventBus();
 const physics = new PhysicsWorld();
 const game = new GameState();
+const economy = new EconomySystem();
 const school = new SchoolScene(physics, events, scene);
 const refs = school.build();
+school.applyCosmetics(economy.unlocks);
 scene.add(school.group);
 
 const audio = new AudioSystem();
-const economy = new EconomySystem();
 const ui = new UISystem(game, events, economy);
 ui.init();
 
@@ -96,6 +98,26 @@ ghost.playerBody = player.createPawn().body;
 items.playerHand = player.pawn.mesh.userData.handSlot;
 ghost.createPawn(refs.ghostSpawn);
 items.spawnPickups();
+if (economy.unlocks.phone_face) {
+  const sticker = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: textTexture('XD', {
+        bg: '#ffd166',
+        fg: '#2b2118',
+        font: 'bold 72px "Microsoft YaHei", sans-serif',
+        width: 256,
+        height: 256,
+        lineHeight: 120,
+        pad: 12
+      }),
+      transparent: true,
+      depthWrite: false
+    })
+  );
+  sticker.position.set(0, 0.95, -0.42);
+  sticker.scale.set(0.24, 0.24, 1);
+  player.pawn.mesh.add(sticker);
+}
 
 const settlement = new SettlementSystem();
 const chain = new ChainDirector({

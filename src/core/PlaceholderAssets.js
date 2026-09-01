@@ -304,7 +304,7 @@ export function makePlayerMesh() {
   return group;
 }
 
-export function makeGhostMesh() {
+export function makeGhostMesh(hat = false) {
   const group = new THREE.Group();
   const ghostMat = new THREE.MeshStandardMaterial({
     color: PALETTE.ghost,
@@ -394,6 +394,14 @@ export function makeGhostMesh() {
   }
 
   group.add(body, tail, head, face, armLGroup, armRGroup, aura, flames);
+  if (hat) {
+    const hatMat = new THREE.MeshStandardMaterial({ color: 0x2c2c34, roughness: 0.6 });
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.04, 12), hatMat);
+    brim.position.set(0, 2.02, 0.08);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.22, 12), hatMat);
+    crown.position.set(0, 2.15, 0.08);
+    group.add(brim, crown);
+  }
   group.userData.ghostMat = ghostMat;
   group.userData.aura = aura;
   group.userData.flames = flames;

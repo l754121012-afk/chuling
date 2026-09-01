@@ -779,6 +779,49 @@ export class SchoolScene {
     }
   }
 
+  applyCosmetics(unlocks = {}) {
+    if (unlocks.office_plant && !this._plantCosmetic) {
+      const x = this.L.charger.x + 1.4;
+      const z = this.L.charger.z;
+      const group = new THREE.Group();
+      const pot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.25, 0.2, 0.7, 10),
+        material('#a0522d', 0.8)
+      );
+      pot.position.y = 0.35;
+      const leaves = new THREE.Mesh(
+        new THREE.SphereGeometry(0.32, 10, 8),
+        material('#4d7c4d', 0.8)
+      );
+      leaves.position.y = 0.9;
+      group.add(pot, leaves);
+      group.position.set(x, 0, z);
+      this.group.add(group);
+      this._plantCosmetic = group;
+    }
+    if (unlocks.office_vip && !this._vipSign) {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture('VIP 打工人', {
+            bg: '#4a1f2c',
+            fg: '#ffd166',
+            font: 'bold 58px "Microsoft YaHei", sans-serif',
+            width: 512,
+            height: 160,
+            lineHeight: 80,
+            pad: 10
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sprite.position.set(this.L.charger.x, 2.8, this.L.charger.z);
+      sprite.scale.set(1.8, 0.5, 1);
+      this.group.add(sprite);
+      this._vipSign = sprite;
+    }
+  }
+
   _box(w, h, d, pos, color, opts = {}) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color));
     mesh.position.set(pos.x, pos.y, pos.z);

@@ -125,6 +125,7 @@ export class EconomySystem {
     if (u.double_points) game.doublePoints = true;
     if (u.auto_tape2) game.addItem('tape', 2);
     if (u.mine_upgrade2) game.addItem('mine', 2);
+    if (u.resign_key) game.resignUnlocked = true;
   }
 
   get points() {

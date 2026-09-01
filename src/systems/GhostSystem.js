@@ -115,7 +115,7 @@ export class GhostSystem {
   }
 
   createPawn(pos) {
-    const mesh = makeGhostMesh();
+    const mesh = makeGhostMesh(!!this.economy?.unlocks?.ghost_hat);
     mesh.position.set(pos.x, 1.2, pos.z);
     this.scene.group.add(mesh);
     const body = makeBody({

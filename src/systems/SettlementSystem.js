@@ -53,6 +53,10 @@ export class SettlementSystem {
       finalLine = '公司表示：合同写得很清楚，死亡抚恤金 0円。';
       rating = 'D';
       title = '工伤免责声明爱好者';
+    } else if (game.resignUnlocked) {
+      finalLine = '你递上辞职信，主管追着你喊：你走了谁干活！';
+      rating = 'S';
+      title = '光荣跑路工';
     } else if (total <= 0) {
       finalLine = '恭喜！你不仅白干一天，还倒欠公司钱。';
     } else if (total < 5000) {
