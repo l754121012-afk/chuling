@@ -4,7 +4,7 @@ import { GAME_CONFIG } from '../config/game.js';
 import { ITEM_DEFS } from '../config/items.js';
 import { GROUPS, makeBody, syncMeshToBody } from '../core/Physics.js';
 import { makePlayerMesh } from '../core/PlaceholderAssets.js';
-import { clamp, distance2D, nowSec, rand } from '../core/Utils.js';
+import { choice, clamp, distance2D, nowSec, rand } from '../core/Utils.js';
 
 export class PlayerSystem {
   constructor({
@@ -1127,6 +1127,9 @@ export class PlayerSystem {
         title: `第 ${combo} 连击 · 它火了！！`,
         line: '鬼的能力提升了，别抽太爽忘记跑！'
       });
+      this.events.emit('danmaku', {
+        text: choice([`第 ${combo} 连击！！鞭神！`, '它被抽火了哈哈哈', '观众：再来一鞭！'])
+      });
     }
   }
 
@@ -1158,6 +1161,9 @@ export class PlayerSystem {
     this.events.emit('toast', {
       text: '抽空了！自己绊了一下，鬼看过来了！',
       ms: 1600
+    });
+    this.events.emit('danmaku', {
+      text: choice(['笑死，抽空了', '主播手滑了！', '这鞭子抽了个寂寞'])
     });
   }
 
@@ -1259,6 +1265,9 @@ export class PlayerSystem {
     this.events.emit('act.card', {
       title: '社死大招 · 夺命连环鞭！',
       line: '三连抽！它被抽到怀疑鬼生！'
+    });
+    this.events.emit('danmaku', {
+      text: choice(['社死大招！！', '观众沸腾了！！', '这一鞭值回票价！'])
     });
     if (!this.ghost) return;
     const pp = this.getPos();

@@ -517,6 +517,9 @@ export class GhostSystem {
         } else {
           this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'dodgeAttack');
           this.events.emit('toast', { text: '鬼扑空了！！', ms: 1200 });
+          this.events.emit('danmaku', {
+            text: choice(['好闪！！', '鬼扑空了哈哈哈', '这走位有点东西'])
+          });
           this._speak('人呢？！', 1400);
         }
       }
@@ -627,6 +630,9 @@ export class GhostSystem {
       this._chargeHitDone = true;
       this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'dodgeCharge');
       this.events.emit('toast', { text: '你闪开了撞击！！', ms: 1200 });
+      this.events.emit('danmaku', {
+        text: choice(['这闪避满分！', '撞击被闪开了！！', '主播会玩'])
+      });
     }
     if (nowSec() >= this._chargeUntil) {
       this._chargeActive = false;
@@ -653,6 +659,9 @@ export class GhostSystem {
     this.events.emit('toast', {
       text: `被撞飞了！体力-${GAME_CONFIG.chargeStaminaCost}，僵直了！`,
       ms: 1600
+    });
+    this.events.emit('danmaku', {
+      text: choice(['被撞飞了哈哈哈哈', '这一撞值50体力', '主播飞起来了！'])
     });
     this.events.emit('player.hurt');
     this.events.emit('camera.shake', { amount: 0.42 });
@@ -683,6 +692,9 @@ export class GhostSystem {
       this._hideAttackRings();
       this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'scareBreak');
       this.events.emit('toast', { text: '鬼脸震慑被打破了！！', ms: 1400 });
+      this.events.emit('danmaku', {
+        text: choice(['震慑被打断了！', '观众：好险！！', '闪光灯立大功'])
+      });
       this._attackCooldown = rand(
         GAME_CONFIG.ghostAttackCooldownMin,
         GAME_CONFIG.ghostAttackCooldownMax
@@ -728,6 +740,9 @@ export class GhostSystem {
       this.events.emit('camera.shake', { amount: 0.45 });
       this.events.emit('hitstop', { ms: 90 });
       this.rage.addDrama(GAME_CONFIG.dramaHurt, 'caught');
+      this.events.emit('danmaku', {
+        text: choice(['完蛋，工资没了！', '鬼脸震慑成功！！', '容错-1 悲'])
+      });
       if (this.game.lives <= 0) {
         this._catchPlayer();
         return;
@@ -833,6 +848,9 @@ export class GhostSystem {
     this.events.emit('slowmo', { ms: 280 });
     this.events.emit('camera.shake', { amount: 0.4 });
     this.events.emit('act.card', { title: '拼文具成功！！', line: '它的攻击被你弹开了！' });
+    this.events.emit('danmaku', {
+      text: choice(['这拼刀能上年度集锦！！', '好快的反应！！', '鬼：我裂开了'])
+    });
     this.audio?.play('whip');
     this._speak('疼疼疼！！', 1600);
     return true;

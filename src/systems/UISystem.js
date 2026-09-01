@@ -57,6 +57,7 @@ export class UISystem {
       lives: document.getElementById('lives'),
       sealStatus: document.getElementById('seal-status'),
       flashOverlay: document.getElementById('flash-overlay'),
+      danmaku: document.getElementById('danmaku'),
       fullscreenBtn: document.getElementById('fullscreen-btn'),
       bestRecord: document.getElementById('best-record'),
       actCard: document.getElementById('act-card'),
@@ -405,6 +406,19 @@ export class UISystem {
     });
     this.events.on('act.card', p => this.showActCard(p.title, p.line));
     this.events.on('ghost.telegraph', () => this.showParryHint());
+    this.events.on('danmaku', p => this.showDanmaku(p.text));
+  }
+
+  showDanmaku(text) {
+    if (!this.el.danmaku || !text) return;
+    const el = document.createElement('div');
+    el.className = 'danmaku-item';
+    el.textContent = text;
+    this.el.danmaku.appendChild(el);
+    while (this.el.danmaku.children.length > 4) {
+      this.el.danmaku.removeChild(this.el.danmaku.firstChild);
+    }
+    setTimeout(() => el.remove(), 2600);
   }
 
   showParryHint() {

@@ -112,6 +112,39 @@ body.playing canvas {
   animation: actPulse 0.9s ease-in-out infinite;
 }
 
+#danmaku {
+  position: absolute;
+  top: 30%;
+  right: max(14px, env(safe-area-inset-right));
+  width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.danmaku-item {
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(20, 22, 28, 0.82);
+  color: #ffe08a;
+  font-size: 12px;
+  border: 1px solid rgba(244, 211, 94, 0.35);
+  white-space: nowrap;
+  animation: danmakuIn 0.22s ease-out, danmakuOut 0.35s ease-in 2.1s forwards;
+}
+
+@keyframes danmakuIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes danmakuOut {
+  to { transform: translateX(30px); opacity: 0; }
+}
+
 #act-title {
   font-size: 22px;
   font-weight: 700;
