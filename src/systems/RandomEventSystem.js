@@ -7,7 +7,7 @@ import { distance2D, nowSec, rand } from '../core/Utils.js';
 const EVENTS = ['blackout', 'red_zone', 'desk_rampage', 'supply_drop', 'tape_revival', 'mimic'];
 
 export class RandomEventSystem {
-  constructor({ scene, events, game, ghost, player, rage, audio, items }) {
+  constructor({ scene, events, game, ghost, player, rage, audio, items, economy }) {
     this.scene = scene;
     this.events = events;
     this.game = game;
@@ -16,9 +16,12 @@ export class RandomEventSystem {
     this.rage = rage;
     this.audio = audio;
     this.items = items;
+    this.economy = economy;
     this._blackoutPending = false;
     this._redZone = null;
     this._supplyTimer = 0;
+    this._artifactTempts = [];
+    this._artifactTemptTimer = 0;
     events.on('pun.horse', pos => this._triggerHorse(pos));
     events.on('env.chain', pos => this._triggerChain(pos));
   }
@@ -35,6 +38,16 @@ export class RandomEventSystem {
     this.game.bellCircle = null;
     this.game.bellCharge = 0;
     this.game.bellPhaseIndex = 0;
+    this.game.artifactActive = false;
+    this.game.artifactUntil = 0;
+    this.game.artifactCircle = null;
+    this.game.artifactDefendTime = 0;
+    this.game.artifactSecured = false;
+    this.game.artifactPenalty = false;
+    this.game.artifactGhostBoostUntil = 0;
+    this.game.artifactPhaseIndex = 0;
+    this._artifactTempts.forEach(t => this.scene.group.remove(t.mesh));
+    this._artifactTempts = [];
     this.game.rebelItem = Math.random() < 0.6
       ? ['pen', 'glue', 'tape', 'crossbow', 'mine'][Math.floor(Math.random() * 5)]
       : null;
@@ -97,6 +110,17 @@ export class RandomEventSystem {
     }
     if (this.game.bellPhaseActive) {
       this._updateBellPhase(dt);
+    }
+
+    if (
+      !this.game.artifactActive &&
+      this.game.artifactPhaseIndex < GAME_CONFIG.artifactPhaseTimes.length &&
+      nowSec() - this.game.runStart >= GAME_CONFIG.artifactPhaseTimes[this.game.artifactPhaseIndex]
+    ) {
+      this._startArtifactPhase();
+    }
+    if (this.game.artifactActive) {
+      this._updateArtifactPhase(dt);
     }
 
     if (this._blackoutPending && this.game.lightsOutUntil <= nowSec()) {
@@ -470,5 +494,150 @@ export class RandomEventSystem {
     if (!used) {
       this.events.emit('toast', { text: '值日点消失了，危机回落。', ms: 1400 });
     }
+  }
+
+  _startArtifactPhase() {
+    this.game.artifactActive = true;
+    this.game.artifactUntil = nowSec() + GAME_CONFIG.artifactDefendDuration;
+    this.game.artifactDefendTime = 0;
+    const c = this.scene.L.classroom;
+    const x = rand(c.minX + 4, c.maxX - 4);
+    const z = rand(c.minZ + 4, c.maxZ - 4);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(GAME_CONFIG.artifactCircleRadius - 0.3, GAME_CONFIG.artifactCircleRadius, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd700,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.05, z);
+    this.scene.group.add(ring);
+    const beam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 10, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.4 })
+    );
+    beam.position.set(x, 5, z);
+    this.scene.group.add(beam);
+    this.game.artifactCircle = { x, z, ring, beam };
+    this.events.emit('artifact.start');
+    this.events.emit('act.card', {
+      title: '镇店之宝出现！！',
+      line: '守 15 秒！鬼拿到就完蛋！'
+    });
+    this.events.emit('beat.flash', { color: '#ffd700' });
+    this.audio?.play('gate');
+  }
+
+  _updateArtifactPhase(dt) {
+    if (nowSec() >= this.game.artifactUntil) {
+      this._ghostGotArtifact();
+      return;
+    }
+    const circle = this.game.artifactCircle;
+    if (!circle) return;
+    const p = this.player.getPos();
+    if (distance2D(p.x, p.z, circle.x, circle.z) < GAME_CONFIG.artifactCircleRadius) {
+      this.game.artifactDefendTime += dt;
+      if (this.game.artifactDefendTime >= GAME_CONFIG.artifactDefendDuration) {
+        this._secureArtifact();
+        return;
+      }
+    } else {
+      this.game.artifactDefendTime = Math.max(0, this.game.artifactDefendTime - dt * 0.5);
+    }
+    const gp = this.ghost.getPos();
+    if (distance2D(gp.x, gp.z, circle.x, circle.z) < GAME_CONFIG.artifactCircleRadius) {
+      this._ghostGotArtifact();
+      return;
+    }
+    this._artifactTemptTimer -= dt;
+    if (this._artifactTemptTimer <= 0) {
+      this._artifactTemptTimer = GAME_CONFIG.artifactTemptInterval;
+      if (this._artifactTempts.length < 2) this._spawnArtifactTempt(circle);
+    }
+    for (let i = this._artifactTempts.length - 1; i >= 0; i--) {
+      const t = this._artifactTempts[i];
+      if (nowSec() >= t.until || distance2D(p.x, p.z, t.x, t.z) < 1.2) {
+        if (distance2D(p.x, p.z, t.x, t.z) < 1.2) {
+          this.game.addItem(t.id, 1);
+          this.events.emit('toast', {
+            text: `清仓道具 ${ITEM_DEFS[t.id]?.name || t.id} 到手！`,
+            ms: 1400
+          });
+          this.audio?.play('paper');
+        }
+        this.scene.group.remove(t.mesh);
+        this._artifactTempts.splice(i, 1);
+      }
+    }
+  }
+
+  _spawnArtifactTempt(circle) {
+    const c = this.scene.L.classroom;
+    const x = rand(c.minX + 2, c.maxX - 2);
+    const z = rand(c.minZ + 2, c.maxZ - 2);
+    if (distance2D(x, z, circle.x, circle.z) < GAME_CONFIG.artifactCircleRadius + 1) return;
+    const id = ['pen', 'glue', 'tape', 'mine'][Math.floor(Math.random() * 4)];
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.28, 0.28),
+      new THREE.MeshBasicMaterial({ color: 0x8ef0c8, transparent: true, opacity: 0.9 })
+    );
+    mesh.position.set(x, 0.3, z);
+    this.scene.group.add(mesh);
+    this._artifactTempts.push({ x, z, id, mesh, until: nowSec() + 6 });
+  }
+
+  _secureArtifact() {
+    this.game.artifactSecured = true;
+    this.events.emit('artifact.secure');
+    this.rage.addDrama(25, 'artifact');
+    this.game.speedBoostUntil = nowSec() + 5;
+    if (this.economy) {
+      this.economy.state.relics += 1;
+      this.economy.state.points += 800;
+      this.economy.save();
+    }
+    this.events.emit('hitstop', { ms: 140 });
+    this.events.emit('slowmo', { ms: 450 });
+    this.events.emit('camera.shake', { amount: 0.6 });
+    this.events.emit('danmaku.burst');
+    this.events.emit('act.card', {
+      title: '守卫成功！！镇店之宝到手！',
+      line: '纪念品+1 · 积分+800 · 守卫奖金！'
+    });
+    this._clearArtifactPhase();
+  }
+
+  _ghostGotArtifact() {
+    this.game.artifactPenalty = true;
+    this.game.artifactGhostBoostUntil = nowSec() + GAME_CONFIG.artifactGhostBoostDuration;
+    this.rage.add(12, 'artifactLost');
+    this.events.emit('act.card', {
+      title: '鬼抢走了镇店之宝！！',
+      line: '它能力大涨 30 秒，结算会被扣钱！'
+    });
+    this.events.emit('beat.flash', { color: '#ff4d4d' });
+    this.audio?.play('ghost');
+    this.events.emit('camera.shake', { amount: 0.5 });
+    this._clearArtifactPhase();
+  }
+
+  _clearArtifactPhase() {
+    this.game.artifactActive = false;
+    const circle = this.game.artifactCircle;
+    if (circle) {
+      this.scene.group.remove(circle.ring);
+      this.scene.group.remove(circle.beam);
+    }
+    this.game.artifactCircle = null;
+    this.game.artifactDefendTime = 0;
+    this.game.artifactPhaseIndex += 1;
+    this._artifactTempts.forEach(t => this.scene.group.remove(t.mesh));
+    this._artifactTempts = [];
+    this.events.emit('artifact.end');
   }
 }

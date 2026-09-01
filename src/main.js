@@ -137,7 +137,8 @@ const randomEvents = new RandomEventSystem({
   player,
   rage,
   audio,
-  items
+  items,
+  economy
 });
 let phoneRang = false;
 let firstScareAt = 0;

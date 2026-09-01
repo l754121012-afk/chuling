@@ -597,6 +597,8 @@ export class UISystem {
     this.events.on('hunt.end', () => document.body.classList.remove('hunt'));
     this.events.on('bell.start', () => document.body.classList.add('bell'));
     this.events.on('bell.end', () => document.body.classList.remove('bell'));
+    this.events.on('artifact.start', () => document.body.classList.add('artifact'));
+    this.events.on('artifact.end', () => document.body.classList.remove('artifact'));
     this.events.on('vote.start', p => this.showVote(p.options));
     this.events.on('vote.end', () => this.el.voteModal?.classList.add('hidden'));
   }

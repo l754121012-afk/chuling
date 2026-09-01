@@ -30,6 +30,8 @@ export class SettlementSystem {
     else if (game.maxWhipCombo >= 3) push('小小抽打奖金', 1000);
     if (game.finisherDone) push('喜剧处决奖金', 5000);
     if (game.comboSkillDone) push('连携技演出奖金', 4000);
+    if (game.artifactSecured) push('镇店之宝守卫奖金', 6000);
+    if (game.artifactPenalty) push('镇店之宝被抢', -5000);
     if (game.parryCount >= 3) push('拼文具表演奖', 2000);
     if (game.kiteCount >= 3) push('溜鬼大师奖', 2000);
 

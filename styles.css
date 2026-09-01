@@ -41,6 +41,10 @@ body.bell #game-canvas {
   filter: saturate(0.7) hue-rotate(180deg) brightness(0.88);
 }
 
+body.artifact #game-canvas {
+  filter: sepia(0.3) saturate(1.25) brightness(1.06);
+}
+
 body.playing,
 body.playing canvas {
   cursor: none;

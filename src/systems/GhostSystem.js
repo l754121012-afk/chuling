@@ -1226,9 +1226,19 @@ export class GhostSystem {
     if (
       this.game.huntActive ||
       this.game.bellPhaseActive ||
+      this.game.artifactGhostBoostUntil > nowSec() ||
       this.game.ghostSpeedBoostUntil > nowSec()
     ) {
       speed *= 1.25;
+    }
+
+    if (this.game.artifactActive && this.game.artifactCircle && !this.game.artifactSecured) {
+      this._goTo(
+        { x: this.game.artifactCircle.x, z: this.game.artifactCircle.z },
+        speed,
+        dt
+      );
+      return;
     }
 
     if (this.game.chainActive && this.game.chainStep === 'lure') {

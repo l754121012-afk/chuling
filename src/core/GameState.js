@@ -52,6 +52,14 @@ export class GameState {
     this.bellCircle = null;
     this.bellCharge = 0;
     this.bellPhaseIndex = 0;
+    this.artifactActive = false;
+    this.artifactUntil = 0;
+    this.artifactCircle = null;
+    this.artifactDefendTime = 0;
+    this.artifactSecured = false;
+    this.artifactPenalty = false;
+    this.artifactGhostBoostUntil = 0;
+    this.artifactPhaseIndex = 0;
     this.lastPlayerAction = '';
     this.lastActionAt = 0;
     this.rebelItem = null;
