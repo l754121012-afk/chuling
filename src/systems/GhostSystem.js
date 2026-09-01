@@ -756,7 +756,7 @@ export class GhostSystem {
         return;
       }
       this._throwComboUntil = nowSec() + GAME_CONFIG.throwComboDuration;
-      this.game.thrownUntil = nowSec() + 2.4;
+      this.game.thrownUntil = nowSec() + GAME_CONFIG.thrownDuration;
       this.game.thrownByGhost = true;
       const dx = playerPos.x - b.x;
       const dz = playerPos.z - b.z;
@@ -764,7 +764,7 @@ export class GhostSystem {
       if (this.playerBody) {
         this.playerBody.velocity.set(
           (dx / len) * GAME_CONFIG.throwLaunchPower,
-          11,
+          GAME_CONFIG.throwLaunchVy,
           (dz / len) * GAME_CONFIG.throwLaunchPower
         );
       }

@@ -236,11 +236,23 @@ export class UISystem {
     if (!this.el.shopList) return;
     const pointsMode = this._shopType === 'points';
     const items = pointsMode ? POINTS_SHOP : RELIC_SHOP;
+    const rarityOrder = ['普通', '稀有', '史诗', '传说'];
+    const rarityColor = { 普通: '#8a8f98', 稀有: '#4c9fe8', 史诗: '#b48cff', 传说: '#ffd166' };
     this.el.shopBalance.textContent = pointsMode
       ? `🛒 百元店积分：${this.economy.points} · 🪙 ${this.economy.coins}`
       : `👻 灵异纪念品：${this.economy.relics}`;
     this.el.shopList.innerHTML = '';
+    const byCategory = {};
     for (const [id, def] of Object.entries(items)) {
+      (byCategory[def.category] ||= []).push({ id, def });
+    }
+    for (const [category, list] of Object.entries(byCategory)) {
+      const head = document.createElement('div');
+      head.className = 'shop-category';
+      head.textContent = category;
+      this.el.shopList.appendChild(head);
+      list.sort((a, b) => rarityOrder.indexOf(a.def.rarity) - rarityOrder.indexOf(b.def.rarity));
+      for (const { id, def } of list) {
       const owned = !!this.economy.unlocks[id];
       const cost = pointsMode ? this.economy.shopPrice(id) : def.cost;
       const affordable = pointsMode
@@ -248,7 +260,12 @@ export class UISystem {
         : this.economy.relics >= cost;
       const row = document.createElement('div');
       row.className = 'shop-row';
-      row.innerHTML = `<span>${def.icon} ${def.name}</span>`;
+      const color = rarityColor[def.rarity] || '#8a8f98';
+      row.innerHTML = `
+        <span class="shop-icon ${def.iconShape || 'square'}" style="--rc:${color}">${def.icon}</span>
+        <span class="shop-name">${def.name}</span>
+        <span class="shop-rarity" style="color:${color}">${def.rarity}</span>
+      `;
       const btn = document.createElement('button');
       btn.textContent = owned ? '已拥有' : `${cost}${pointsMode ? ' 积分' : ' 纪念品'}`;
       btn.disabled = owned || !affordable;
@@ -263,6 +280,7 @@ export class UISystem {
       }
       row.appendChild(btn);
       this.el.shopList.appendChild(row);
+      }
     }
   }
 

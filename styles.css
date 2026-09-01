@@ -513,6 +513,56 @@ body.playing canvas {
   cursor: pointer;
 }
 
+.shop-category {
+  margin-top: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(201, 79, 61, 0.1);
+  color: var(--red-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: 2px solid var(--rc, #8a8f98);
+  color: var(--rc, #8a8f98);
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 15px;
+}
+
+.shop-icon.square {
+  border-radius: 4px;
+}
+
+.shop-icon.circle {
+  border-radius: 50%;
+}
+
+.shop-icon.diamond {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  border: none;
+}
+
+.shop-icon.hex {
+  clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%);
+  border: none;
+}
+
+.shop-name {
+  flex: 1;
+}
+
+.shop-rarity {
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .shop-buttons {
   display: flex;
   gap: 8px;

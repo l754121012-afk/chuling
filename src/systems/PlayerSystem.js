@@ -292,6 +292,11 @@ export class PlayerSystem {
       return;
     }
     if (nowSec() < this.game.thrownUntil) {
+      if (nowSec() < this.game.dodgingUntil) return;
+      if (body.position.y > 6.8) {
+        body.position.y = 6.8;
+        body.velocity.y = 0;
+      }
       let moveX = 0;
       let moveZ = 0;
       if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
