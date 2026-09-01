@@ -397,6 +397,11 @@ export class UISystem {
         ? `鬼虚弱了：快跑向出口！剩余 ${Math.ceil(game.escapeTimer)} 秒`
         : `它追上来了！快跑！剩余 ${Math.ceil(game.escapeTimer)} 秒`;
     }
+    if (game.broken) {
+      return game.hasItem('stapler')
+        ? '鬼破防了！靠近按 E 处决！'
+        : '鬼破防了！先去拿订书机再回来处决！';
+    }
     if (game.chainActive && game.chainStep !== 'done') {
       const steps = {
         place: game.hasItem('tape')

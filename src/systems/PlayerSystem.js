@@ -1491,9 +1491,14 @@ export class PlayerSystem {
     this.ghost._dashFlash = 0.5;
     this.rage.add(10, 'ultimate');
     this.ghost.registerKnockdown();
+    this.game.broken = true;
+    this.game.brokenUntil = nowSec() + 5;
     this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
     this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#ffd166');
-    this.events.emit('toast', { text: '夺命连环鞭！！', ms: 1600 });
+    this.events.emit('toast', {
+      text: this.game.hasItem('stapler') ? '夺命连环鞭！！快按 E 处决！' : '夺命连环鞭！！它破防了，快去拿订书机！',
+      ms: 2000
+    });
     this.events.emit('danmaku.burst');
   }
 
