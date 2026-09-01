@@ -407,11 +407,35 @@ export class GhostSystem {
     this._lastStuckPos = { x: body.position.x, z: body.position.z };
     if (this._stuckTime > 0.6) {
       this._stuckTime = 0;
+      this._moveOutOfWall();
       this._waypoint = this._randomClassroomPoint();
       this._lastSeen = null;
       this._lastNoise = null;
       this._searchTimer = 0;
     }
+  }
+
+  _moveOutOfWall() {
+    const b = this.pawn.body.position;
+    for (let i = 0; i < 12; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = 1.2 + Math.random() * 2;
+      const tx = b.x + Math.cos(angle) * r;
+      const tz = b.z + Math.sin(angle) * r;
+      const from = v3(b.x, b.y + 0.5, b.z);
+      const to = v3(tx, b.y + 0.5, tz);
+      const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD);
+      if (!hit) {
+        b.x = tx;
+        b.z = tz;
+        this.pawn.body.velocity.set(0, 0, 0);
+        return;
+      }
+    }
+    const c = this.scene.L.classroom;
+    b.x = Math.max(c.minX + 1, Math.min(c.maxX - 1, b.x));
+    b.z = Math.max(c.minZ + 1, Math.min(c.maxZ - 1, b.z));
+    this.pawn.body.velocity.set(0, 0, 0);
   }
 
   _tryDash(dt, playerPos) {
