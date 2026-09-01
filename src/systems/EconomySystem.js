@@ -1,0 +1,122 @@
+import { GAME_CONFIG } from '../config/game.js';
+
+const KEY = 'exorcist_progress_v1';
+
+const POINTS_SHOP = {
+  start_pen2: { name: '圆珠笔补给（+2）', cost: 300, icon: '✒' },
+  start_glue: { name: '胶水补给（+1）', cost: 500, icon: '⚗' },
+  start_tape: { name: '修正带补给（+1）', cost: 400, icon: '▤' },
+  start_crossbow: { name: '玩具弩补给（+1）', cost: 900, icon: '弩' },
+  start_mine: { name: '尖叫地雷补给（+1）', cost: 500, icon: '地雷' },
+  battery_pack: { name: '手机电池扩容', cost: 600, icon: '🔋' },
+  stamina_boost: { name: '更结实的鞋', cost: 800, icon: '鞋' },
+  discount_card: { name: '百元店会员卡', cost: 2000, icon: '卡' }
+};
+
+const RELIC_SHOP = {
+  finisher_toilet: { name: '新处决：塞进马桶', cost: 2, icon: '🚽' },
+  sweat_spray: { name: '止汗喷雾（体力回复+）', cost: 3, icon: '💨' },
+  mine_upgrade: { name: '尖叫地雷升级（开局+1）', cost: 4, icon: '地雷' },
+  auto_tape: { name: '自动修正带（开局+1）', cost: 5, icon: '▤' },
+  office_vip: { name: '办公室装修（VIP打工）', cost: 3, icon: '🪑' }
+};
+
+export class EconomySystem {
+  constructor() {
+    this.state = this._load();
+  }
+
+  _load() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (raw && typeof raw.points === 'number') {
+        return {
+          points: Math.max(0, raw.points),
+          relics: Math.max(0, raw.relics || 0),
+          unlocks: raw.unlocks || {}
+        };
+      }
+    } catch {
+      // fall through to defaults
+    }
+    return { points: 0, relics: 0, unlocks: {} };
+  }
+
+  save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(this.state));
+    } catch {
+      // storage unavailable
+    }
+  }
+
+  award(game, settlement) {
+    const ratingBonus = { S: 10, A: 6, B: 3, C: 1, D: 0 }[settlement.rating] || 0;
+    const points = Math.max(0, Math.floor(settlement.total / 500)) + ratingBonus;
+    let chance = 0.04 + ratingBonus * 0.02;
+    if (game.finisherDone) chance += 0.25;
+    if (game.parryCount >= 3) chance += 0.15;
+    if (game.maxWhipCombo >= 10) chance += 0.15;
+    if (game.kiteCount >= 3) chance += 0.1;
+    chance = Math.min(0.95, chance);
+    const guaranteed = settlement.rating === 'S' && game.finisherDone;
+    const relics = guaranteed ? 1 : Math.random() < chance ? 1 : 0;
+    this.state.points += points;
+    this.state.relics += relics;
+    this.save();
+    return { points, relics };
+  }
+
+  shopPrice(id) {
+    const item = POINTS_SHOP[id];
+    if (!item) return 0;
+    const discount = this.state.unlocks.discount_card ? 0.8 : 1;
+    return Math.max(1, Math.round(item.cost * discount));
+  }
+
+  buyPoints(id) {
+    const price = this.shopPrice(id);
+    if (this.state.points < price) return false;
+    this.state.points -= price;
+    this.state.unlocks[id] = true;
+    this.save();
+    return true;
+  }
+
+  buyRelic(id) {
+    const item = RELIC_SHOP[id];
+    if (!item) return false;
+    if (this.state.relics < item.cost) return false;
+    this.state.relics -= item.cost;
+    this.state.unlocks[id] = true;
+    this.save();
+    return true;
+  }
+
+  applyRunMods(game) {
+    const u = this.state.unlocks;
+    if (u.start_pen2) game.addItem('pen', 2);
+    if (u.start_glue) game.addItem('glue', 1);
+    if (u.start_tape) game.addItem('tape', 1);
+    if (u.start_crossbow) game.addItem('crossbow', 1);
+    if (u.start_mine || u.mine_upgrade) game.addItem('mine', 1);
+    if (u.auto_tape) game.addItem('tape', 1);
+    if (u.battery_pack) game.batteryMax = 120;
+    if (u.stamina_boost) game.staminaMax = GAME_CONFIG.staminaMax + 5;
+    if (u.sweat_spray) game.staminaRegenBonus = 2;
+  }
+
+  get points() {
+    return this.state.points;
+  }
+
+  get relics() {
+    return this.state.relics;
+  }
+
+  get unlocks() {
+    return this.state.unlocks;
+  }
+}
+
+export { POINTS_SHOP, RELIC_SHOP };

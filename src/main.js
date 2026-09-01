@@ -16,6 +16,7 @@ import { ClueSystem } from './systems/ClueSystem.js';
 import { SettlementSystem } from './systems/SettlementSystem.js';
 import { UISystem } from './systems/UISystem.js';
 import { ChainDirector } from './systems/ChainDirector.js';
+import { EconomySystem } from './systems/EconomySystem.js';
 import { nowSec } from './core/Utils.js';
 
 const canvas = document.getElementById('game-canvas');
@@ -39,7 +40,8 @@ const refs = school.build();
 scene.add(school.group);
 
 const audio = new AudioSystem();
-const ui = new UISystem(game, events);
+const economy = new EconomySystem();
+const ui = new UISystem(game, events, economy);
 ui.init();
 
 const input = new InputSystem(renderer.domElement);
@@ -162,6 +164,7 @@ events.on('game.start', () => {
   document.body.classList.add('playing');
   player.resetHiding();
   game.addItem('pen', 2);
+  economy.applyRunMods(game);
   game.equipped = 'pen';
   items.resetBackup();
   items.syncHand();
@@ -180,6 +183,11 @@ events.on('game.win', () => {
   if (document.pointerLockElement) document.exitPointerLock();
   audio.play('win');
   const winSettlement = settlement.calculate(game);
+  const winEcon = economy.award(game, winSettlement);
+  winSettlement.rows.push(
+    { label: '百元店积分', amount: winEcon.points },
+    { label: '灵异纪念品', amount: winEcon.relics }
+  );
   ui.saveBest(game, winSettlement);
   ui.showBest();
   ui.showWin(winSettlement);
@@ -193,6 +201,11 @@ events.on('game.lost', () => {
   if (document.pointerLockElement) document.exitPointerLock();
   audio.play('lose');
   const loseSettlement = settlement.calculate(game);
+  const loseEcon = economy.award(game, loseSettlement);
+  loseSettlement.rows.push(
+    { label: '百元店积分', amount: loseEcon.points },
+    { label: '灵异纪念品', amount: loseEcon.relics }
+  );
   ui.saveBest(game, loseSettlement);
   ui.showBest();
   ui.showLose(loseSettlement);
@@ -257,7 +270,8 @@ window.__game = {
   camera: cameraSys,
   events,
   scene: school,
-  chain
+  chain,
+  economy
 };
 
 let last = nowSec();
@@ -285,9 +299,9 @@ function tick() {
       ? GAME_CONFIG.phoneOpenDrainPerSecond
       : GAME_CONFIG.batteryDrainPerSecond;
     if (!game.hiding && !game.charging) {
-      game.battery = Math.max(0, game.battery - drain * simDt);
+      game.battery = Math.min(game.batteryMax, Math.max(0, game.battery - drain * simDt));
     }
-    school.setDarkness(1 - game.battery / 100);
+    school.setDarkness(1 - game.battery / game.batteryMax);
     if (game.battery <= 0 && game.notebookOpen) ui.toggleNotebook(false);
   }
   if (
@@ -328,6 +342,7 @@ function tick() {
   input.allowLock = game.isPlaying();
 
   if (input.justPressed('Tab')) ui.toggleNotebook();
+  if (input.justPressed('KeyB')) ui.toggleBackpack();
   ui.sync(game);
   ui.updateSealStatus(player, ghost);
   cameraSys.update(input, player.getPos(), dt);

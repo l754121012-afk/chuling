@@ -1,12 +1,15 @@
 import { ITEM_DEFS } from '../config/items.js';
 import { GAME_CONFIG } from '../config/game.js';
 import { CLUE_TEXT } from './ClueSystem.js';
+import { POINTS_SHOP, RELIC_SHOP } from './EconomySystem.js';
 
 export class UISystem {
-  constructor(game, events) {
+  constructor(game, events, economy) {
     this.game = game;
     this.events = events;
+    this.economy = economy;
     this.el = {};
+    this.selectedSlot = 0;
     this._toastTimer = null;
     this._speechTimer = null;
     this._flashTimer = null;
@@ -30,6 +33,19 @@ export class UISystem {
       stamina: document.getElementById('stamina-bar'),
       objective: document.getElementById('objective'),
       inventory: document.getElementById('inventory'),
+      backpackBtn: document.getElementById('backpack-btn'),
+      backpackModal: document.getElementById('backpack-modal'),
+      backpackList: document.getElementById('backpack-list'),
+      slotSelect: document.getElementById('slot-select'),
+      backpackClose: document.querySelector('.backpack-close'),
+      shopModal: document.getElementById('shop-modal'),
+      shopTitle: document.getElementById('shop-title'),
+      shopBalance: document.getElementById('shop-balance'),
+      shopList: document.getElementById('shop-list'),
+      shopClose: document.querySelector('.shop-close'),
+      shopBtn: document.getElementById('shop-btn'),
+      relicBtn: document.getElementById('relic-btn'),
+      economyBalance: document.getElementById('economy-balance'),
       toast: document.getElementById('toast'),
       speech: document.getElementById('speech'),
       prompt: document.getElementById('prompt'),
@@ -75,11 +91,17 @@ export class UISystem {
     this.el.notebook.querySelector('.notebook-close').addEventListener('click', () => {
       this.toggleNotebook(false);
     });
+    this.el.backpackBtn?.addEventListener('click', () => this.toggleBackpack());
+    this.el.backpackClose?.addEventListener('click', () => this.toggleBackpack(false));
+    this.el.shopBtn?.addEventListener('click', () => this.openShop('points'));
+    this.el.relicBtn?.addEventListener('click', () => this.openShop('relics'));
+    this.el.shopClose?.addEventListener('click', () => this.closeShop());
     this.el.mute.addEventListener('click', () => {
       this.el.mute.classList.toggle('muted');
     });
     this.sync(this.game);
     this.showBest();
+    this.renderEconomyBalance();
   }
 
   saveBest(game, settlement) {
@@ -124,16 +146,18 @@ export class UISystem {
     }
     const time = best.time === null ? '--' : `${Math.floor(best.time / 60)}分${String(best.time % 60).padStart(2, '0')}秒`;
     el.textContent = `最佳记录：${best.rating} ${best.title} · ${time}`;
+    this.renderEconomyBalance();
   }
 
   _buildInventory() {
     this.el.inventory.innerHTML = '';
-    const ids = Object.keys(ITEM_DEFS);
+    const ids = this.game.quickSlots;
     for (let i = 0; i < ids.length; i++) {
       const def = ITEM_DEFS[ids[i]];
       const slot = document.createElement('button');
       slot.className = 'inv-slot';
       slot.dataset.itemId = def.id;
+      slot.addEventListener('click', () => this.selectSlot(i));
       slot.innerHTML = `
         <span class="inv-key">${i + 1}</span>
         <span class="inv-icon">${def.icon}</span>
@@ -142,6 +166,109 @@ export class UISystem {
       `;
       this.el.inventory.appendChild(slot);
     }
+  }
+
+  selectSlot(i) {
+    this.selectedSlot = i;
+    const id = this.game.quickSlots[i];
+    if (id && this.game.hasItem(id)) {
+      this.game.equipped = id;
+      this.events.emit('aim.changed', { aiming: false, combo: false });
+    }
+    this.sync(this.game);
+    this.renderBackpack();
+  }
+
+  toggleBackpack(force) {
+    const open = force ?? this.el.backpackModal.classList.contains('hidden');
+    this.el.backpackModal.classList.toggle('hidden', !open);
+    if (open) this.renderBackpack();
+  }
+
+  renderBackpack() {
+    if (!this.el.backpackList || !this.el.slotSelect) return;
+    this.el.slotSelect.innerHTML = '';
+    this.game.quickSlots.forEach((id, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = id ? `${ITEM_DEFS[id]?.name || id} x${this.game.inventory.get(id) || 0}` : '空位';
+      btn.classList.toggle('selected', i === this.selectedSlot);
+      btn.addEventListener('click', () => this.selectSlot(i));
+      this.el.slotSelect.appendChild(btn);
+    });
+    this.el.backpackList.innerHTML = '';
+    for (const [id, count] of this.game.inventory) {
+      if (count <= 0) continue;
+      const def = ITEM_DEFS[id];
+      const row = document.createElement('div');
+      row.className = 'backpack-row';
+      const inSlot = this.game.quickSlots.includes(id);
+      row.innerHTML = `<span>${def?.name || id} x${count}</span>`;
+      const btn = document.createElement('button');
+      btn.textContent = inSlot ? '装备' : '放入';
+      btn.addEventListener('click', () => {
+        if (inSlot) {
+          this.game.equipped = id;
+        } else {
+          this.game.quickSlots[this.selectedSlot] = id;
+          this.game.equipped = id;
+        }
+        this.events.emit('aim.changed', { aiming: false, combo: false });
+        this.sync(this.game);
+        this.renderBackpack();
+      });
+      row.appendChild(btn);
+      this.el.backpackList.appendChild(row);
+    }
+  }
+
+  openShop(type) {
+    this._shopType = type;
+    this.el.shopTitle.textContent = type === 'points' ? '百元店补给站' : '灵异收藏柜';
+    this.el.shopModal.classList.remove('hidden');
+    this.renderShop();
+  }
+
+  closeShop() {
+    this.el.shopModal.classList.add('hidden');
+  }
+
+  renderShop() {
+    if (!this.el.shopList) return;
+    const pointsMode = this._shopType === 'points';
+    const items = pointsMode ? POINTS_SHOP : RELIC_SHOP;
+    this.el.shopBalance.textContent = pointsMode
+      ? `百元店积分：${this.economy.points}`
+      : `灵异纪念品：${this.economy.relics}`;
+    this.el.shopList.innerHTML = '';
+    for (const [id, def] of Object.entries(items)) {
+      const owned = !!this.economy.unlocks[id];
+      const cost = pointsMode ? this.economy.shopPrice(id) : def.cost;
+      const affordable = pointsMode
+        ? this.economy.points >= cost
+        : this.economy.relics >= cost;
+      const row = document.createElement('div');
+      row.className = 'shop-row';
+      row.innerHTML = `<span>${def.icon} ${def.name}</span>`;
+      const btn = document.createElement('button');
+      btn.textContent = owned ? '已拥有' : `${cost}${pointsMode ? ' 积分' : ' 纪念品'}`;
+      btn.disabled = owned || !affordable;
+      if (!owned) {
+        btn.addEventListener('click', () => {
+          const ok = pointsMode ? this.economy.buyPoints(id) : this.economy.buyRelic(id);
+          if (ok) {
+            this.renderEconomyBalance();
+            this.renderShop();
+          }
+        });
+      }
+      row.appendChild(btn);
+      this.el.shopList.appendChild(row);
+    }
+  }
+
+  renderEconomyBalance() {
+    if (!this.el.economyBalance) return;
+    this.el.economyBalance.textContent = `百元店积分 ${this.economy.points} · 灵异纪念品 ${this.economy.relics}`;
   }
 
   sync(game) {
@@ -174,7 +301,7 @@ export class UISystem {
       seg.classList.toggle('current', i === stageIdx);
     });
     this.el.stageLabel.textContent = `恶灵：${stage.label}`;
-    this.el.battery.style.width = `${game.battery}%`;
+    this.el.battery.style.width = `${(game.battery / game.batteryMax) * 100}%`;
     this.el.phone.classList.toggle('drained', game.battery <= 0);
     if (this.el.darkOverlay) {
       const dark = Math.max(0, (100 - game.battery) / 100);

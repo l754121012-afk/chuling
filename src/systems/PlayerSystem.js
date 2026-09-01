@@ -29,9 +29,11 @@ export class PlayerSystem {
     this._dodgeCooldown = 0;
     this._dodgeVX = 0;
     this._dodgeVZ = 0;
+    this._shiftTapAt = 0;
+    this._shiftTapHandled = false;
     this._throwJumpUsed = false;
     this._noiseTimer = 0;
-    this._itemCycle = Object.keys(ITEM_DEFS);
+    this._itemCycle = this.game.quickSlots;
     this.pose = 'idle';
     this.poseTimer = 0;
     this.aiming = false;
@@ -142,14 +144,26 @@ export class PlayerSystem {
     this._dodgeCooldown = Math.max(0, this._dodgeCooldown - dt);
     if (this.game.charging && nowSec() >= this.game.chargingUntil) {
       this.game.charging = false;
-      this.game.battery = 100;
+      this.game.battery = this.game.batteryMax;
       this.audio?.play('win');
       this.events.emit('toast', { text: '电充满了！手机满血复活！', ms: 2000 });
     }
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
     if (this.input.justPressed('KeyG')) this._toggleWhipMode();
-    if (this.input.justPressed('KeyR')) this._doDodge();
     if (this.input.justPressed('KeyH')) this._doUltimate();
+    const shiftDown = this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight');
+    if (this.input.justPressed('ShiftLeft') || this.input.justPressed('ShiftRight')) {
+      this._shiftTapAt = nowSec();
+      this._shiftTapHandled = false;
+    }
+    if (this._shiftTapAt > 0 && !this._shiftTapHandled) {
+      if (nowSec() - this._shiftTapAt > 0.18) {
+        this._shiftTapHandled = true;
+      } else if (!shiftDown) {
+        this._shiftTapHandled = true;
+        this._doDodge();
+      }
+    }
 
     if (this._pushTarget) {
       const pos = this.getPos();
@@ -449,13 +463,13 @@ export class PlayerSystem {
       this.game.stamina = clamp(
         this.game.stamina - GAME_CONFIG.staminaDrainPerSecond * dt,
         0,
-        GAME_CONFIG.staminaMax
+        this.game.staminaMax
       );
     } else {
       this.game.stamina = clamp(
-        this.game.stamina + GAME_CONFIG.staminaRegenPerSecond * dt,
+        this.game.stamina + (GAME_CONFIG.staminaRegenPerSecond + this.game.staminaRegenBonus) * dt,
         0,
-        GAME_CONFIG.staminaMax
+        this.game.staminaMax
       );
     }
   }

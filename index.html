@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>除灵实习生 Phase 0</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="./styles.css?v=60" />
+  <link rel="stylesheet" href="./styles.css?v=61" />
   <script type="importmap">
     {
       "imports": {
@@ -71,6 +71,7 @@
       </div>
 
       <div id="inventory"></div>
+      <button id="backpack-btn" type="button" title="背包 (B)">背包</button>
       <div id="item-hint"></div>
 
       <div id="crosshair"><span class="tick-x"></span></div>
@@ -84,7 +85,7 @@
       <button id="fullscreen-btn" type="button" title="全屏">⛶</button>
       <div id="ghost-warning"><span class="warn-icon">⚠</span><span id="warn-label">愤怒</span></div>
       <div id="whip-hint"><span>G</span><span id="whip-label">鞭子</span><span id="whip-combo"></span></div>
-      <div id="hint">WASD 移动 · 滚轮/数字键 切道具 · 左键/F 使用 · V 闪光 · G 鞭子模式 · R 闪避 · H 社死大招 · E 互动 · X 下蹲 · Tab 手机</div>
+      <div id="hint">WASD 移动 · Shift 短冲刺/长快跑 · 滚轮/数字键 切道具 · B 背包 · 左键/F 使用 · V 闪光 · G 鞭子模式 · H 社死大招 · E 互动 · X 下蹲 · Tab 手机</div>
     </div>
 
     <div id="notebook" class="modal hidden">
@@ -99,12 +100,12 @@
 
     <div id="screen-start">
       <div class="start-card">
-        <div class="start-stamp">PHASE 0 · v60</div>
+        <div class="start-stamp">PHASE 0 · v61</div>
         <h1>除灵实习生</h1>
         <p class="start-line">百元店文具，打白工除灵，干完这一单就跑路。</p>
         <div class="start-controls">
           <span>WASD 移动</span>
-          <span>Shift 奔跑</span>
+          <span>Shift 短按冲刺 / 长按快跑</span>
           <span>点击画面 锁定鼠标</span>
           <span>右键 瞄准 / 左键 射出</span>
           <span>左键 使用道具</span>
@@ -112,7 +113,7 @@
           <span>X / Ctrl 下蹲爬行</span>
           <span>V 手机闪光</span>
           <span>G 鞭子模式（左键连抽）</span>
-          <span>R 狼狈闪身</span>
+          <span>B 背包</span>
           <span>H 社死大招</span>
           <span>E 互动</span>
           <span>滚轮 / 数字键 切换道具</span>
@@ -121,6 +122,33 @@
         <button id="start-btn" type="button">开始实习</button>
         <p class="start-note">先找两条线索：黑板上写了什么，桌上的纸条又说了什么。</p>
         <p id="best-record" class="best-record">最佳记录：--</p>
+        <p id="economy-balance" class="best-record"></p>
+        <div class="shop-buttons">
+          <button id="shop-btn" type="button">百元店补给站</button>
+          <button id="relic-btn" type="button">灵异收藏柜</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="backpack-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span>背包</span>
+          <button type="button" class="notebook-close backpack-close">×</button>
+        </div>
+        <div id="slot-select" class="slot-select"></div>
+        <div id="backpack-list"></div>
+      </div>
+    </div>
+
+    <div id="shop-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span id="shop-title">百元店补给站</span>
+          <button type="button" class="notebook-close shop-close">×</button>
+        </div>
+        <p id="shop-balance" class="shop-balance"></p>
+        <div id="shop-list"></div>
       </div>
     </div>
 
@@ -147,6 +175,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/main.js?v=60"></script>
+  <script type="module" src="./src/main.js?v=61"></script>
 </body>
 </html>

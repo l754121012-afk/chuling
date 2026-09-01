@@ -456,7 +456,7 @@ export class ItemSystem {
 
     let equipped = this.game.equipped;
     if (!this.game.hasItem(equipped)) {
-      const owned = Object.keys(ITEM_DEFS).filter(id => this.game.hasItem(id));
+      const owned = this.game.quickSlots.filter(id => this.game.hasItem(id));
       equipped = owned[0] || null;
       if (equipped) this.game.equipped = equipped;
     }

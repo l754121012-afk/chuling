@@ -398,6 +398,20 @@ body.playing canvas {
   pointer-events: auto;
 }
 
+#backpack-btn {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  padding: 8px 12px;
+  border: 1px solid #6a7480;
+  border-radius: 6px;
+  background: rgba(39, 45, 54, 0.9);
+  color: #f4efe4;
+  font-size: 12px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 .inv-slot {
   position: relative;
   width: 74px;
@@ -444,6 +458,82 @@ body.playing canvas {
   font-size: 12px;
   font-weight: 700;
   color: #f4a261;
+}
+
+.slot-select {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #d4c7ab;
+}
+
+.slot-select button {
+  padding: 8px 4px;
+  border: 1px solid #a8a291;
+  border-radius: 6px;
+  background: #fffdf5;
+  color: #4a5560;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.slot-select button.selected {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px rgba(201, 79, 61, 0.3);
+}
+
+#backpack-list,
+#shop-list {
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.backpack-row,
+.shop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #fffdf5;
+  border: 1px solid #e0d8c4;
+  font-size: 13px;
+}
+
+.backpack-row button,
+.shop-row button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--red);
+  color: #fff;
+  cursor: pointer;
+}
+
+.shop-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.shop-buttons button {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #a8a291;
+  border-radius: 6px;
+  background: #fffdf5;
+  color: var(--red-dark);
+  cursor: pointer;
+}
+
+.shop-balance {
+  padding: 10px 14px 0;
+  font-size: 13px;
+  color: #4a5560;
 }
 
 #crosshair {

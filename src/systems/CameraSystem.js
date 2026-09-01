@@ -18,7 +18,6 @@ export class CameraSystem {
   update(input, targetPos, dt = 1 / 60) {
     this.yaw -= input.look.x * 0.005;
     this.pitch = clamp(this.pitch + input.look.y * 0.004, -0.15, 1.15);
-    this.dist = clamp(this.dist + input.zoom * 0.012, 2.6, 9.5);
 
     const cp = new THREE.Vector3(
       targetPos.x + Math.sin(this.yaw) * Math.cos(this.pitch) * this.dist,

@@ -14,10 +14,14 @@ export class GameState {
     this.drama = 0;
     this.ghostHp = GHOST_CONFIG.hpMax;
     this.stamina = GAME_CONFIG.staminaMax;
+    this.staminaMax = GAME_CONFIG.staminaMax;
+    this.staminaRegenBonus = 0;
     this.battery = 100;
+    this.batteryMax = 100;
     this.clues = new Set();
     this.inventory = new Map();
     this.equipped = 'pen';
+    this.quickSlots = ['pen', 'glue', 'tape', 'stapler'];
     this.hiding = false;
     this.damages = [];
     this.usedItems = [];
