@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GAME_CONFIG } from '../config/game.js';
 import { ITEM_DEFS } from '../config/items.js';
-import { makeTrapMesh } from '../core/PlaceholderAssets.js';
+import { makeTrapMesh, textTexture } from '../core/PlaceholderAssets.js';
 import { distance2D, nowSec, rand } from '../core/Utils.js';
 
 const EVENTS = ['blackout', 'red_zone', 'desk_rampage', 'supply_drop', 'tape_revival', 'mimic'];
@@ -140,10 +140,10 @@ export class RandomEventSystem {
     }
     if (type === 'red_zone') {
       const c = this.scene.L.classroom;
-      const x = rand(c.minX + 2, c.maxX - 2);
-      const z = rand(c.minZ + 2, c.maxZ - 2);
+      const x = rand(c.minX + 6.5, c.maxX - 6.5);
+      const z = rand(c.minZ + 6.5, c.maxZ - 6.5);
       const mesh = new THREE.Mesh(
-        new THREE.RingGeometry(2.1, 2.4, 32),
+        new THREE.RingGeometry(6.3, 6.6, 48),
         new THREE.MeshBasicMaterial({
           color: 0xff4d4d,
           transparent: true,
@@ -155,7 +155,7 @@ export class RandomEventSystem {
       mesh.rotation.x = -Math.PI / 2;
       mesh.position.set(x, 0.05, z);
       this.scene.group.add(mesh);
-      this._redZone = { x, z, r: 2.3, until: nowSec() + 8, mesh, toasted: false };
+      this._redZone = { x, z, r: 6.4, until: nowSec() + 8, mesh, toasted: false };
       this.events.emit('act.card', { title: '怪谈事件 · 禁区红线', line: '红线内体力狂掉！' });
       this.events.emit('beat.flash', { color: '#ff4d4d' });
       const p = this.player.getPos();
@@ -176,7 +176,13 @@ export class RandomEventSystem {
       this.events.emit('act.card', { title: '怪谈事件 · 桌椅暴走', line: '路线变了，鬼也快了！' });
       this.events.emit('beat.flash', { color: '#f4a261' });
       const p = this.player.getPos();
-      this.player.pawn?.body?.velocity.set(rand(-3, 3), 2, rand(-3, 3));
+      const dx = p.x;
+      const dz = p.z;
+      const len = Math.hypot(dx, dz) || 1;
+      this.player.pawn?.body?.velocity.set((dx / len) * 12, 5, (dz / len) * 12);
+      this.game.stamina = Math.max(0, this.game.stamina - 15);
+      this.game.playerStunUntil = Math.max(this.game.playerStunUntil, nowSec() + 0.5);
+      this.events.emit('hitstop', { ms: 70 });
       this.events.emit('toast', { text: '桌椅暴走了！鬼也变快了！！', ms: 1800 });
       this.audio?.play('shake');
       this.events.emit('camera.shake', { amount: 0.3 });
@@ -193,7 +199,31 @@ export class RandomEventSystem {
       );
       mesh.position.set(x, 0.35, z);
       this.scene.group.add(mesh);
-      this.game.supplyDrop = { x, z, id, until: nowSec() + 12, mesh };
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, 6, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.45 })
+      );
+      beam.position.set(x, 3, z);
+      this.scene.group.add(beam);
+      const marker = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture('补给', {
+            bg: '#4a3b12',
+            fg: '#ffd166',
+            font: 'bold 60px "Microsoft YaHei", sans-serif',
+            width: 256,
+            height: 128,
+            lineHeight: 64,
+            pad: 8
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      marker.position.set(x, 4.4, z);
+      marker.scale.set(0.8, 0.4, 1);
+      this.scene.group.add(marker);
+      this.game.supplyDrop = { x, z, id, until: nowSec() + 12, mesh, beam, marker };
       this.events.emit('act.card', { title: '怪谈事件 · 主管空投', line: '补给来了，也可能是陷阱！' });
       this.events.emit('beat.flash', { color: '#ffd166' });
       this.events.emit('toast', { text: '主管空投了一个补给箱！', ms: 1600 });
@@ -204,11 +234,26 @@ export class RandomEventSystem {
       const trap = this.items?.zones.find(z => z.type === 'trap');
       if (trap) {
         const c = this.scene.L.classroom;
-        trap.pos.x = rand(c.minX + 2, c.maxX - 2);
-        trap.pos.z = rand(c.minZ + 2, c.maxZ - 2);
+        const oldX = trap.pos.x;
+        const oldZ = trap.pos.z;
+        let nx = oldX;
+        let nz = oldZ;
+        for (let i = 0; i < 8; i++) {
+          nx = rand(c.minX + 2, c.maxX - 2);
+          nz = rand(c.minZ + 2, c.maxZ - 2);
+          if (Math.hypot(nx - oldX, nz - oldZ) > 5) break;
+        }
+        trap.pos.x = nx;
+        trap.pos.z = nz;
         trap.mesh.position.set(trap.pos.x, 0.02, trap.pos.z);
+        this.scene.spawnSlashTrail(
+          { x: oldX, y: 0, z: oldZ },
+          { x: nx, y: 0, z: nz },
+          '#f4d35e',
+          0.9
+        );
         this.scene.spawnParticles({ x: trap.pos.x, y: 0.5, z: trap.pos.z }, '#f4d35e');
-        this.events.emit('toast', { text: '修正带活过来了！！自己挪走了！', ms: 1800 });
+        this.events.emit('toast', { text: '修正带活过来了！！自己滚远了！', ms: 2200 });
       } else {
         const c = this.scene.L.classroom;
         const x = rand(c.minX + 2, c.maxX - 2);
@@ -216,6 +261,7 @@ export class RandomEventSystem {
         const mesh = makeTrapMesh();
         mesh.position.set(x, 0.02, z);
         this.scene.group.add(mesh);
+        this.scene.spawnParticles({ x, y: 0.5, z }, '#f4d35e');
         this.items?.zones.push({
           type: 'trap',
           mesh,
@@ -224,7 +270,7 @@ export class RandomEventSystem {
           until: nowSec() + 60,
           used: false
         });
-        this.events.emit('toast', { text: '修正带自己画了一道陷阱线！', ms: 1800 });
+        this.events.emit('toast', { text: '修正带自己滚过全场，画了一道陷阱线！', ms: 2200 });
       }
       this.events.emit('act.card', { title: '怪谈事件 · 修正带复活', line: '它自己动了！' });
       this.events.emit('beat.flash', { color: '#f4d35e' });
@@ -310,6 +356,8 @@ export class RandomEventSystem {
   _clearSupplyDrop() {
     if (this.game.supplyDrop) {
       this.scene.group.remove(this.game.supplyDrop.mesh);
+      if (this.game.supplyDrop.beam) this.scene.group.remove(this.game.supplyDrop.beam);
+      if (this.game.supplyDrop.marker) this.scene.group.remove(this.game.supplyDrop.marker);
       this.game.supplyDrop = null;
     }
   }

@@ -1052,6 +1052,11 @@ export class GhostSystem {
   performFinisher() {
     if (this.game.phase !== 'investigate') return;
     if (!this.game.broken && !this.game.chainPinned) return;
+    if (!this.game.hasItem('stapler')) {
+      this.events.emit('toast', { text: '订书机都不带，处决个寂寞！', ms: 1800 });
+      this.events.emit('danmaku', { text: '没订书机也想处决？' });
+      return;
+    }
     this.game.broken = false;
     this.game.finisherDone = true;
     this.rage.addDrama(GAME_CONFIG.dramaFinisher, 'finisher');

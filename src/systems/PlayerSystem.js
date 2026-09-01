@@ -624,6 +624,7 @@ export class PlayerSystem {
     }
 
     for (const prop of this.refs.props) {
+      if (prop.type === 'bookshelf' && prop.used) continue;
       const px = prop.type === 'crate' ? prop.body.position.x : prop.pos.x;
       const pz = prop.type === 'crate' ? prop.body.position.z : prop.pos.z;
       const d = distance2D(pos.x, pos.z, px, pz);
@@ -831,6 +832,10 @@ export class PlayerSystem {
 
   _kickProp(prop) {
     if (prop.type === 'bookshelf') {
+      if (prop.used) {
+        this.events.emit('toast', { text: '书架已经倒过了，不能再推了！', ms: 1400 });
+        return;
+      }
       if (prop.body.type !== CANNON.Body.DYNAMIC) {
         prop.body.type = CANNON.Body.DYNAMIC;
         prop.body.mass = 45;
