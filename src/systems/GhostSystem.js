@@ -101,6 +101,7 @@ export class GhostSystem {
     this._throwHitCooldownUntil = 0;
     this._throwSpeed = 0;
     this._kiteCooldown = 0;
+    this._pressureTime = 0;
     this._attackAnimTimer = 0;
     this._telegraphRing = null;
     this._telegraphRingMat = null;
@@ -563,6 +564,13 @@ export class GhostSystem {
       return;
     }
 
+    this._pressureTime += dt;
+    if (dist < 3) {
+      if (this._pressureTime > 1.2) this._attackCooldown = 0;
+    } else {
+      this._pressureTime = 0;
+    }
+
     const stage = this.game.currentStage();
     const highRage = stage.id === 'furious' || stage.id === 'insane';
     const rangeMap = { calm: 4, annoyed: 4.5, angry: 5.5, furious: 7, insane: 9 };
@@ -601,8 +609,8 @@ export class GhostSystem {
       calm: 0,
       annoyed: 0,
       angry: 0.22,
-      furious: 0.35,
-      insane: 0.45
+      furious: 0.25,
+      insane: 0.28
     }[stage.id] || 0;
     if (dist > 2.2 && Math.random() < chargeChance) {
       this._startCharge(playerPos, stage);
@@ -613,6 +621,7 @@ export class GhostSystem {
 
   _startSwipe(playerPos) {
     this._telegraphActive = true;
+    this._pressureTime = 0;
     this._attackFired = false;
     this._telegraphUntil = nowSec() + GAME_CONFIG.attackTelegraph;
     this._attackUntil = nowSec() + GAME_CONFIG.attackTelegraph + GAME_CONFIG.attackWindup;
@@ -635,6 +644,7 @@ export class GhostSystem {
     const dz = playerPos.z - b.z;
     const len = Math.hypot(dx, dz) || 1;
     this._chargeActive = true;
+    this._pressureTime = 0;
     this._chargeWindupUntil = nowSec() + GAME_CONFIG.chargeWindup;
     this._chargeUntil = this._chargeWindupUntil + GAME_CONFIG.chargeDuration;
     this._chargeDirX = dx / len;
@@ -709,11 +719,15 @@ export class GhostSystem {
 
   _startThrow(playerPos, stage) {
     this._throwActive = true;
+    this._pressureTime = 0;
     this._throwTelegraphUntil = nowSec() + 0.8;
     this._throwComboUntil = 0;
     this._throwHits = 0;
     this._throwHitCooldownUntil = 0;
-    this._throwSpeed = Math.max(6, (stage.speed || 2.6) * 2.4);
+    this._throwSpeed = Math.max(
+      7,
+      (stage.speed || 2.6) * GAME_CONFIG.throwSpeedMultiplier
+    );
     this._dashFlash = 0.35;
     this.audio?.play('ghost');
     if (this._telegraphRing) {
@@ -756,6 +770,7 @@ export class GhostSystem {
         return;
       }
       this._throwComboUntil = nowSec() + GAME_CONFIG.throwComboDuration;
+      this._throwHitCooldownUntil = nowSec() + 0.9;
       this.game.thrownUntil = nowSec() + GAME_CONFIG.thrownDuration;
       this.game.thrownByGhost = true;
       const dx = playerPos.x - b.x;
@@ -822,6 +837,7 @@ export class GhostSystem {
 
   _startScare(playerPos) {
     this._scareActive = true;
+    this._pressureTime = 0;
     this._scareUntil = nowSec() + 0.9;
     this._dashFlash = 0.4;
     this.audio?.play('ghost');

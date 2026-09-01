@@ -129,7 +129,9 @@ export class PlayerSystem {
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
 
     this._handleMovement(dt, body);
-    if (this.game.thrownUntil > nowSec()) this._checkThrowCollision();
+    if (this.game.thrownUntil > nowSec() && this.pawn.body.velocity.y < 0) {
+      this._checkThrowCollision();
+    }
     this._handleStamina(dt, body);
     this._checkFootprints(dt);
     this._handleInteractions();
