@@ -42,17 +42,32 @@ export class EconomySystem {
     try {
       const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
       if (raw && typeof raw.points === 'number') {
+        const ghost = raw.ghost && typeof raw.ghost === 'object' ? raw.ghost : {};
         return {
           coins: Math.max(0, raw.coins || 0),
           points: Math.max(0, raw.points),
           relics: Math.max(0, raw.relics || 0),
-          unlocks: raw.unlocks || {}
+          unlocks: raw.unlocks || {},
+          ghost: {
+            encounters: Math.max(0, ghost.encounters || 0),
+            seeds: Array.isArray(ghost.seeds) ? ghost.seeds : [],
+            lastLine: ghost.lastLine || '',
+            lastScore: Math.max(0, ghost.lastScore || 0),
+            helpedCount: Math.max(0, ghost.helpedCount || 0),
+            leftCount: Math.max(0, ghost.leftCount || 0)
+          }
         };
       }
     } catch {
       // fall through to defaults
     }
-    return { coins: 0, points: 0, relics: 0, unlocks: {} };
+    return {
+      coins: 0,
+      points: 0,
+      relics: 0,
+      unlocks: {},
+      ghost: { encounters: 0, seeds: [], lastLine: '', lastScore: 0, helpedCount: 0, leftCount: 0 }
+    };
   }
 
   save() {
@@ -61,6 +76,51 @@ export class EconomySystem {
     } catch {
       // storage unavailable
     }
+  }
+
+  recordGhostEncounter(game, settlement) {
+    const ghost = this.state.ghost;
+    const seedSet = new Set(ghost.seeds);
+    const addSeed = id => {
+      if (!seedSet.has(id)) {
+        seedSet.add(id);
+        ghost.seeds.push(id);
+      }
+    };
+    const helped = !!game.ghostWishHelped;
+    const knocked = !!game.ghostWishKnocked;
+    if (helped) {
+      addSeed('wish_helped_pen');
+      ghost.helpedCount += 1;
+    } else if (knocked) {
+      addSeed('wish_left_pen');
+      ghost.leftCount += 1;
+    }
+    if (game.finisherDone) addSeed('staple_finisher');
+    if (game.maxWhipCombo >= 5) addSeed('whip_tease');
+    if (game.parryCount >= 2) addSeed('parry_rival');
+    if (game.kiteCount >= 2) addSeed('kited_around');
+    if (game.lives >= 3 && game.damages.length === 0 && game.phase !== 'lost') addSeed('clean_run');
+
+    const ghostScore = Math.max(0, game.ghostScore || 0);
+    ghost.encounters += 1;
+    ghost.lastScore = ghostScore;
+    ghost.lastLine = this._ghostLine(game, ghostScore, helped, knocked, settlement.total);
+    this.save();
+    return {
+      score: ghostScore,
+      line: ghost.lastLine,
+      seeds: ghost.seeds.slice()
+    };
+  }
+
+  _ghostLine(game, ghostScore, helped, knocked, playerTotal) {
+    if (game.phase === 'lost') return '这次是我赢了。';
+    if (helped) return '它记住了：讲台上的笔被摆回了原位。';
+    if (knocked) return '它离开讲台前，又看了那支笔一眼。';
+    if (this.state.ghost.encounters <= 1) return '今天……它好像一直在看讲台。';
+    if (ghostScore > Math.max(0, playerTotal) / 500) return '下次见面，我会记得你跑得有多快。';
+    return '今天先这样，下次我换个柜子躲。';
   }
 
   award(game, settlement) {

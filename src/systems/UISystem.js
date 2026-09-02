@@ -555,6 +555,25 @@ export class UISystem {
     const ratingEl = rowsEl === this.el.settlementRows ? this.el.settlementRating : this.el.loseRating;
     if (ratingEl) ratingEl.textContent = `节目效果评分：${settlement.rating} · ${settlement.title}`;
     rowsEl.innerHTML = '';
+    if (settlement.ghostReport) {
+      const ghostBlock = document.createElement('div');
+      ghostBlock.className = 'settle-ghost';
+      ghostBlock.innerHTML = `
+        <div class="settle-dual">
+          <div class="settle-side player-side">
+            <span>实习生工单</span>
+            <b>${Math.max(0, settlement.total).toLocaleString()}</b>
+          </div>
+          <div class="settle-vs">VS</div>
+          <div class="settle-side ghost-side">
+            <span>值日鬼考勤</span>
+            <b>${settlement.ghostReport.score.toLocaleString()}</b>
+          </div>
+        </div>
+        <div class="ghost-memory">${settlement.ghostReport.line}</div>
+      `;
+      rowsEl.appendChild(ghostBlock);
+    }
     const groups = { coin: [], points: [], relic: [] };
     for (const row of settlement.rows) {
       (groups[row.currency || 'coin'] || groups.coin).push(row);

@@ -5,7 +5,8 @@ import {
   material,
   makePropMesh,
   makeFootprintMesh,
-  textTexture
+  textTexture,
+  makeItemMesh
 } from '../core/PlaceholderAssets.js';
 import { PALETTE } from '../config/palette.js';
 import { LEVEL_CONFIG } from '../config/level.js';
@@ -727,6 +728,24 @@ export class SchoolScene {
       body: noteBody,
       pos: { x: note.x, z: note.z }
     });
+
+    const wishPen = makeItemMesh('pen');
+    wishPen.scale.setScalar(1.8);
+    wishPen.position.set(note.x + 0.65, note.y + 0.12, note.z - 0.2);
+    wishPen.rotation.set(0.15, -0.5, 0.15);
+    this.group.add(wishPen);
+    refs.wishPen = {
+      mesh: wishPen,
+      pos: {
+        x: wishPen.position.x,
+        y: wishPen.position.y,
+        z: wishPen.position.z
+      },
+      neatX: wishPen.position.x,
+      neatY: wishPen.position.y,
+      neatZ: wishPen.position.z,
+      state: 'neat'
+    };
   }
 
   _addExit(refs) {

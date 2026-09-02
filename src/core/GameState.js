@@ -112,6 +112,9 @@ export class GameState {
     this.whipHits = 0;
     this.whipMisses = 0;
     this.whipComboUntil = 0;
+    this.ghostScore = 0;
+    this.ghostWishKnocked = false;
+    this.ghostWishHelped = false;
   }
 
   addItem(id, n = 1) {

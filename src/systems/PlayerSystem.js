@@ -625,6 +625,21 @@ export class PlayerSystem {
       }
     }
 
+    const wishPen = this.refs.wishPen;
+    if (wishPen && wishPen.state === 'knocked' && !this.game.ghostWishHelped) {
+      const d = distance2D(pos.x, pos.z, wishPen.pos.x, wishPen.pos.z);
+      const gp = this.ghost?.getPos?.();
+      const ghostFar = gp ? distance2D(gp.x, gp.z, wishPen.pos.x, wishPen.pos.z) > 3.6 : true;
+      if (d < GAME_CONFIG.interactRadius + 0.3 && ghostFar && 4.5 > bestPriority) {
+        bestPriority = 4.5;
+        best = {
+          type: 'wishHelp',
+          label: '替它把笔摆回原位',
+          pos: { x: wishPen.pos.x, y: wishPen.neatY + 0.5, z: wishPen.pos.z }
+        };
+      }
+    }
+
     if (this.refs.locker) {
       const d = distance2D(pos.x, pos.z, this.refs.locker.pos.x, this.refs.locker.pos.z);
       if (d < GAME_CONFIG.interactRadius && 2 > bestPriority) {
@@ -723,6 +738,8 @@ export class PlayerSystem {
       this.events.emit('game.win');
     } else if (target.type === 'clue') {
       this.clues.readClue(target.clue.id);
+    } else if (target.type === 'wishHelp') {
+      this._helpGhostWish();
     } else if (target.type === 'ropeGrab') {
       const rope = this.refs.rope;
       const startD = distance2D(
@@ -846,6 +863,19 @@ export class PlayerSystem {
     } else if (target.type === 'prop') {
       this._kickProp(target.prop);
     }
+  }
+
+  _helpGhostWish() {
+    const pen = this.refs.wishPen;
+    if (!pen || pen.state !== 'knocked' || this.game.ghostWishHelped) return;
+    pen.state = 'neat';
+    pen.mesh.position.set(pen.neatX, pen.neatY, pen.neatZ);
+    pen.mesh.rotation.set(0.15, -0.5, 0.15);
+    this.game.ghostWishHelped = true;
+    this.scene.spawnParticles({ x: pen.pos.x, y: pen.neatY + 0.4, z: pen.pos.z }, '#ffe08a');
+    this.audio?.play('paper');
+    this.events.emit('toast', { text: '你替它把笔摆回了原位。', ms: 1800 });
+    this.ghost?.acknowledgeWish?.(pen.pos);
   }
 
   _kickProp(prop) {

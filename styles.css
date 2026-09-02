@@ -1147,6 +1147,57 @@ body.playing canvas {
   margin-bottom: 16px;
 }
 
+.settle-ghost {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(30, 26, 38, 0.88);
+  border: 1px solid #7a6a9f;
+  color: #f4efe4;
+}
+
+.settle-dual {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.settle-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.settle-side b {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-side b {
+  color: #ffd166;
+}
+
+.ghost-side b {
+  color: #b48cff;
+}
+
+.settle-vs {
+  font-size: 12px;
+  color: #9a8fb0;
+}
+
+.ghost-memory {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(180, 140, 255, 0.35);
+  color: #e6d8ff;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .settle-row {
   display: flex;
   justify-content: space-between;

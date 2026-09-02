@@ -1033,6 +1033,7 @@ export class RandomEventSystem {
 
   _ghostGotArtifact() {
     this.game.artifactPenalty = true;
+    this.game.ghostScore = (this.game.ghostScore || 0) + 200;
     this.game.artifactGhostBoostUntil = nowSec() + GAME_CONFIG.artifactGhostBoostDuration;
     this.rage.add(12, 'artifactLost');
     this.events.emit('act.card', {

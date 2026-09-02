@@ -118,6 +118,14 @@ export class GhostSystem {
     this._lookBackUntil = 0;
     this._lookBackActive = false;
     this._lookBackAngle = 0;
+    this._wishNextAt = 0;
+    this._wishActive = false;
+    this._wishPhase = 'idle';
+    this._wishUntil = 0;
+    this._wishKnockAt = 0;
+    this._wishLeaveAt = 0;
+    this._wishAckUntil = 0;
+    this._wishAckPos = null;
     this._minions = [];
     this._ghostWebs = [];
     this._minionNextAt = 0;
@@ -217,6 +225,11 @@ export class GhostSystem {
     this._lookBackCooldown = rand(14, 22);
     this._lookBackActive = false;
     this._lookBackUntil = 0;
+    this._wishNextAt = nowSec() + rand(18, 28);
+    this._wishActive = false;
+    this._wishPhase = 'idle';
+    this._wishAckUntil = 0;
+    this._wishAckPos = null;
     this._minionNextAt = nowSec() + GAME_CONFIG.minionWaveFirstAt;
     this._wallHugUntil = 0;
   }
@@ -693,7 +706,7 @@ export class GhostSystem {
           (dz / len) * this._throwSpeed
         );
       }
-    } else if (this._lookBackActive || this._scareActive || this._telegraphActive) {
+    } else if (this._lookBackActive || this._wishActive || this._scareActive || this._telegraphActive) {
       this.pawn.body.velocity.set(0, 0, 0);
     } else {
       this._tryDash(dt, playerPos);
@@ -764,6 +777,7 @@ export class GhostSystem {
 
     const stage = this.game.currentStage();
     this._updateLookBack(dt, playerPos, stage);
+    this._updateHiddenWish(dt, playerPos, stage);
     this._skillCooldown -= dt;
     if (this._ambushActive) {
       if (nowSec() < this._ambushUntil) {
@@ -941,6 +955,7 @@ export class GhostSystem {
       this.game.ladderClimbing ||
       this._ambushActive ||
       this._disguiseActive ||
+      this._wishActive ||
       this._telegraphActive ||
       this._throwActive
     ) return;
@@ -959,9 +974,83 @@ export class GhostSystem {
     this._lookBackAngle = Math.atan2(dx, dz) + rand(-0.3, 0.3);
   }
 
+  _updateHiddenWish(dt, playerPos, stage) {
+    if (this.game.phase !== 'investigate' || this.game.ghostWishHelped) return;
+    const pen = this.scene.refs?.wishPen;
+    if (!pen) return;
+    const busy =
+      this.game.hiding ||
+      this.game.broken ||
+      this.game.chainStuck ||
+      this._isPinned() ||
+      this.game.ropeClimbing ||
+      this.game.ladderClimbing ||
+      this._ambushActive ||
+      this._disguiseActive ||
+      this._lookBackActive ||
+      this._telegraphActive ||
+      this._chargeActive ||
+      this._throwActive ||
+      this._scareActive;
+    if (!this._wishActive) {
+      if (nowSec() < this._wishNextAt) return;
+      if (busy || (stage.id !== 'calm' && stage.id !== 'annoyed')) {
+        this._wishNextAt = nowSec() + 5;
+        return;
+      }
+      this._wishActive = true;
+      this._wishUntil = nowSec() + 7;
+      return;
+    }
+    if (busy || nowSec() >= this._wishUntil) {
+      this._wishActive = false;
+      this._wishNextAt = nowSec() + rand(28, 45);
+      return;
+    }
+    const b = this.pawn.body.position;
+    const d = distance2D(b.x, b.z, pen.pos.x, pen.pos.z);
+    if (d > 0.9) {
+      this._goTo(pen.pos, Math.min(GHOST_CONFIG.stages[1].speed, 1.45), dt);
+      return;
+    }
+    this.pawn.body.velocity.set(0, 0, 0);
+    const faceAngle = Math.atan2(pen.pos.x - b.x, pen.pos.z - b.z);
+    this._facing = faceAngle;
+    this.pawn.mesh.rotation.y = faceAngle;
+    if (!this.game.ghostWishKnocked) {
+      this._knockWishPen();
+      this._wishUntil = nowSec() + 2.4;
+    }
+    if (nowSec() >= this._wishUntil - 0.4) {
+      this._wishActive = false;
+      this._wishNextAt = nowSec() + rand(30, 50);
+      this._waypoint = this._randomPlayablePoint();
+    }
+  }
+
+  _knockWishPen() {
+    const pen = this.scene.refs?.wishPen;
+    if (!pen || pen.state === 'knocked') return;
+    pen.state = 'knocked';
+    pen.mesh.position.set(pen.neatX + 0.42, pen.neatY - 0.03, pen.neatZ + 0.38);
+    pen.mesh.rotation.set(0.2, -0.8, 1.1);
+    this.game.ghostWishKnocked = true;
+    this.scene.spawnParticles({ x: pen.mesh.position.x, y: pen.neatY + 0.3, z: pen.mesh.position.z }, '#f4a261');
+    this.audio?.play('paper');
+  }
+
+  acknowledgeWish(pos) {
+    this._wishAckUntil = nowSec() + 4.5;
+    this._wishAckPos = { x: pos.x, z: pos.z };
+    this._wishActive = false;
+    this._lastSeen = null;
+    this._lastNoise = null;
+    this._searchTimer = 0;
+  }
+
   _updateAttack(dt, playerPos) {
     if (this.game.phase !== 'investigate') return;
-    if (this._lookBackActive) return;
+    if (this._lookBackActive || this._wishActive) return;
     if (
       this.game.hiding ||
       this.game.broken ||
@@ -1238,6 +1327,7 @@ export class GhostSystem {
   _doGhostChargeHit(playerPos) {
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.chargeStaminaCost);
     this.game.playerStunUntil = nowSec() + 1.2;
+    this.game.ghostScore = (this.game.ghostScore || 0) + 80;
     this.game.dodgingUntil = 0;
     if (this.playerBody) {
       const b = this.pawn.body.position;
@@ -1354,6 +1444,7 @@ export class GhostSystem {
 
   _doThrowHit(playerPos) {
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.throwStaminaCostPerHit);
+    this.game.ghostScore = (this.game.ghostScore || 0) + 40;
     if (this.playerBody) {
       const b = this.pawn.body.position;
       const dx = playerPos.x - b.x;
@@ -1439,6 +1530,7 @@ export class GhostSystem {
     }
     if (this.game.lives > 0) {
       this.game.lives -= 1;
+      this.game.ghostScore = (this.game.ghostScore || 0) + 150;
       this.game.invincibleUntil = nowSec() + 2.2;
       if (this.playerBody) {
         const b = this.pawn.body.position;
@@ -1481,6 +1573,7 @@ export class GhostSystem {
   _doGhostSwipe(playerPos) {
     this._slapCooldown = GAME_CONFIG.slapCooldown;
     this.game.invincibleUntil = nowSec() + 1.0;
+    this.game.ghostScore = (this.game.ghostScore || 0) + 60;
     this.rage.add(GHOST_CONFIG.rage.slap, 'slap');
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.swipeStaminaCost);
     if (this.playerBody) {
@@ -1732,6 +1825,18 @@ export class GhostSystem {
       speed *= 1.25;
     }
 
+    if (this._wishAckUntil > nowSec() && this._wishAckPos) {
+      const ack = this._wishAckPos;
+      const arrived = this._goTo(ack, speed * 0.85, dt);
+      if (arrived) {
+        this._wishAckUntil = 0;
+        this._wishAckPos = null;
+        this.events.emit('speech', { text: '……谢了。', ms: 1500 });
+        this.audio?.play('paper');
+      }
+      return;
+    }
+
     if (
       this.game.artifactActive &&
       this.game.artifactStage >= 2 &&
@@ -1968,6 +2073,7 @@ export class GhostSystem {
   _catchPlayer() {
     if (this._caught) return;
     this._caught = true;
+    this.game.ghostScore = (this.game.ghostScore || 0) + 250;
     this.game.phase = 'lost';
     this.audio?.play('lose');
     this.events.emit('toast', { text: '被鬼抓住了……', ms: 2400 });
