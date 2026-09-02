@@ -521,6 +521,17 @@ export class GhostSystem {
     const dx = tx - m.x;
     const dz = tz - m.z;
     const dist = Math.hypot(dx, dz);
+    if (m.state === 'chase') {
+      if (dist < GAME_CONFIG.minionKeepDistance) {
+        if (dist < 1.4) {
+          const awayX = (m.x - tx) / (dist || 1);
+          const awayZ = (m.z - tz) / (dist || 1);
+          m.x += awayX * speed * 0.5 * dt;
+          m.z += awayZ * speed * 0.5 * dt;
+        }
+        return false;
+      }
+    }
     if (dist < 0.55) return true;
     let angle = Math.atan2(dx, dz);
     if (nowSec() < m.hugUntil) {
@@ -1123,7 +1134,12 @@ export class GhostSystem {
       }
       if (hand) hand.position.set(0, 0.6 - t * 1.5, -0.6 + t * 1.6);
       if (nowSec() < this._telegraphUntil) {
-        this._goTo(playerPos, GAME_CONFIG.swipeTelegraphSpeed, dt);
+        this._goTo(
+          playerPos,
+          GAME_CONFIG.swipeTelegraphSpeed,
+          dt,
+          GAME_CONFIG.swipeHitRange - 0.7
+        );
         return;
       }
       if (!this._attackFired) {
@@ -1954,12 +1970,12 @@ export class GhostSystem {
     return this._randomClassroomPoint();
   }
 
-  _goTo(target, speed, dt) {
+  _goTo(target, speed, dt, stopDist = 0.45) {
     const b = this.pawn.body.position;
     const dx = target.x - b.x;
     const dz = target.z - b.z;
     const dist = Math.hypot(dx, dz);
-    if (dist < 0.45) {
+    if (dist < stopDist) {
       this._setVelocity(0, 0, 0);
       return true;
     }
@@ -1985,7 +2001,20 @@ export class GhostSystem {
   }
 
   _chase(playerPos, speed, dt) {
-    this._goTo(playerPos, speed, dt);
+    const b = this.pawn.body.position;
+    const dx = playerPos.x - b.x;
+    const dz = playerPos.z - b.z;
+    const dist = Math.hypot(dx, dz) || 1;
+    const keep = GAME_CONFIG.ghostKeepDistance;
+    if (dist > keep + 0.1) {
+      this._goTo(playerPos, speed, dt, keep);
+    } else if (dist < keep - 0.45) {
+      const awayX = (b.x - playerPos.x) / dist;
+      const awayZ = (b.z - playerPos.z) / dist;
+      this._setVelocity(awayX * speed * 0.55, awayZ * speed * 0.55, dt);
+    } else {
+      this._setVelocity(0, 0, 0);
+    }
   }
 
   _setVelocity(vx, vz, dt) {
