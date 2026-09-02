@@ -400,7 +400,7 @@ export class GhostSystem {
       born: nowSec(),
       lifetime: GAME_CONFIG.minionLifetime,
       bob: Math.random() * Math.PI * 2,
-      hp: 2,
+      hp: 6,
       flashUntil: 0,
       hugDir: Math.random() < 0.5 ? -1 : 1,
       hugUntil: 0,
