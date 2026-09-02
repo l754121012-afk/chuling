@@ -110,8 +110,17 @@ export class GhostSystem {
     this._weakPoint = null;
     this._rangeRing = null;
     this._rangeRingMat = null;
+    this._wallHugDir = 1;
+    this._wallHugUntil = 0;
+    this._comboCount = 0;
+    this._lastAttackKind = null;
+    this._minions = [];
+    this._ghostWebs = [];
+    this._minionNextAt = 0;
 
     events.on('noise', payload => this._onNoise(payload));
+    events.on('game.lost', () => this._clearMinions());
+    events.on('game.win', () => this._clearMinions());
   }
 
   createPawn(pos) {
@@ -155,7 +164,7 @@ export class GhostSystem {
     this._rangeRingMat = rangeMat;
 
     const attackRing = new THREE.Mesh(
-      new THREE.RingGeometry(2.4, 2.6, 32),
+      new THREE.RingGeometry(3.15, 3.45, 40),
       new THREE.MeshBasicMaterial({
         color: 0xff6b6b,
         transparent: true,
@@ -196,6 +205,423 @@ export class GhostSystem {
 
   _isPinned() {
     return this.game.chainPinned || this.game.pinnedUntil > nowSec();
+  }
+
+  onRunStart() {
+    this._clearMinions();
+    this._comboCount = 0;
+    this._minionNextAt = nowSec() + GAME_CONFIG.minionWaveFirstAt;
+    this._wallHugUntil = 0;
+  }
+
+  _clearMinions() {
+    for (const m of this._minions || []) {
+      this.scene.group.remove(m.group);
+    }
+    for (const w of this._ghostWebs || []) {
+      this.scene.group.remove(w.group);
+    }
+    this._minions = [];
+    this._ghostWebs = [];
+  }
+
+  _roomRects() {
+    const c = this.scene.L.classroom;
+    const co = this.scene.L.corridor;
+    return [
+      {
+        minX: c.minX + 1.2,
+        maxX: c.maxX - 1.2,
+        minZ: c.minZ + 1.2,
+        maxZ: c.maxZ - 1.2,
+        w: 0.7
+      },
+      {
+        minX: co.minX + 1.2,
+        maxX: co.maxX - 1.2,
+        minZ: co.minZ + 1.2,
+        maxZ: co.maxZ - 1.2,
+        w: 0.3
+      }
+    ];
+  }
+
+  _isInsidePlayable(x, z, pad = 0) {
+    for (const r of this._roomRects()) {
+      if (x >= r.minX - pad && x <= r.maxX + pad && z >= r.minZ - pad && z <= r.maxZ + pad) return true;
+    }
+    return false;
+  }
+
+  _randomPlayablePoint(margin = 1.6) {
+    const rects = this._roomRects();
+    const totalW = rects.reduce((sum, r) => sum + r.w, 0);
+    let roll = Math.random() * totalW;
+    for (const r of rects) {
+      roll -= r.w;
+      if (roll > 0) continue;
+      return {
+        x: rand(r.minX + margin, r.maxX - margin),
+        z: rand(r.minZ + margin, r.maxZ - margin)
+      };
+    }
+    const r = rects[0];
+    return { x: rand(r.minX + margin, r.maxX - margin), z: rand(r.minZ + margin, r.maxZ - margin) };
+  }
+
+  _lineBlockedWorld(x1, z1, x2, z2) {
+    const from = v3(x1, 1.15, z1);
+    const to = v3(x2, 1.15, z2);
+    const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD);
+    if (!hit) return false;
+    const total = Math.max(0.3, Math.hypot(x2 - x1, z2 - z1));
+    const hx = hit.hitPointWorld.x;
+    const hz = hit.hitPointWorld.z;
+    const hitDist = Math.hypot(hx - x1, hz - z1);
+    return hitDist < total - 0.4;
+  }
+
+  _findValidLanding(nearX, nearZ, minDist = 2.2, maxDist = 4.2) {
+    for (let i = 0; i < 26; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const d = rand(minDist, maxDist);
+      const x = nearX + Math.cos(angle) * d;
+      const z = nearZ + Math.sin(angle) * d;
+      if (!this._isInsidePlayable(x, z)) continue;
+      if (this._lineBlockedWorld(x, z, nearX, nearZ)) continue;
+      return { x, z };
+    }
+    return this._randomPlayablePoint(1.4);
+  }
+
+  _enforcePlayable(dt) {
+    const b = this.pawn.body.position;
+    if (this._isInsidePlayable(b.x, b.z)) return;
+    this._boundsFixCooldown = (this._boundsFixCooldown || 0) - dt;
+    if (this._boundsFixCooldown > 0) return;
+    this._boundsFixCooldown = 1.5;
+    const land = this._randomPlayablePoint(1.8);
+    this._placeGhost(land.x, land.z, 1.2);
+    this._ambushActive = false;
+    this._disguiseActive = false;
+    if (this._disguiseMesh) {
+      this.scene.group.remove(this._disguiseMesh);
+      this._disguiseMesh = null;
+    }
+    this.pawn.mesh.visible = true;
+    this.scene.spawnParticles({ x: land.x, y: 1, z: land.z }, '#9b8cff');
+  }
+
+  canTouchPoint(x, z, radius) {
+    if (!this.pawn) return false;
+    const b = this.pawn.body.position;
+    if (!this._isInsidePlayable(b.x, b.z)) return false;
+    if (this._isPinned() || this.game.chainStuck || this.game.broken) return false;
+    if (this.game.weakUntil > nowSec() || this.game.stunnedUntil > nowSec()) return false;
+    if (distance2D(b.x, b.z, x, z) >= radius) return false;
+    if (this._lineBlockedWorld(b.x, b.z, x, z)) return false;
+    return distance2D(b.x, b.z, x, z) < radius;
+  }
+
+  _maybeSpawnMinionWave() {
+    if (this.game.phase !== 'investigate' || !this.game.isPlaying()) return;
+    if (this._minionNextAt <= 0) {
+      this._minionNextAt = nowSec() + GAME_CONFIG.minionWaveFirstAt;
+      return;
+    }
+    if (nowSec() < this._minionNextAt) return;
+    if (this.game.artifactActive || this.game.bellPhaseActive || this.game.huntActive) return;
+    this._minionNextAt = nowSec() + rand(
+      GAME_CONFIG.minionWaveIntervalMin,
+      GAME_CONFIG.minionWaveIntervalMax
+    );
+    const count = GAME_CONFIG.minionCount || 3;
+    for (let i = 0; i < count; i++) this._spawnMinion();
+    this.audio?.play('ghost');
+    this.events.emit('toast', {
+      text: `${count} 只巡逻幽灵被放出来了！别被围住！`,
+      ms: 2400
+    });
+    this.events.emit('danmaku', { text: '它们开始巡楼了！！' });
+  }
+
+  _spawnMinion() {
+    const p = this.playerPos();
+    let spot = this._randomPlayablePoint(2);
+    for (let i = 0; i < 24; i++) {
+      const c = this._randomPlayablePoint(2);
+      if (distance2D(c.x, c.z, p.x, p.z) > 5.5) {
+        spot = c;
+        break;
+      }
+    }
+    const mesh = makeGhostMesh(false);
+    mesh.scale.setScalar(0.48);
+    mesh.position.set(spot.x, 1.0, spot.z);
+    this.scene.group.add(mesh);
+    const ghostMat = mesh.userData?.ghostMat;
+    if (ghostMat) {
+      ghostMat.color.setHex(0x73d5cf);
+      ghostMat.transparent = true;
+      ghostMat.opacity = 0.88;
+    }
+    const aura = mesh.userData?.aura;
+    if (aura) {
+      aura.material.color.setHex(0x46d5c5);
+      aura.material.opacity = 0.22;
+    }
+    const minion = {
+      group: mesh,
+      x: spot.x,
+      z: spot.z,
+      waypoint: this._randomPlayablePoint(2),
+      speed: GAME_CONFIG.minionPatrolSpeed,
+      state: 'patrol',
+      born: nowSec(),
+      lifetime: GAME_CONFIG.minionLifetime,
+      bob: Math.random() * Math.PI * 2,
+      hugDir: Math.random() < 0.5 ? -1 : 1,
+      hugUntil: 0,
+      webUsed: false
+    };
+    this._minions.push(minion);
+    this.scene.spawnParticles({ x: spot.x, y: 1, z: spot.z }, '#46d5c5');
+  }
+
+  _updateMinions(dt, playerPos) {
+    this._maybeSpawnMinionWave();
+    for (let i = this._minions.length - 1; i >= 0; i--) {
+      const m = this._minions[i];
+      const age = nowSec() - m.born;
+      if (age >= m.lifetime || !this.game.isPlaying() || this.game.phase !== 'investigate') {
+        this.scene.group.remove(m.group);
+        this.scene.spawnParticles({ x: m.x, y: 1, z: m.z }, '#9b8cff');
+        this._minions.splice(i, 1);
+        continue;
+      }
+      const dist = distance2D(m.x, m.z, playerPos.x, playerPos.z);
+      const sameFloor = playerPos.y - m.group.position.y < 1.25;
+      const hidden = this.game.hiding || (this.playerCrouching?.() && dist > 3.2);
+      const canSeePlayer =
+        !hidden &&
+        sameFloor &&
+        dist < GAME_CONFIG.minionDetectRadius &&
+        !this._lineBlockedWorld(m.x, m.z, playerPos.x, playerPos.z);
+      let target = m.waypoint;
+      let speed = m.speed;
+      let nextState = 'patrol';
+      if (canSeePlayer) {
+        nextState = 'chase';
+        target = playerPos;
+        speed = GAME_CONFIG.minionChaseSpeed;
+      } else if (m.state === 'chase' && dist > GAME_CONFIG.minionDetectRadius + 4) {
+        nextState = 'patrol';
+        m.waypoint = this._randomPlayablePoint(2);
+        target = m.waypoint;
+        speed = GAME_CONFIG.minionPatrolSpeed;
+      }
+      if (m.state !== nextState) {
+        m.state = nextState;
+        this._paintMinion(m);
+      }
+      if (
+        m.state === 'chase' &&
+        !m.webUsed &&
+        dist < GAME_CONFIG.minionScreamRadius &&
+        age > 3 &&
+        playerPos.y - m.group.position.y < 1.2
+      ) {
+        m.webUsed = true;
+        this._minionAlert(m, playerPos);
+      }
+      const arrived = this._minionSteer(m, target.x, target.z, speed, dt);
+      if (arrived && m.state !== 'chase') {
+        m.waypoint = this._randomPlayablePoint(2);
+      }
+      const bobY = 1.0 + Math.sin(nowSec() * 2.2 + m.bob) * 0.12;
+      m.group.position.set(m.x, bobY, m.z);
+      m.group.rotation.y += dt * 0.8;
+    }
+  }
+
+  _paintMinion(m) {
+    const ghostMat = m.group.userData?.ghostMat;
+    const aura = m.group.userData?.aura;
+    if (m.state === 'chase') {
+      if (ghostMat) {
+        ghostMat.color.setHex(0xff8fa3);
+        ghostMat.emissive.setHex(0x8f2233);
+        ghostMat.emissiveIntensity = 0.6;
+      }
+      if (aura) {
+        aura.material.color.setHex(0xff5d7a);
+        aura.material.opacity = 0.5;
+      }
+    } else {
+      if (ghostMat) {
+        ghostMat.color.setHex(0x73d5cf);
+        ghostMat.emissive.setHex(0x0f5f5a);
+        ghostMat.emissiveIntensity = 0.2;
+      }
+      if (aura) {
+        aura.material.color.setHex(0x46d5c5);
+        aura.material.opacity = 0.22;
+      }
+    }
+  }
+
+  _minionSteer(m, tx, tz, speed, dt) {
+    const dx = tx - m.x;
+    const dz = tz - m.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.55) return true;
+    let angle = Math.atan2(dx, dz);
+    if (nowSec() < m.hugUntil) {
+      angle += m.hugDir * 0.95;
+    } else if (this._lineBlockedWorld(m.x, m.z, tx, tz)) {
+      m.hugDir = Math.random() < 0.5 ? -1 : 1;
+      m.hugUntil = nowSec() + 0.55;
+      angle += m.hugDir * 0.95;
+    }
+    const nx = m.x + Math.sin(angle) * speed * dt;
+    const nz = m.z + Math.cos(angle) * speed * dt;
+    if (!this._isInsidePlayable(nx, nz, 0.2)) {
+      m.waypoint = this._randomPlayablePoint(2);
+      m.hugUntil = nowSec() + 0.8;
+      return false;
+    }
+    m.x = nx;
+    m.z = nz;
+    return false;
+  }
+
+  _minionAlert(m, playerPos) {
+    this.events.emit('noise', { pos: { x: m.x, z: m.z }, radius: 26, rage: 0 });
+    this.audio?.play('ghost');
+    this.events.emit('camera.shake', { amount: 0.22 });
+    this.events.emit('toast', { text: '巡逻幽灵尖叫了！鬼被引过来了！', ms: 1800 });
+    this.events.emit('danmaku', { text: choice(['它叫人了！！', '快去高处甩掉它！']) });
+    this._paintMinion({ ...m, state: 'chase' });
+    this._throwMinionWeb(m, playerPos);
+  }
+
+  _throwMinionWeb(m, playerPos) {
+    const travel = 0.38;
+    const vel = this.playerBody?.velocity;
+    const vx = vel?.x || 0;
+    const vz = vel?.z || 0;
+    let tx = playerPos.x + vx * travel;
+    let tz = playerPos.z + vz * travel;
+    const clamped = this._clampToPlayablePoint(tx, tz);
+    tx = clamped.x;
+    tz = clamped.z;
+    const group = new THREE.Group();
+    const webMat = new THREE.MeshBasicMaterial({
+      color: 0xd7f2ff,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, GAME_CONFIG.minionWebRadius, 32), webMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.08;
+    const center = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), webMat);
+    center.position.y = 0.12;
+    group.add(ring, center);
+    group.position.set(m.x, 0.08, m.z);
+    this.scene.group.add(group);
+    const totalDist = Math.max(0.1, Math.hypot(tx - m.x, tz - m.z));
+    this._ghostWebs.push({
+      group,
+      x: m.x,
+      z: m.z,
+      targetX: tx,
+      targetZ: tz,
+      speed: Math.max(11, totalDist / 0.38),
+      state: 'flying',
+      activeUntil: 0,
+      startedAt: nowSec(),
+      bound: false,
+      ring,
+      center
+    });
+    this.audio?.play('whoosh');
+    this.events.emit('toast', { text: '幽灵网飞过来了！！快闪！', ms: 1600 });
+  }
+
+  _updateGhostWebs(dt, playerPos) {
+    if (this.game.phase !== 'investigate') {
+      this._clearMinions();
+      return;
+    }
+    for (let i = this._ghostWebs.length - 1; i >= 0; i--) {
+      const w = this._ghostWebs[i];
+      if (w.state === 'flying') {
+        const dx = w.targetX - w.x;
+        const dz = w.targetZ - w.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 0.18 || nowSec() - w.startedAt > 0.9) {
+          w.x = w.targetX;
+          w.z = w.targetZ;
+          w.state = 'active';
+          w.activeUntil = nowSec() + GAME_CONFIG.minionWebLifetime;
+        } else {
+          const step = Math.min(dist, w.speed * dt);
+          w.x += (dx / dist) * step;
+          w.z += (dz / dist) * step;
+        }
+        w.group.position.set(w.x, 0.08, w.z);
+      } else {
+        w.ring.rotation.z += dt * 1.2;
+        const pDist = distance2D(w.x, w.z, playerPos.x, playerPos.z);
+        const canBind =
+          pDist < GAME_CONFIG.minionWebRadius &&
+          nowSec() < w.activeUntil &&
+          !w.bound &&
+          nowSec() >= this.game.dodgingUntil &&
+          this.game.phase === 'investigate';
+        if (canBind) {
+          w.bound = true;
+          this.game.playerStunUntil = Math.max(
+            this.game.playerStunUntil,
+            nowSec() + GAME_CONFIG.minionBindDuration
+          );
+          this.game.dodgingUntil = 0;
+          this.game.stamina = Math.max(0, this.game.stamina - 12);
+          this.audio?.play('slap');
+          this.events.emit('camera.shake', { amount: 0.28 });
+          this.events.emit('toast', {
+            text: `幽灵网缠住你了！僵直 ${GAME_CONFIG.minionBindDuration.toFixed(1)} 秒！`,
+            ms: 1800
+          });
+          this.events.emit('danmaku', {
+            text: choice(['被网住了！！快挣脱！', '鬼网缠身！', '危险了危险了！'])
+          });
+          this.scene.spawnParticles({ x: w.x, y: 0.5, z: w.z }, '#d7f2ff');
+          this.rage.addDrama(GAME_CONFIG.dramaHurt, 'web');
+        }
+        if (nowSec() >= w.activeUntil) {
+          this.scene.group.remove(w.group);
+          this._ghostWebs.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  _clampToPlayablePoint(x, z) {
+    const c = this.scene.L.classroom;
+    const co = this.scene.L.corridor;
+    if (z > c.maxZ) {
+      return {
+        x: clamp(x, co.minX + 1.5, co.maxX - 1.5),
+        z: clamp(z, co.minZ + 1.5, co.maxZ - 1.5)
+      };
+    }
+    return {
+      x: clamp(x, c.minX + 1.5, c.maxX - 1.5),
+      z: clamp(z, c.minZ + 1.5, c.maxZ - 1.5)
+    };
   }
 
   update(dt, playerPos) {
@@ -272,6 +698,7 @@ export class GhostSystem {
         this._investigateAI(dt, playerPos);
       }
     }
+    this._enforcePlayable(dt);
 
     if (this._spinTimer > 0) {
       this._spinTimer -= dt;
@@ -303,6 +730,8 @@ export class GhostSystem {
     }
 
     this._catchOrSlap(playerPos);
+    this._updateMinions(dt, playerPos);
+    this._updateGhostWebs(dt, playerPos);
 
     if (this.game.hiding) {
       this._hiddenTimer += dt;
@@ -330,26 +759,15 @@ export class GhostSystem {
     this._skillCooldown -= dt;
     if (this._ambushActive) {
       if (nowSec() < this._ambushUntil) {
-      const p = playerPos;
-      const b = this.pawn.body.position;
-      const dx = p.x - b.x;
-      const dz = p.z - b.z;
-      const len = Math.hypot(dx, dz) || 1;
-      this.pawn.body.velocity.set(
-        (dx / len) * this._ambushSpeed,
-        0,
-        (dz / len) * this._ambushSpeed
-      );
+        this.pawn.body.velocity.set(0, 0, 0);
       } else {
         this._ambushActive = false;
-        const p = playerPos;
-        const b = this.pawn.body.position;
-        const dx = p.x - b.x;
-        const dz = p.z - b.z;
-        b.x = p.x + dx * 0.1;
-        b.z = p.z + dz * 0.1;
+        const land = this._findValidLanding(playerPos.x, playerPos.z, 2.1, 4.5);
+        this._placeGhost(land.x, land.z, 1.2);
+        this.scene.spawnParticles({ x: land.x, y: 1, z: land.z }, '#9b8cff');
+        this.scene.spawnHitRing({ x: land.x, y: 0.4, z: land.z }, '#9b8cff');
         this.audio?.play('ghost');
-        this.events.emit('toast', { text: '鬼影突袭！', ms: 1500 });
+        this.events.emit('toast', { text: '鬼影突袭！它闪到你身边了！', ms: 1500 });
         this.events.emit('camera.shake', { amount: 0.35 });
       }
     } else if (
@@ -408,7 +826,7 @@ export class GhostSystem {
     if (this._stuckTime > 0.6) {
       this._stuckTime = 0;
       this._moveOutOfWall();
-      this._waypoint = this._randomClassroomPoint();
+      this._waypoint = this._randomPlayablePoint();
       this._lastSeen = null;
       this._lastNoise = null;
       this._searchTimer = 0;
@@ -417,25 +835,30 @@ export class GhostSystem {
 
   _moveOutOfWall() {
     const b = this.pawn.body.position;
+    if (!this._isInsidePlayable(b.x, b.z)) {
+      const land = this._randomPlayablePoint(2);
+      this._placeGhost(land.x, land.z, b.y);
+      this.scene.spawnParticles({ x: land.x, y: 1, z: land.z }, '#9b8cff');
+      return;
+    }
     for (let i = 0; i < 12; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const r = 1.2 + Math.random() * 2;
-      const tx = b.x + Math.cos(angle) * r;
-      const tz = b.z + Math.sin(angle) * r;
+      const r = 1.5 + Math.random() * 2.5;
+      const tx = clamp(b.x + Math.cos(angle) * r, b.x - 4, b.x + 4);
+      const tz = clamp(b.z + Math.sin(angle) * r, b.z - 4, b.z + 4);
+      if (!this._isInsidePlayable(tx, tz)) continue;
       const from = v3(b.x, b.y + 0.5, b.z);
       const to = v3(tx, b.y + 0.5, tz);
       const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD);
       if (!hit) {
-        b.x = tx;
-        b.z = tz;
-        this.pawn.body.velocity.set(0, 0, 0);
+        this._placeGhost(tx, tz, b.y);
+        this.scene.spawnParticles({ x: tx, y: 1, z: tz }, '#9b8cff');
         return;
       }
     }
-    const c = this.scene.L.classroom;
-    b.x = Math.max(c.minX + 1, Math.min(c.maxX - 1, b.x));
-    b.z = Math.max(c.minZ + 1, Math.min(c.maxZ - 1, b.z));
-    this.pawn.body.velocity.set(0, 0, 0);
+    const land = this._randomPlayablePoint(2);
+    this._placeGhost(land.x, land.z, b.y);
+    this.scene.spawnParticles({ x: land.x, y: 1, z: land.z }, '#9b8cff');
   }
 
   _tryDash(dt, playerPos) {
@@ -523,7 +946,10 @@ export class GhostSystem {
         armR.rotation.z = -0.9 + t * 0.7;
       }
       if (hand) hand.position.set(0, 0.6 - t * 1.5, -0.6 + t * 1.6);
-      if (nowSec() < this._telegraphUntil) return;
+      if (nowSec() < this._telegraphUntil) {
+        this._goTo(playerPos, GAME_CONFIG.swipeTelegraphSpeed, dt);
+        return;
+      }
       if (!this._attackFired) {
         this._attackFired = true;
         this.audio?.play('whoosh');
@@ -564,8 +990,8 @@ export class GhostSystem {
         }
         if (hand) hand.position.set(0, -0.9, 1.0);
         if (
-          dist < 2.6 &&
-          playerPos.y - b.y < 0.8 &&
+          dist < GAME_CONFIG.swipeHitRange &&
+          playerPos.y - b.y < 0.95 &&
           nowSec() >= this.game.dodgingUntil
         ) {
           this._doGhostSwipe(playerPos);
@@ -583,10 +1009,7 @@ export class GhostSystem {
         this._telegraphActive = false;
         this._attackFired = false;
         this._hideAttackRings();
-        this._attackCooldown = rand(
-          GAME_CONFIG.ghostAttackCooldownMin,
-          GAME_CONFIG.ghostAttackCooldownMax
-        );
+        this._scheduleNextAttack(playerPos);
       }
       return;
     }
@@ -639,16 +1062,50 @@ export class GhostSystem {
       furious: 0.35,
       insane: 0.4
     }[stage.id] || 0;
+    const comboChargeChance = this._comboCount > 0
+      ? Math.min(0.82, chargeChance * 2.4 + 0.2)
+      : chargeChance;
     const preferredCharge = dist > 3.5 && chargeChance > 0 ? 0.65 : chargeChance;
-    if (dist > 2.2 && Math.random() < preferredCharge) {
+    const finalChargeChance = this._comboCount > 0 && dist > 1.6
+      ? comboChargeChance
+      : preferredCharge;
+    if (dist > 1.6 && Math.random() < finalChargeChance) {
       this._startCharge(playerPos, stage);
       return;
     }
     this._startSwipe(playerPos);
   }
 
+  _scheduleNextAttack(playerPos, allowCombo = true) {
+    const stage = this.game.currentStage();
+    const rageOk = stage.id === 'angry' || stage.id === 'furious' || stage.id === 'insane';
+    const maxed = this._comboCount >= GAME_CONFIG.ghostComboMax;
+    const roll = Math.random() < GAME_CONFIG.ghostComboChance;
+    if (allowCombo && rageOk && !maxed && roll) {
+      this._comboCount += 1;
+      this._attackCooldown = GAME_CONFIG.ghostComboRush + Math.random() * 0.12;
+      if (this._comboCount >= 2) {
+        this.events.emit('toast', {
+          text: `鬼开始连招了！！第 ${this._comboCount} 击马上来！`,
+          ms: 1300
+        });
+        this.events.emit('danmaku', {
+          text: choice(['它居然会连招？！', '这鬼练过！', '注意下一招！'])
+        });
+        this._speak('还没完呢！！', 1300);
+      }
+      return;
+    }
+    this._comboCount = 0;
+    this._attackCooldown = rand(
+      GAME_CONFIG.ghostAttackCooldownMin,
+      GAME_CONFIG.ghostAttackCooldownMax
+    );
+  }
+
   _startSwipe(playerPos) {
     this._telegraphActive = true;
+    this._lastAttackKind = 'swipe';
     this._pressureTime = 0;
     this._attackFired = false;
     this._telegraphUntil = nowSec() + GAME_CONFIG.attackTelegraph;
@@ -660,8 +1117,8 @@ export class GhostSystem {
     if (this._parryRangeRing) this._parryRangeRing.visible = true;
     this.events.emit('toast', {
       text: this.game.whipMode
-        ? '鬼要挥爪了！左键拼文具，或按 R 闪开！'
-        : '鬼要挥爪了！按 G 切鞭子拼文具，或按 R 闪开！',
+        ? '鬼要挥爪了！左键拼文具，或短按 Shift 闪开！'
+        : '鬼要挥爪了！按 G 切鞭子拼文具，或短按 Shift 闪开！',
       ms: 1400
     });
   }
@@ -672,6 +1129,7 @@ export class GhostSystem {
     const dz = playerPos.z - b.z;
     const len = Math.hypot(dx, dz) || 1;
     this._chargeActive = true;
+    this._lastAttackKind = 'charge';
     this._pressureTime = 0;
     this._chargeWindupUntil = nowSec() + GAME_CONFIG.chargeWindup;
     this._chargeUntil = this._chargeWindupUntil + GAME_CONFIG.chargeDuration;
@@ -689,7 +1147,7 @@ export class GhostSystem {
       this._telegraphRing.visible = true;
     }
     this.events.emit('toast', {
-      text: '它在原地蓄力，要撞过来了！按 R 闪开！',
+      text: '它在原地蓄力，要撞过来了！短按 Shift 闪开！',
       ms: 1600
     });
   }
@@ -713,10 +1171,7 @@ export class GhostSystem {
     if (nowSec() >= this._chargeUntil) {
       this._chargeActive = false;
       this._hideAttackRings();
-      this._attackCooldown = rand(
-        GAME_CONFIG.ghostAttackCooldownMin,
-        GAME_CONFIG.ghostAttackCooldownMax
-      );
+      this._scheduleNextAttack(playerPos, !this._chargeHitDone);
     }
   }
 
@@ -748,6 +1203,7 @@ export class GhostSystem {
 
   _startThrow(playerPos, stage) {
     this._throwActive = true;
+    this._lastAttackKind = 'throw';
     this._pressureTime = 0;
     this._throwTelegraphUntil = nowSec() + 0.8;
     this._throwComboUntil = 0;
@@ -792,10 +1248,7 @@ export class GhostSystem {
         this.events.emit('danmaku', {
           text: choice(['抛飞失败哈哈哈', '主播躲开了！！'])
         });
-        this._attackCooldown = rand(
-          GAME_CONFIG.ghostAttackCooldownMin,
-          GAME_CONFIG.ghostAttackCooldownMax
-        );
+        this._scheduleNextAttack(playerPos, false);
         return;
       }
       this._throwComboUntil = nowSec() + GAME_CONFIG.throwComboDuration;
@@ -835,10 +1288,7 @@ export class GhostSystem {
     if (nowSec() >= this._throwComboUntil || this.game.thrownUntil <= nowSec()) {
       this._throwActive = false;
       this._hideAttackRings();
-      this._attackCooldown = rand(
-        GAME_CONFIG.ghostAttackCooldownMin,
-        GAME_CONFIG.ghostAttackCooldownMax
-      );
+      this._scheduleNextAttack(playerPos);
     }
   }
 
@@ -890,6 +1340,7 @@ export class GhostSystem {
       this.events.emit('danmaku', {
         text: choice(['震慑被打断了！', '观众：好险！！', '闪光灯立大功'])
       });
+      this._comboCount = 0;
       this._attackCooldown = rand(
         GAME_CONFIG.ghostAttackCooldownMin,
         GAME_CONFIG.ghostAttackCooldownMax
@@ -902,6 +1353,7 @@ export class GhostSystem {
     this._scareActive = false;
     this._hideAttackRings();
     this._lastScareAt = nowSec();
+    this._comboCount = 0;
     this._attackCooldown = rand(
       GAME_CONFIG.ghostAttackCooldownMin,
       GAME_CONFIG.ghostAttackCooldownMax
@@ -994,6 +1446,7 @@ export class GhostSystem {
     this._telegraphActive = false;
     this._attackFired = false;
     this._hideAttackRings();
+    this._comboCount = 0;
     this._attackCooldown = rand(
       GAME_CONFIG.ghostAttackCooldownMin,
       GAME_CONFIG.ghostAttackCooldownMax
@@ -1108,21 +1561,10 @@ export class GhostSystem {
   }
 
   _startDisguise(playerPos) {
-    const p = playerPos;
-    const ang = Math.random() * Math.PI * 2;
-    const d = rand(4, 7);
-    const x = clamp(
-      p.x + Math.cos(ang) * d,
-      this.scene.L.classroom.minX + 1,
-      this.scene.L.classroom.maxX - 1
-    );
-    const z = clamp(
-      p.z + Math.sin(ang) * d,
-      this.scene.L.classroom.minZ + 1,
-      this.scene.L.classroom.maxZ - 1
-    );
-    this.pawn.body.position.set(x, 1.2, z);
-    this.pawn.body.velocity.set(0, 0, 0);
+    const land = this._findValidLanding(playerPos.x, playerPos.z, 4, 7);
+    const x = land.x;
+    const z = land.z;
+    this._placeGhost(x, z, 1.2);
     this.pawn.mesh.visible = false;
     this._disguiseMesh = makePropMesh('trashCan');
     this._disguiseMesh.position.set(x, 0, z);
@@ -1141,9 +1583,7 @@ export class GhostSystem {
     }
     this.pawn.mesh.visible = true;
     this._disguiseActive = false;
-    const b = this.pawn.body.position;
-    b.x = playerPos.x;
-    b.z = playerPos.z;
+    this._placeGhost(playerPos.x, playerPos.z, 1.2);
     this.audio?.play('ghost');
     this.events.emit('camera.shake', { amount: 0.4 });
     this.events.emit('hitstop', { ms: 80 });
@@ -1306,10 +1746,7 @@ export class GhostSystem {
   }
 
   _randomClassroomPoint() {
-    return {
-      x: rand(-6, 6),
-      z: rand(-4.4, 2.6)
-    };
+    return this._randomPlayablePoint(1.4);
   }
 
   _pointAwayFromLocker() {
@@ -1330,7 +1767,24 @@ export class GhostSystem {
       this._setVelocity(0, 0, 0);
       return true;
     }
-    this._setVelocity((dx / dist) * speed, (dz / dist) * speed, dt);
+    let angle = Math.atan2(dx, dz);
+    if (nowSec() < this._wallHugUntil) {
+      angle += this._wallHugDir * 1.05;
+    } else if (this._lineBlockedWorld(b.x, b.z, target.x, target.z)) {
+      this._wallHugDir = Math.random() < 0.5 ? -1 : 1;
+      this._wallHugUntil = nowSec() + 0.6;
+      angle += this._wallHugDir * 1.05;
+    }
+    const vx = Math.sin(angle) * speed;
+    const vz = Math.cos(angle) * speed;
+    this._setVelocity(vx, vz, dt);
+    const nx = b.x + vx * dt;
+    const nz = b.z + vz * dt;
+    if (!this._isInsidePlayable(nx, nz, 0.2)) {
+      this._setVelocity(0, 0, 0);
+      this._wallHugUntil = nowSec() + 0.8;
+      this._wallHugDir *= -1;
+    }
     return false;
   }
 
@@ -1344,6 +1798,13 @@ export class GhostSystem {
       this._facing = Math.atan2(vx, vz);
       this.pawn.mesh.rotation.y = this._facing;
     }
+  }
+
+  _placeGhost(x, z, y = 1.2) {
+    const b = this.pawn.body.position;
+    b.set(x, y, z);
+    b.aabbNeedsUpdate = true;
+    this.pawn.body.velocity.set(0, 0, 0);
   }
 
   _canSee(playerPos, stage) {

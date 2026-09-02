@@ -204,6 +204,7 @@ events.on('game.start', () => {
   items.syncHand();
   chain.reset();
   randomEvents.reset();
+  ghost.onRunStart();
   audio.init();
   ui.toggleNotebook(false);
   ui.closeShop();

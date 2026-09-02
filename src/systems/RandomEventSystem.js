@@ -897,16 +897,11 @@ export class RandomEventSystem {
     }
     const circle = this.game.artifactCircle;
     if (!circle) return;
-    if (nowSec() >= this.game.artifactUntil) {
-      this._ghostGotArtifact();
-      return;
-    }
     if (this.game.artifactDefendTime >= GAME_CONFIG.artifactDefendDuration) {
       this._secureArtifact();
       return;
     }
     const p = this.player.getPos();
-    const gp = this.ghost.getPos();
     const inCircle = distance2D(p.x, p.z, circle.x, circle.z) < GAME_CONFIG.artifactCircleRadius;
     const defending = nowSec() >= this.game.artifactDefendUntil;
     if (defending && inCircle) {
@@ -915,10 +910,10 @@ export class RandomEventSystem {
       this.game.artifactDefendTime = Math.max(0, this.game.artifactDefendTime - dt * 0.5);
     }
     if (nowSec() >= this.game.artifactUntil) {
-      this._ghostGotArtifact();
+      this._artifactTimeout(circle);
       return;
     }
-    if (distance2D(gp.x, gp.z, circle.x, circle.z) < GAME_CONFIG.artifactCircleRadius) {
+    if (this.ghost.canTouchPoint(circle.x, circle.z, GAME_CONFIG.artifactCircleRadius)) {
       this._ghostGotArtifact();
       return;
     }
@@ -1020,6 +1015,19 @@ export class RandomEventSystem {
       title: '守卫成功！！镇店之宝到手！',
       line: '纪念品+1 · 积分+800 · 守卫奖金！'
     });
+    this._clearArtifactPhase();
+  }
+
+  _artifactTimeout(circle) {
+    if (this.ghost.canTouchPoint(circle.x, circle.z, GAME_CONFIG.artifactCircleRadius)) {
+      this._ghostGotArtifact();
+      return;
+    }
+    this.events.emit('act.card', {
+      title: '守卫超时！镇店之宝被主管收回！',
+      line: '鬼没摸到宝贝，你也守漏了 15 秒窗口。'
+    });
+    this.events.emit('toast', { text: '守卫超时：没有额外奖金。', ms: 2200 });
     this._clearArtifactPhase();
   }
 
