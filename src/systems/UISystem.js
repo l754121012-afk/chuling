@@ -391,6 +391,15 @@ export class UISystem {
   }
 
   _objectiveText(game) {
+    if (game.artifactActive && game.phase !== 'escape') {
+      if (game.artifactStage === 0) return '清仓守卫战幕 1：广播封锁，躲开红色警戒区！';
+      if (game.artifactStage === 1) return '清仓守卫战幕 2：抢清仓道具，鬼马上就来了！';
+      if (game.artifactStage === 2) {
+        return game.artifactDefendTime > 0
+          ? `守卫镇店之宝！再守 ${Math.ceil(GAME_CONFIG.artifactDefendDuration - game.artifactDefendTime)} 秒！`
+          : '镇店之宝出现了！站进金圈开始守卫！';
+      }
+    }
     if (game.phase === 'escape') {
       const weak = game.weakUntil > performance.now() / 1000;
       return weak
@@ -598,7 +607,13 @@ export class UISystem {
     this.events.on('bell.start', () => document.body.classList.add('bell'));
     this.events.on('bell.end', () => document.body.classList.remove('bell'));
     this.events.on('artifact.start', () => document.body.classList.add('artifact'));
-    this.events.on('artifact.end', () => document.body.classList.remove('artifact'));
+    this.events.on('artifact.end', () => {
+      document.body.classList.remove('artifact');
+      for (let i = 0; i < 3; i++) document.body.classList.remove(`artifact-stage-${i}`);
+    });
+    this.events.on('artifact.stage', p => {
+      for (let i = 0; i < 3; i++) document.body.classList.toggle(`artifact-stage-${i}`, (p?.stage ?? 0) === i);
+    });
     this.events.on('vote.start', p => this.showVote(p.options));
     this.events.on('vote.end', () => this.el.voteModal?.classList.add('hidden'));
   }

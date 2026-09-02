@@ -309,7 +309,10 @@ window.__game = {
   scene: school,
   chain,
   economy,
-  randomEvents
+  randomEvents,
+  debugArtifact: () => {
+    if (!game.artifactActive && game.isPlaying()) randomEvents._startArtifactPhase();
+  }
 };
 
 let last = nowSec();

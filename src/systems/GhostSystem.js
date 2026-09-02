@@ -1232,7 +1232,12 @@ export class GhostSystem {
       speed *= 1.25;
     }
 
-    if (this.game.artifactActive && this.game.artifactCircle && !this.game.artifactSecured) {
+    if (
+      this.game.artifactActive &&
+      this.game.artifactStage >= 2 &&
+      this.game.artifactCircle &&
+      !this.game.artifactSecured
+    ) {
       this._goTo(
         { x: this.game.artifactCircle.x, z: this.game.artifactCircle.z },
         speed,
