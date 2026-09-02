@@ -114,6 +114,10 @@ export class GhostSystem {
     this._wallHugUntil = 0;
     this._comboCount = 0;
     this._lastAttackKind = null;
+    this._lookBackCooldown = rand(12, 20);
+    this._lookBackUntil = 0;
+    this._lookBackActive = false;
+    this._lookBackAngle = 0;
     this._minions = [];
     this._ghostWebs = [];
     this._minionNextAt = 0;
@@ -210,6 +214,9 @@ export class GhostSystem {
   onRunStart() {
     this._clearMinions();
     this._comboCount = 0;
+    this._lookBackCooldown = rand(14, 22);
+    this._lookBackActive = false;
+    this._lookBackUntil = 0;
     this._minionNextAt = nowSec() + GAME_CONFIG.minionWaveFirstAt;
     this._wallHugUntil = 0;
   }
@@ -686,7 +693,7 @@ export class GhostSystem {
           (dz / len) * this._throwSpeed
         );
       }
-    } else if (this._scareActive || this._telegraphActive) {
+    } else if (this._lookBackActive || this._scareActive || this._telegraphActive) {
       this.pawn.body.velocity.set(0, 0, 0);
     } else {
       this._tryDash(dt, playerPos);
@@ -756,6 +763,7 @@ export class GhostSystem {
     }
 
     const stage = this.game.currentStage();
+    this._updateLookBack(dt, playerPos, stage);
     this._skillCooldown -= dt;
     if (this._ambushActive) {
       if (nowSec() < this._ambushUntil) {
@@ -900,8 +908,60 @@ export class GhostSystem {
     this._knockbackTimer = duration;
   }
 
+  _updateLookBack(dt, playerPos, stage) {
+    if (this.game.phase !== 'investigate') {
+      this._lookBackActive = false;
+      return;
+    }
+    if (this._lookBackActive) {
+      if (nowSec() >= this._lookBackUntil) {
+        this._lookBackActive = false;
+        if (this._canSee(playerPos, stage)) {
+          this._lastSeen = { x: playerPos.x, z: playerPos.z };
+        }
+        this._lookBackCooldown = rand(16, 28);
+        return;
+      }
+      let diff = this._lookBackAngle - this._facing;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      this._facing += diff * Math.min(1, dt * 8);
+      this.pawn.mesh.rotation.y = this._facing;
+      return;
+    }
+    this._lookBackCooldown -= dt;
+    if (this._lookBackCooldown > 0) return;
+    if (stage.id !== 'calm' && stage.id !== 'annoyed') return;
+    if (
+      this.game.hiding ||
+      this.game.broken ||
+      this.game.chainStuck ||
+      this._isPinned() ||
+      this.game.ropeClimbing ||
+      this.game.ladderClimbing ||
+      this._ambushActive ||
+      this._disguiseActive ||
+      this._telegraphActive ||
+      this._throwActive
+    ) return;
+    const b = this.pawn.body.position;
+    const dist = distance2D(b.x, b.z, playerPos.x, playerPos.z);
+    if (dist < 0.5 || dist > stage.viewDist) return;
+    if (Math.abs(playerPos.y - b.y) > 1.2) return;
+    const dx = playerPos.x - b.x;
+    const dz = playerPos.z - b.z;
+    const facingX = Math.sin(this._facing);
+    const facingZ = Math.cos(this._facing);
+    const dot = (dx * facingX + dz * facingZ) / (dist || 1);
+    if (dot > -0.25) return;
+    this._lookBackActive = true;
+    this._lookBackUntil = nowSec() + 0.8;
+    this._lookBackAngle = Math.atan2(dx, dz) + rand(-0.3, 0.3);
+  }
+
   _updateAttack(dt, playerPos) {
     if (this.game.phase !== 'investigate') return;
+    if (this._lookBackActive) return;
     if (
       this.game.hiding ||
       this.game.broken ||

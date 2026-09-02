@@ -28,6 +28,10 @@ export class PlayerSystem {
     this._whipCooldown = 0;
     this._heavyCooldown = 0;
     this._dodgeCooldown = 0;
+    this._stationeryCooldown = 0;
+    this._sprintArmed = false;
+    this._sprintSince = 0;
+    this._dodgeStationeryAt = 0;
     this._dodgeVX = 0;
     this._dodgeVZ = 0;
     this._shiftTapAt = 0;
@@ -147,6 +151,11 @@ export class PlayerSystem {
     this._whipCooldown = Math.max(0, this._whipCooldown - dt);
     this._heavyCooldown = Math.max(0, this._heavyCooldown - dt);
     this._dodgeCooldown = Math.max(0, this._dodgeCooldown - dt);
+    this._stationeryCooldown = Math.max(0, this._stationeryCooldown - dt);
+    if (this._dodgeStationeryAt > 0 && nowSec() >= this._dodgeStationeryAt) {
+      this._dodgeStationeryAt = 0;
+      this._tryKnockStationery();
+    }
     if (this.game.charging && nowSec() >= this.game.chargingUntil) {
       this.game.charging = false;
       this.game.battery = this.game.batteryMax;
@@ -168,6 +177,15 @@ export class PlayerSystem {
         this._shiftTapHandled = true;
         this._doDodge();
       }
+    }
+    if (shiftDown) {
+      if (!this._sprintArmed) {
+        this._sprintArmed = true;
+        this._sprintSince = nowSec();
+      }
+    } else if (this._sprintArmed) {
+      this._sprintArmed = false;
+      if (nowSec() - this._sprintSince >= 0.35) this._tryKnockStationery();
     }
 
     if (this._pushTarget) {
@@ -1355,6 +1373,7 @@ export class PlayerSystem {
     this.game.lastActionAt = nowSec();
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.dodgeStaminaCost);
     this.game.dodgingUntil = nowSec() + GAME_CONFIG.dodgeDuration;
+    this._dodgeStationeryAt = nowSec() + GAME_CONFIG.dodgeDuration + 0.05;
     this.game.dodgeCount += 1;
     this.playPose('hurt', 0.35);
     this.audio?.play('whoosh');
@@ -1389,6 +1408,34 @@ export class PlayerSystem {
       this._dodgeVZ
     );
     this._bonkCheck(dirX, dirZ);
+  }
+
+  _tryKnockStationery() {
+    if (this._stationeryCooldown > 0) return;
+    if (this.game.hiding || this.game.ropeClimbing || this.game.ladderClimbing) return;
+    const pos = this.getPos();
+    if (!this._nearAnyDesk(pos)) return;
+    if (Math.random() >= GAME_CONFIG.knockStationeryChance) return;
+    this._stationeryCooldown = GAME_CONFIG.knockStationeryCooldown;
+    const id = Math.random() < 0.72 ? 'pen' : 'tape';
+    this.game.addItem(id, 1);
+    this.events.emit('item.picked');
+    this.scene.spawnParticles({ x: pos.x, y: 0.6, z: pos.z }, '#e5d9bd');
+    this.events.emit('noise', { pos, radius: 7, rage: 0 });
+    this.audio?.play('paper');
+    this.events.emit('toast', {
+      text: `跑动蹭掉了桌沿的${ITEM_DEFS[id].name}！`,
+      ms: 1400
+    });
+  }
+
+  _nearAnyDesk(pos) {
+    for (const desk of this.scene.refs?.desks || []) {
+      const bx = desk?.base?.x ?? desk?.body?.position?.x;
+      const bz = desk?.base?.z ?? desk?.body?.position?.z;
+      if (typeof bx === 'number' && distance2D(pos.x, pos.z, bx, bz) < 2.3) return true;
+    }
+    return false;
   }
 
   _bonkCheck(dirX, dirZ) {

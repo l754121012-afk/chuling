@@ -50,6 +50,8 @@ export const GAME_CONFIG = {
   minionWebRadius: 1.7,
   minionWebLifetime: 4.2,
   minionBindDuration: 1.15,
+  knockStationeryChance: 0.1,
+  knockStationeryCooldown: 12,
   composureParry: 22,
   composureKite: 18,
   composureKnockdown: 15,
