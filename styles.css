@@ -282,6 +282,17 @@ body.playing canvas {
   letter-spacing: 0;
 }
 
+.phone-time {
+  font-variant-numeric: tabular-nums;
+  color: #ffe9b8;
+}
+
+.phone-time.urgent {
+  color: #ff6b6b;
+  font-weight: 700;
+  animation: warnPulse 0.9s ease-in-out infinite;
+}
+
 .phone-screen {
   padding: 12px;
   background: #39414d;

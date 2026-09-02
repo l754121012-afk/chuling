@@ -25,6 +25,7 @@ export class UISystem {
       lose: document.getElementById('screen-lose'),
       hud: document.getElementById('hud'),
       phone: document.getElementById('phone'),
+      phoneTime: document.querySelector('.phone-time'),
       rageSegments: [...document.querySelectorAll('.rage-seg')],
       stageLabel: document.getElementById('stage-label'),
       battery: document.getElementById('battery-bar'),
@@ -346,6 +347,7 @@ export class UISystem {
       this.el.dramaBar.parentElement?.classList.toggle('full', game.drama >= GAME_CONFIG.dramaMax);
     }
     this.el.stamina.style.width = `${game.stamina}%`;
+    this._updatePhoneTimer(game);
     if (this.el.lives) {
       this.el.lives.innerHTML = [0, 1, 2]
         .map(i => `<span class="life ${i < game.lives ? 'on' : 'off'}">♥</span>`)
@@ -387,6 +389,30 @@ export class UISystem {
       if (this.el.whipCombo) {
         this.el.whipCombo.textContent = comboActive ? `x${game.whipCombo}` : '';
       }
+    }
+  }
+
+  _updatePhoneTimer(game) {
+    if (!this.el.phoneTime) return;
+    const now = performance.now() / 1000;
+    if (game.bellPhaseActive && game.bellPhaseUntil > now) {
+      const remain = Math.max(0, Math.ceil(game.bellPhaseUntil - now));
+      this.el.phoneTime.textContent = `铃声 ${remain}s`;
+      this.el.phoneTime.classList.add('urgent');
+      return;
+    }
+    this.el.phoneTime.classList.remove('urgent');
+    if (game.runStart <= 0) {
+      this.el.phoneTime.textContent = '距响铃 --';
+      return;
+    }
+    const idx = game.bellPhaseIndex;
+    if (idx < GAME_CONFIG.bellPhaseTimes.length) {
+      const at = game.runStart + GAME_CONFIG.bellPhaseTimes[idx];
+      const remain = Math.max(0, Math.ceil(at - now));
+      this.el.phoneTime.textContent = remain > 0 ? `距响铃 ${remain}s` : '即将响铃';
+    } else {
+      this.el.phoneTime.textContent = '今日无铃声';
     }
   }
 
