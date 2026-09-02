@@ -1729,6 +1729,10 @@ export class GhostSystem {
     this.events.emit('danmaku.burst');
     this.audio?.play('win');
     this._sealSuccess('finisher');
+    this.game.stamina = Math.min(
+      this.game.staminaMax,
+      this.game.stamina + GAME_CONFIG.staminaFinisherReward
+    );
   }
 
   _finisherLines() {

@@ -1258,6 +1258,7 @@ export class PlayerSystem {
     this.game.comboSkillDone = true;
     this.game.speedBoostUntil = nowSec() + 4;
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.comboStaminaCost);
+    this._restoreStamina(GAME_CONFIG.staminaComboReward);
     this.playPose('use', 0.8);
     this.audio?.play('whip');
     this.events.emit('slowmo', { ms: 450 });
@@ -1436,7 +1437,14 @@ export class PlayerSystem {
     const dot = ((gp.x - pp.x) * fwdX + (gp.z - pp.z) * fwdZ) / (dist || 1);
     if (dot < (this.game.desperate ? 0.1 : 0.3)) return false;
     this.playPose('use', 0.45);
-    return this.ghost.parrySucceeded();
+    const parried = this.ghost.parrySucceeded();
+    if (parried) this._restoreStamina(GAME_CONFIG.staminaParryReward);
+    return parried;
+  }
+
+  _restoreStamina(amount) {
+    if (!amount) return;
+    this.game.stamina = Math.min(this.game.staminaMax, this.game.stamina + amount);
   }
 
   _doDodge() {
