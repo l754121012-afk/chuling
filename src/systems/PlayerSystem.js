@@ -1159,7 +1159,7 @@ export class PlayerSystem {
   _doHeavyWhip() {
     if (this._heavyCooldown > 0) return;
     if (this.game.hiding || this.game.notebookOpen) return;
-    if (this.game.stamina < 30) {
+    if (this.game.stamina < GAME_CONFIG.heavyStaminaCost) {
       this.events.emit('toast', { text: '体力不够重击！', ms: 1300 });
       return;
     }
@@ -1168,9 +1168,10 @@ export class PlayerSystem {
       return;
     }
     this._heavyCooldown = 1.2;
-    this.game.stamina = Math.max(0, this.game.stamina - 30);
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.heavyStaminaCost);
     this.playPose('use', 0.6);
     this.audio?.play('whip');
+    if (this._tryWhipMinion(true)) return;
     if (!this.ghost) return;
     const pp = this.getPos();
     const gp = this.ghost.getPos();
@@ -1203,12 +1204,60 @@ export class PlayerSystem {
     this.events.emit('toast', { text: '重击！！', ms: 1200 });
   }
 
+  _findWhipTargetMinion(range, cone) {
+    const minions = this.ghost?._minions;
+    if (!minions?.length) return null;
+    const pp = this.getPos();
+    const yaw = this.camera.yaw;
+    const fwdX = -Math.sin(yaw);
+    const fwdZ = -Math.cos(yaw);
+    let best = null;
+    let bestDist = Infinity;
+    for (const m of minions) {
+      const dx = m.x - pp.x;
+      const dz = m.z - pp.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.4 || dist > range || dist >= bestDist) continue;
+      const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
+      if (dot < cone) continue;
+      best = m;
+      bestDist = dist;
+    }
+    return best;
+  }
+
+  _tryWhipMinion(heavy) {
+    const range = heavy ? 5.5 : GAME_CONFIG.whipRange;
+    const cone = heavy ? 0.35 : GAME_CONFIG.whipCone;
+    const m = this._findWhipTargetMinion(range, cone);
+    if (!m) return false;
+    const pp = this.getPos();
+    this.ghost?._damageMinion?.(m, heavy ? 2 : 1);
+    this.scene.spawnSlashTrail(
+      { x: pp.x, y: 0, z: pp.z },
+      { x: m.x, y: 0, z: m.z },
+      heavy ? '#ffb86b' : '#ffd166',
+      heavy ? 0.5 : 0.35
+    );
+    this.scene.spawnAirSlash(
+      { x: pp.x, y: 1.25, z: pp.z },
+      { x: m.x, y: 1.25, z: m.z },
+      heavy ? '#ffb86b' : '#ffd166',
+      heavy ? 0.5 : 0.35
+    );
+    this.scene.spawnParticles({ x: m.x, y: 1, z: m.z }, heavy ? '#ffb86b' : '#f4d35e');
+    this.events.emit('hitstop', { ms: heavy ? 80 : 45 });
+    this.events.emit('camera.shake', { amount: heavy ? 0.3 : 0.15 });
+    this.audio?.play('whip');
+    return true;
+  }
+
   _doComboSkill() {
     this._heavyCooldown = 1.2;
     this.game.comboWindowUntil = 0;
     this.game.comboSkillDone = true;
     this.game.speedBoostUntil = nowSec() + 4;
-    this.game.stamina = Math.max(0, this.game.stamina - 35);
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.comboStaminaCost);
     this.playPose('use', 0.8);
     this.audio?.play('whip');
     this.events.emit('slowmo', { ms: 450 });
@@ -1255,6 +1304,7 @@ export class PlayerSystem {
     this.playPose('use', 0.4);
 
     if (this.game.whipComboUntil < nowSec()) this.game.whipCombo = 0;
+    if (this._tryWhipMinion(false)) return;
     if (!this.ghost) {
       this._whipMiss();
       return;

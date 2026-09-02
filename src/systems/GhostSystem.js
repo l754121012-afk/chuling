@@ -400,12 +400,33 @@ export class GhostSystem {
       born: nowSec(),
       lifetime: GAME_CONFIG.minionLifetime,
       bob: Math.random() * Math.PI * 2,
+      hp: 2,
+      flashUntil: 0,
       hugDir: Math.random() < 0.5 ? -1 : 1,
       hugUntil: 0,
       webUsed: false
     };
     this._minions.push(minion);
     this.scene.spawnParticles({ x: spot.x, y: 1, z: spot.z }, '#46d5c5');
+  }
+
+  _damageMinion(m, damage = 1) {
+    if (!m || m.hp <= 0 || !this._minions.includes(m)) return false;
+    m.hp -= damage;
+    m.flashUntil = nowSec() + 0.45;
+    if (m.hp <= 0) {
+      this.scene.group.remove(m.group);
+      this.scene.spawnParticles({ x: m.x, y: 1, z: m.z }, '#9b8cff');
+      this._minions = this._minions.filter(x => x !== m);
+      this.audio?.play('slap');
+      this.events.emit('toast', { text: '巡逻幽灵被打散了！', ms: 1300 });
+      this.events.emit('danmaku', { text: choice(['幽灵护卫倒了一个！', '它又少了条腿！']) });
+      this.rage?.addDrama?.(6, 'minionKill');
+    } else {
+      this.scene.spawnParticles({ x: m.x, y: 1, z: m.z }, '#ffd166');
+      this.audio?.play('hit');
+    }
+    return true;
   }
 
   _updateMinions(dt, playerPos) {
@@ -457,6 +478,12 @@ export class GhostSystem {
       const arrived = this._minionSteer(m, target.x, target.z, speed, dt);
       if (arrived && m.state !== 'chase') {
         m.waypoint = this._randomPlayablePoint(2);
+      }
+      if (m.flashUntil > nowSec()) {
+        const flashScale = 0.62 + Math.sin(nowSec() * 30) * 0.08;
+        m.group.scale.setScalar(flashScale);
+      } else {
+        m.group.scale.setScalar(0.48);
       }
       const bobY = 1.0 + Math.sin(nowSec() * 2.2 + m.bob) * 0.12;
       m.group.position.set(m.x, bobY, m.z);

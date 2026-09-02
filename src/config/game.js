@@ -13,6 +13,8 @@ export const GAME_CONFIG = {
   interactRadius: 2.2,
   pickupRadius: 2.0,
   whipStaminaCost: 18,
+  heavyStaminaCost: 26,
+  comboStaminaCost: 30,
   whipRange: 3.8,
   whipCone: 0.5,
   whipCooldown: 0.45,
