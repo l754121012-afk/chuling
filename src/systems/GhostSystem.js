@@ -225,7 +225,7 @@ export class GhostSystem {
     this._lookBackCooldown = rand(14, 22);
     this._lookBackActive = false;
     this._lookBackUntil = 0;
-    this._wishNextAt = nowSec() + rand(18, 28);
+    this._wishNextAt = nowSec() + rand(6, 9);
     this._wishActive = false;
     this._wishPhase = 'idle';
     this._wishAckUntil = 0;
@@ -1032,7 +1032,17 @@ export class GhostSystem {
       this._scareActive;
     if (!this._wishActive) {
       if (nowSec() < this._wishNextAt) return;
-      if (busy || (stage.id !== 'calm' && stage.id !== 'annoyed')) {
+      const stageOk =
+        stage.id === 'calm' ||
+        stage.id === 'annoyed' ||
+        (stage.id === 'angry' && !this._lastSeen && !this._lastNoise);
+      const distPlayer = distance2D(
+        this.pawn.body.position.x,
+        this.pawn.body.position.z,
+        playerPos.x,
+        playerPos.z
+      );
+      if (busy || !stageOk || distPlayer < 4.5) {
         this._wishNextAt = nowSec() + 5;
         return;
       }
@@ -1042,7 +1052,7 @@ export class GhostSystem {
     }
     if (busy || nowSec() >= this._wishUntil) {
       this._wishActive = false;
-      this._wishNextAt = nowSec() + rand(28, 45);
+      this._wishNextAt = nowSec() + rand(18, 28);
       return;
     }
     const b = this.pawn.body.position;
@@ -1074,7 +1084,9 @@ export class GhostSystem {
     pen.mesh.rotation.set(0.2, -0.8, 1.1);
     this.game.ghostWishKnocked = true;
     this.scene.spawnParticles({ x: pen.mesh.position.x, y: pen.neatY + 0.3, z: pen.mesh.position.z }, '#f4a261');
+    this.scene.spawnHitRing({ x: pen.mesh.position.x, y: 0.3, z: pen.mesh.position.z }, '#f4a261');
     this.audio?.play('paper');
+    this.events.emit('speech', { text: '……笔怎么又歪了。', ms: 2000 });
   }
 
   acknowledgeWish(pos) {
@@ -1089,6 +1101,7 @@ export class GhostSystem {
   _updateAttack(dt, playerPos) {
     if (this.game.phase !== 'investigate') return;
     if (this._lookBackActive || this._wishActive) return;
+    if (this.game.artifactGhostGrabAt > 0) return;
     if (
       this.game.hiding ||
       this.game.broken ||
@@ -1881,6 +1894,11 @@ export class GhostSystem {
         this.events.emit('speech', { text: '……谢了。', ms: 1500 });
         this.audio?.play('paper');
       }
+      return;
+    }
+
+    if (this.game.artifactGhostGrabAt > 0) {
+      this._setVelocity(0, 0, 0);
       return;
     }
 

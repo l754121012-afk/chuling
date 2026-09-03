@@ -48,6 +48,7 @@ export class RandomEventSystem {
     this.game.artifactDefendUntil = 0;
     this.game.artifactStage = 0;
     this.game.artifactStageUntil = 0;
+    this.game.artifactGhostGrabAt = 0;
     this.game.artifactSecured = false;
     this.game.artifactPenalty = false;
     this.game.artifactGhostBoostUntil = 0;
@@ -526,104 +527,74 @@ export class RandomEventSystem {
   }
 
   _spawnArtifactLockouts() {
-    const c = this.scene.L.classroom;
-    const zoneCount = 2;
-    this.game.artifactLockoutZones = [];
-    const splitX = c.minX + (c.maxX - c.minX) / 3;
-    const splitZ = c.minZ + (c.maxZ - c.minZ) / 3;
-    const pending = this.game.artifactPending;
-    const rects = [];
-    const attempts = [
-      { minX: c.minX + 0.5, maxX: splitX - 0.2, minZ: c.minZ + 0.5, maxZ: c.maxZ - 0.5, color: 0xff4d4d },
-      { minX: splitX + 0.2, maxX: splitX * 2 + 0.4, minZ: c.minZ + 0.5, maxZ: c.maxZ - 0.5, color: 0xff6b6b },
-      { minX: splitX * 2 + 0.6, maxX: c.maxX - 0.5, minZ: c.minZ + 0.5, maxZ: c.maxZ - 0.5, color: 0xff4d4d },
-      { minX: c.minX + 0.5, maxX: c.maxX - 0.5, minZ: c.minZ + 0.5, maxZ: splitZ - 0.2, color: 0xff6b6b },
-      { minX: c.minX + 0.5, maxX: c.maxX - 0.5, minZ: splitZ + 0.2, maxZ: splitZ * 2 + 0.4, color: 0xff4d4d },
-      { minX: c.minX + 0.5, maxX: c.maxX - 0.5, minZ: splitZ * 2 + 0.6, maxZ: c.maxZ - 0.5, color: 0xff6b6b }
-    ];
-    for (let i = 0; i < attempts.length && rects.length < zoneCount; i++) {
-      const r = attempts[i];
-      const containsPending =
-        pending &&
-        pending.x >= r.minX - 0.4 &&
-        pending.x <= r.maxX + 0.4 &&
-        pending.z >= r.minZ - 0.4 &&
-        pending.z <= r.maxZ + 0.4;
-      if (containsPending) continue;
-      rects.push(r);
-    }
-    if (rects.length < zoneCount) {
-      this.game.artifactPending = this._pickTreasureSpot();
-    }
-    for (let i = 0; i < zoneCount; i++) {
-      const rect = rects[i];
-      const group = new THREE.Group();
-      const w = rect.maxX - rect.minX;
-      const h = rect.maxZ - rect.minZ;
-      const cx = (rect.minX + rect.maxX) / 2;
-      const cz = (rect.minZ + rect.maxZ) / 2;
-      const zoneMesh = new THREE.Mesh(
-        new THREE.RingGeometry(0.1, Math.min(w, h) / 2, 40),
-        new THREE.MeshBasicMaterial({
-          color: rect.color,
-          transparent: true,
-          opacity: 0.24,
-          side: THREE.DoubleSide,
-          depthWrite: false
-        })
-      );
-      zoneMesh.rotation.x = -Math.PI / 2;
-      zoneMesh.position.set(cx, 0.04, cz);
-      group.add(zoneMesh);
-      const fill = new THREE.Mesh(
-        new THREE.PlaneGeometry(w, h),
-        new THREE.MeshBasicMaterial({
-          color: rect.color,
-          transparent: true,
-          opacity: 0.28,
-          side: THREE.DoubleSide,
-          depthWrite: false
-        })
-      );
-      fill.rotation.x = -Math.PI / 2;
-      fill.position.set(cx, 0.02, cz);
-      group.add(fill);
-      const wallH = 2.2;
-      const wallMat = new THREE.MeshBasicMaterial({
-        color: rect.color,
-        transparent: true,
-        opacity: 0.34,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      });
-      const makeWall = (x, z, ww, hh) => {
-        const m = new THREE.Mesh(new THREE.PlaneGeometry(ww, hh), wallMat);
-        m.position.set(x, wallH / 2, z);
-        group.add(m);
-      };
-      makeWall(cx, rect.minZ, w, wallH);
-      makeWall(cx, rect.maxZ, w, wallH);
-      makeWall(rect.minX, cz, 0.08, wallH);
-      makeWall(rect.maxX, cz, 0.08, wallH);
-      for (let j = 0; j < 8; j++) {
-        const x = rand(rect.minX + 0.2, rect.maxX - 0.2);
-        const z = rand(rect.minZ + 0.2, rect.maxZ - 0.2);
-        this.scene.spawnParticles({ x, y: 0.3, z }, '#ff8080');
-      }
-      group.position.set(0, 0, 0);
-      this.scene.group.add(group);
-      this.game.artifactLockoutZones.push({
-        ...rect,
-        group,
-        w: w + 0.15,
-        h: h + 0.15,
-        lockAt: nowSec() + 2.2,
-        fill,
-        wallMat,
-        fillMat: fill.material
-      });
-    }
-    this.events.emit('toast', { text: '警戒封锁即将落下：先离开红色区域！', ms: 2200 });
+    const pending = this.game.artifactPending || this._pickTreasureSpot();
+    this.game.artifactPending = pending;
+    const group = new THREE.Group();
+    const outerMat = new THREE.MeshBasicMaterial({
+      color: 0xff4d4d,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const boundaryMat = new THREE.MeshBasicMaterial({
+      color: 0xff6b6b,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const wallMat = new THREE.MeshBasicMaterial({
+      color: 0xff4d4d,
+      transparent: true,
+      opacity: 0.24,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const outer = new THREE.Mesh(new THREE.RingGeometry(1, 70, 72), outerMat);
+    outer.rotation.x = -Math.PI / 2;
+    outer.position.y = 0.03;
+    group.add(outer);
+    const boundary = new THREE.Mesh(new THREE.RingGeometry(0.92, 1.08, 72), boundaryMat);
+    boundary.rotation.x = -Math.PI / 2;
+    boundary.position.y = 0.06;
+    group.add(boundary);
+    const wall = new THREE.Mesh(
+      new THREE.CylinderGeometry(1, 1, 2.6, 64, 1, true),
+      wallMat
+    );
+    wall.position.y = 1.3;
+    group.add(wall);
+    group.position.set(pending.x, 0, pending.z);
+    this.scene.group.add(group);
+    const zone = {
+      type: 'ring',
+      x: pending.x,
+      z: pending.z,
+      group,
+      outer,
+      boundary,
+      wall,
+      startAt: nowSec(),
+      dangerAt: nowSec() + 2,
+      startRadius: GAME_CONFIG.artifactRingStartRadius,
+      endRadius: GAME_CONFIG.artifactRingEndRadius,
+      radius: GAME_CONFIG.artifactRingStartRadius,
+      pushed: false
+    };
+    this.game.artifactLockoutZones = [zone];
+    this._setArtifactRingRadius(zone, zone.startRadius);
+    this.events.emit('toast', {
+      text: '红幕警戒区出现：会向镇店之宝方向收缩！',
+      ms: 2400
+    });
+  }
+
+  _setArtifactRingRadius(zone, radius) {
+    zone.radius = Math.max(0.5, radius);
+    zone.outer.scale.set(zone.radius, zone.radius, 1);
+    zone.boundary.scale.set(zone.radius, zone.radius, 1);
+    zone.wall.scale.set(zone.radius, zone.radius, 1);
   }
 
   _pickTreasureSpot() {
@@ -637,10 +608,9 @@ export class RandomEventSystem {
   }
 
   _insideLockout(x, z) {
-    const zones = this.game.artifactLockoutZones || [];
-    for (const zone of zones) {
-      const pad = zone.orientationPad || 0.4;
-      if (x >= zone.minX - pad && x <= zone.maxX + pad && z >= zone.minZ - pad && z <= zone.maxZ + pad) return true;
+    const zone = (this.game.artifactLockoutZones || [])[0];
+    if (zone && zone.type === 'ring') {
+      return distance2D(x, z, zone.x, zone.z) > zone.radius + 0.2;
     }
     return false;
   }
@@ -799,6 +769,7 @@ export class RandomEventSystem {
     this.game.artifactLockoutZones = [];
     this.game.artifactStage = 2;
     this.game.artifactStageUntil = 0;
+    this.game.artifactGhostGrabAt = 0;
     this.game.artifactUntil = nowSec() + GAME_CONFIG.artifactDefendGrace + GAME_CONFIG.artifactDefendDuration;
     this.game.artifactDefendTime = 0;
     this.game.artifactDefendUntil = nowSec() + GAME_CONFIG.artifactDefendGrace;
@@ -909,15 +880,41 @@ export class RandomEventSystem {
     } else if (!inCircle) {
       this.game.artifactDefendTime = Math.max(0, this.game.artifactDefendTime - dt * 0.5);
     }
+    const touching = this.ghost.canTouchPoint(
+      circle.x,
+      circle.z,
+      GAME_CONFIG.artifactGrabRadius
+    );
+    const grabbing = this.game.artifactGhostGrabAt > 0;
+    if (grabbing && touching && nowSec() - this.game.artifactGhostGrabAt >= GAME_CONFIG.artifactGrabDuration) {
+      this._ghostGotArtifact();
+      return;
+    }
     if (nowSec() >= this.game.artifactUntil) {
       this._artifactTimeout(circle);
       return;
     }
-    if (this.ghost.canTouchPoint(circle.x, circle.z, GAME_CONFIG.artifactCircleRadius)) {
-      this._ghostGotArtifact();
-      return;
+    if (grabbing && !touching) {
+      this.game.artifactGhostGrabAt = 0;
+      this.events.emit('toast', { text: '抢宝被打断了！它没来得及举起来！', ms: 1800 });
+      this.events.emit('danmaku', { text: '抢宝中断！！守住了！' });
+      this.audio?.play('whoosh');
+    } else if (!grabbing && touching) {
+      this.game.artifactGhostGrabAt = nowSec();
+      this.events.emit('toast', {
+        text: '鬼抓住了镇店之宝！！快打断它的举宝动作！',
+        ms: 2200
+      });
+      this.events.emit('camera.shake', { amount: 0.4 });
+      this.audio?.play('ghost');
     }
-    this._animateTreasure(circle);
+    if (grabbing && this.game.artifactGhostGrabAt > 0 && Math.random() < dt * 10) {
+      this.scene.spawnParticles(
+        { x: circle.x + rand(-0.5, 0.5), y: 1.2, z: circle.z + rand(-0.5, 0.5) },
+        '#ff4d6d'
+      );
+    }
+    this._animateTreasure(circle, dt);
     if (this._artifactTemptTimer > 0) {
       this._artifactTemptTimer -= dt;
     } else {
@@ -937,12 +934,21 @@ export class RandomEventSystem {
     }
   }
 
-  _animateTreasure(circle) {
+  _animateTreasure(circle, dt = 0.016) {
     if (!circle.treasure) return;
     const spin = circle.treasure.userData.spin;
+    const grabAt = this.game.artifactGhostGrabAt;
     if (spin) {
       spin.rotation.y += 0.018;
-      spin.position.y = Math.sin(nowSec() * 1.7) * 0.08;
+      if (grabAt > 0) {
+        const t = Math.min(1, (nowSec() - grabAt) / GAME_CONFIG.artifactGrabDuration);
+        spin.rotation.y += dt * 3.5;
+        spin.position.y = Math.sin(nowSec() * 3) * 0.06 + t * 0.2;
+        circle.treasure.position.y = Math.min(1.6, t * 1.7);
+      } else {
+        spin.position.y = Math.sin(nowSec() * 1.7) * 0.08;
+        circle.treasure.position.y = Math.max(0, circle.treasure.position.y - dt * 2.2);
+      }
     }
     if (!circle.progress) return;
     const t = Math.min(1, this.game.artifactDefendTime / GAME_CONFIG.artifactDefendDuration);
@@ -953,29 +959,30 @@ export class RandomEventSystem {
 
   _updateLockoutZones(dt) {
     const p = this.player.getPos();
-    for (const zone of this.game.artifactLockoutZones || []) {
-      const pending = nowSec() < zone.lockAt;
-      const pulse = 0.18 + Math.sin(nowSec() * (pending ? 7 : 2)) * 0.08;
-      zone.fillMat.opacity = (pending ? 0.14 : 0.26) + pulse;
-      zone.wallMat.opacity = (pending ? 0.16 : 0.38) + pulse * 0.5;
-      const pad = 0.35;
-      if (pending) continue;
-      const inside = p.x >= zone.minX - pad && p.x <= zone.maxX + pad && p.z >= zone.minZ - pad && p.z <= zone.maxZ + pad;
-      if (!inside) continue;
-      this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.artifactLockoutDrain * dt);
-      if (this.game.stamina <= 0 && !zone.pushed) {
-        zone.pushed = true;
-        const closest = Math.max(zone.minX - pad - p.x, zone.maxX + pad - p.x, zone.minZ - pad - p.z, zone.maxZ + pad - p.z);
-        const dir = closest === zone.minX - pad - p.x ? { x: -1, z: 0 }
-          : closest === zone.maxX + pad - p.x ? { x: 1, z: 0 }
-            : closest === zone.minZ - pad - p.z ? { x: 0, z: -1 }
-              : { x: 0, z: 1 };
-        this.player.pawn.body.velocity.set(dir.x * 10, 3, dir.z * 10);
-        this.game.playerStunUntil = nowSec() + 0.5;
-        this.events.emit('camera.shake', { amount: 0.28 });
-        this.events.emit('toast', { text: '警戒红幕！！体力被抽干还被推出去！', ms: 1800 });
-        this.audio?.play('slap');
-      }
+    const zone = (this.game.artifactLockoutZones || [])[0];
+    if (!zone || zone.type !== 'ring') return;
+    const total = GAME_CONFIG.artifactShrinkDuration;
+    const t = Math.min(1, Math.max(0, (nowSec() - zone.startAt) / total));
+    const nextRadius = zone.startRadius + (zone.endRadius - zone.startRadius) * t;
+    this._setArtifactRingRadius(zone, nextRadius);
+    const danger = nowSec() >= zone.dangerAt;
+    const pulse = 0.5 + Math.sin(nowSec() * (danger ? 2.4 : 8)) * 0.2;
+    zone.outer.material.opacity = 0.12 + (1 - t) * 0.05;
+    zone.boundary.material.opacity = 0.7 + pulse * 0.2;
+    zone.wall.material.opacity = 0.18 + pulse * 0.15;
+    const distToCenter = distance2D(p.x, p.z, zone.x, zone.z);
+    if (!danger || distToCenter <= zone.radius + 0.2) return;
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.artifactLockoutDrain * dt);
+    if (this.game.stamina <= 0 && !zone.pushed) {
+      zone.pushed = true;
+      const dist = Math.max(0.2, distToCenter);
+      const dirX = (zone.x - p.x) / dist;
+      const dirZ = (zone.z - p.z) / dist;
+      this.player.pawn.body.velocity.set(dirX * 9, 2.5, dirZ * 9);
+      this.game.playerStunUntil = nowSec() + 0.5;
+      this.events.emit('camera.shake', { amount: 0.3 });
+      this.events.emit('toast', { text: '红幕收圈！你被推向镇店之宝的位置！', ms: 1800 });
+      this.audio?.play('slap');
     }
   }
 
@@ -1019,7 +1026,12 @@ export class RandomEventSystem {
   }
 
   _artifactTimeout(circle) {
-    if (this.ghost.canTouchPoint(circle.x, circle.z, GAME_CONFIG.artifactCircleRadius)) {
+    const grabAt = this.game.artifactGhostGrabAt;
+    if (
+      grabAt > 0 &&
+      nowSec() - grabAt >= GAME_CONFIG.artifactGrabDuration &&
+      this.ghost.canTouchPoint(circle.x, circle.z, GAME_CONFIG.artifactGrabRadius)
+    ) {
       this._ghostGotArtifact();
       return;
     }
@@ -1059,6 +1071,7 @@ export class RandomEventSystem {
     this.game.artifactCircle = null;
     this.game.artifactPending = null;
     this.game.artifactDefendTime = 0;
+    this.game.artifactGhostGrabAt = 0;
     this.game.artifactPhaseIndex += 1;
     this._artifactTempts.forEach(t => this.scene.group.remove(t.mesh));
     this._artifactTempts = [];

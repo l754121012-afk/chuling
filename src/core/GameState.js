@@ -59,6 +59,7 @@ export class GameState {
     this.artifactDefendUntil = 0;
     this.artifactStage = 0;
     this.artifactStageUntil = 0;
+    this.artifactGhostGrabAt = 0;
     this.artifactSecured = false;
     this.artifactPenalty = false;
     this.artifactGhostBoostUntil = 0;

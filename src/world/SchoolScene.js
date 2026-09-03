@@ -730,7 +730,7 @@ export class SchoolScene {
     });
 
     const wishPen = makeItemMesh('pen');
-    wishPen.scale.setScalar(1.8);
+    wishPen.scale.setScalar(3);
     wishPen.position.set(note.x + 0.65, note.y + 0.12, note.z - 0.2);
     wishPen.rotation.set(0.15, -0.5, 0.15);
     this.group.add(wishPen);
