@@ -41,6 +41,7 @@ const physics = new PhysicsWorld();
 const game = new GameState();
 const economy = new EconomySystem();
 const DETENTION_MODE = new URLSearchParams(window.location.search).get('case') === 'detention';
+const DETENTION_AUTO = new URLSearchParams(window.location.search).get('auto') === '1';
 const school = new SchoolScene(
   physics,
   events,
@@ -278,8 +279,14 @@ ui.el.fullscreenBtn.addEventListener('click', () => {
   }
 });
 document.getElementById('detention-btn')?.addEventListener('click', () => {
-  window.location.search = DETENTION_MODE ? '' : '?case=detention';
+  window.location.search = DETENTION_MODE ? '' : '?case=detention&auto=1';
 });
+if (DETENTION_MODE) {
+  const startBtn = document.getElementById('start-btn');
+  const toggleBtn = document.getElementById('detention-btn');
+  if (startBtn) startBtn.textContent = '开始禁闭室切片';
+  if (toggleBtn) toggleBtn.textContent = '返回值日教室';
+}
 window.addEventListener('keydown', e => {
   if (e.code === 'AltLeft' || e.code === 'AltRight') {
     document.body.classList.remove('playing');
@@ -415,5 +422,8 @@ function tick() {
   input.update();
 }
 
+if (DETENTION_MODE && DETENTION_AUTO) {
+  setTimeout(() => events.emit('game.start'), 180);
+}
 ui.sync(game);
 tick();
