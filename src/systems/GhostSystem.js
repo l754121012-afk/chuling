@@ -1322,8 +1322,8 @@ export class GhostSystem {
     if (this._parryRangeRing) this._parryRangeRing.visible = true;
     this.events.emit('toast', {
       text: this.game.whipMode
-        ? '鬼要挥爪了！左键拼文具，或短按 Shift 闪开！'
-        : '鬼要挥爪了！按 G 切鞭子拼文具，或短按 Shift 闪开！',
+        ? '鬼要挥爪了！左键拼文具，或短按 Shift 翻滚闪开！'
+        : '鬼要挥爪了！按 G 切鞭子拼文具，或短按 Shift 翻滚闪开！',
       ms: 1400
     });
   }
@@ -1352,7 +1352,7 @@ export class GhostSystem {
       this._telegraphRing.visible = true;
     }
     this.events.emit('toast', {
-      text: '它在原地蓄力，要撞过来了！短按 Shift 闪开！',
+      text: '它在原地蓄力，要撞过来了！短按 Shift 翻滚闪开！',
       ms: 1600
     });
   }
@@ -1367,10 +1367,10 @@ export class GhostSystem {
     } else if (nowSec() < this.game.dodgingUntil && dist < 1.6) {
       this._chargeHitDone = true;
       this.rage.addDrama(GAME_CONFIG.dramaPerfectDodge, 'dodgeCharge');
-      this.events.emit('toast', { text: '你闪开了撞击！！', ms: 1200 });
+      this.events.emit('toast', { text: '你翻滚闪开了撞击！！', ms: 1200 });
       this.events.emit('slowmo', { ms: 220 });
       this.events.emit('danmaku', {
-        text: choice(['这闪避满分！', '撞击被闪开了！！', '主播会玩'])
+        text: choice(['这翻滚满分！', '撞击被滚开了！！', '主播会玩'])
       });
     }
     if (nowSec() >= this._chargeUntil) {
@@ -1533,7 +1533,7 @@ export class GhostSystem {
       this._telegraphRing.visible = true;
     }
     this.events.emit('toast', {
-      text: '它要鬼脸震慑了！快闪开或用 V 闪光打断！',
+      text: '它要鬼脸震慑了！快翻滚或用 V 闪光打断！',
       ms: 1800
     });
   }

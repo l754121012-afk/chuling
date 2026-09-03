@@ -28,6 +28,10 @@ export class PlayerSystem {
     this._whipCooldown = 0;
     this._heavyCooldown = 0;
     this._dodgeCooldown = 0;
+    this._rollUntil = 0;
+    this._rollStart = 0;
+    this._rollDirX = 0;
+    this._rollDirZ = 0;
     this._stationeryCooldown = 0;
     this._sprintArmed = false;
     this._sprintSince = 0;
@@ -227,8 +231,34 @@ export class PlayerSystem {
 
     this._syncPlayerMesh();
     const hSpeed = Math.hypot(body.velocity.x, body.velocity.z);
-    if (hSpeed > 0.4) {
+    const rolling = nowSec() < this._rollUntil;
+    if (rolling) {
+      const rollT = Math.min(1, Math.max(0, (nowSec() - this._rollStart) / GAME_CONFIG.dodgeDuration));
+      const spin = rollT * Math.PI * 2.35;
+      const squash = Math.sin(spin * 2);
+      this.pawn.mesh.rotation.y = Math.atan2(this._rollDirX, this._rollDirZ);
+      this.pawn.mesh.rotation.x = spin;
+      this.pawn.mesh.rotation.z = Math.sin(spin * 2.4) * 0.16;
+      this.pawn.mesh.scale.set(
+        1 + Math.max(0, squash) * 0.16,
+        Math.max(0.68, 1 - Math.abs(squash) * 0.3),
+        1 - Math.abs(squash) * 0.08
+      );
+      if (Math.random() < dt * 26) {
+        this.scene.spawnParticles(
+          { x: body.position.x, y: 0.35, z: body.position.z },
+          '#ffe08a'
+        );
+      }
+    } else if (hSpeed > 0.4) {
       this.pawn.mesh.rotation.y = Math.atan2(body.velocity.x, body.velocity.z);
+      this.pawn.mesh.rotation.x = 0;
+      this.pawn.mesh.rotation.z = 0;
+      this.pawn.mesh.scale.set(1, 1, 1);
+    } else if (Math.abs(this.pawn.mesh.rotation.x) > 0.01 || this.pawn.mesh.scale.x !== 1) {
+      this.pawn.mesh.rotation.x = 0;
+      this.pawn.mesh.rotation.z = 0;
+      this.pawn.mesh.scale.set(1, 1, 1);
     }
     this._updatePose(dt);
     if (this.phoneLight) {
@@ -236,7 +266,7 @@ export class PlayerSystem {
       this.phoneLight.intensity = f * 1.9;
       this.phoneLight.distance = 5 + f * 6;
     }
-    this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
+    if (!rolling) this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
     if (this.game.hiding) {
       this.pawn.mesh.visible = false;
     } else if (nowSec() < this.game.invincibleUntil) {
@@ -296,7 +326,8 @@ export class PlayerSystem {
       use: { armR: { x: -1.15, z: -0.45 }, armL: { x: 0.3, z: -0.5 }, body: 0.08, head: -0.08 },
       interact: { armR: { x: -0.95, z: -0.3 }, armL: { x: -1.0, z: -0.75 }, body: 0.3, head: 0.25 },
       aim: { armR: { x: -0.9, z: -0.3 }, armL: { x: 0.3, z: -0.5 }, body: 0.05, head: -0.05 },
-      hurt: { armR: { x: 1.1, z: -0.2 }, armL: { x: 1.2, z: -0.8 }, body: -0.28, head: -0.35 }
+      hurt: { armR: { x: 1.1, z: -0.2 }, armL: { x: 1.2, z: -0.8 }, body: -0.28, head: -0.35 },
+      roll: { armR: { x: -2.7, z: -0.9 }, armL: { x: 2.7, z: -0.9 }, body: -0.55, head: 0.6 }
     };
     return poses[this.pose] || poses.idle;
   }
@@ -1453,7 +1484,7 @@ export class PlayerSystem {
     if (this.game.ropeClimbing || this.game.ladderClimbing) return;
     if (nowSec() < this.game.playerStunUntil) return;
     if (this.game.stamina < GAME_CONFIG.dodgeStaminaCost) {
-      this.events.emit('toast', { text: '没体力闪了！', ms: 1200 });
+      this.events.emit('toast', { text: '没体力翻滚了！', ms: 1200 });
       return;
     }
     this._dodgeCooldown = GAME_CONFIG.dodgeCooldown;
@@ -1462,11 +1493,12 @@ export class PlayerSystem {
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.dodgeStaminaCost);
     this.game.dodgingUntil = nowSec() + GAME_CONFIG.dodgeDuration;
     this._dodgeStationeryAt = nowSec() + GAME_CONFIG.dodgeDuration + 0.05;
+    this._rollUntil = this.game.dodgingUntil;
+    this._rollStart = nowSec();
     this.game.dodgeCount += 1;
-    this.playPose('hurt', 0.35);
+    this.playPose('roll', 0.55);
     this.audio?.play('whoosh');
-    this.events.emit('camera.shake', { amount: 0.08 });
-    this.scene.spawnParticles(this.getPos(), '#d9c8a0');
+    this.events.emit('camera.shake', { amount: 0.12 });
 
     const yaw = this.camera.yaw;
     let moveX = 0;
@@ -1490,6 +1522,9 @@ export class PlayerSystem {
     dirZ /= len;
     this._dodgeVX = dirX * GAME_CONFIG.dodgeSpeed;
     this._dodgeVZ = dirZ * GAME_CONFIG.dodgeSpeed;
+    this._rollDirX = dirX;
+    this._rollDirZ = dirZ;
+    this.scene.spawnParticles(this.getPos(), '#ffe08a');
     this.pawn.body.velocity.set(
       this._dodgeVX,
       this.pawn.body.velocity.y,
