@@ -75,6 +75,7 @@ export class UISystem {
       prompt: document.getElementById('prompt'),
       notebook: document.getElementById('notebook'),
       notebookList: document.getElementById('notebook-list'),
+      phaseFlag: document.getElementById('phase-flag'),
       mute: document.getElementById('mute-btn'),
       settlementRows: document.getElementById('settlement-rows'),
       settlementTotal: document.getElementById('settlement-total'),
@@ -509,38 +510,90 @@ export class UISystem {
   }
 
   _updatePhoneTimer(game) {
-    if (!this.el.phoneTime) return;
+    if (!this.el.phoneTime && !this.el.phaseFlag) return;
     const now = performance.now() / 1000;
-    if (game.bellPhaseActive && game.bellPhaseUntil > now) {
-      const remain = Math.max(0, Math.ceil(game.bellPhaseUntil - now));
-      this.el.phoneTime.textContent = `铃声 ${remain}s`;
-      this.el.phoneTime.classList.add('urgent');
+    const pad = n => String(n).padStart(2, '0');
+    const elapsed = game.runStart > 0 ? Math.max(0, now - game.runStart) : 0;
+    const clockSec = Math.floor(8 * 3600 + elapsed);
+    const hh = Math.floor(clockSec / 3600) % 24;
+    const mm = Math.floor(clockSec / 60) % 60;
+    const ss = clockSec % 60;
+    if (this.el.phoneTime) {
+      if (game.runStart <= 0) {
+        this.el.phoneTime.textContent = '08:00:00';
+      } else {
+        this.el.phoneTime.textContent = `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+      }
+      this.el.phoneTime.classList.toggle('urgent', game.bellPhaseActive && game.bellPhaseUntil > now);
+    }
+    if (!this.el.phaseFlag) return;
+    this.el.phaseFlag.classList.remove('urgent', 'stage');
+    if (game.runStart <= 0) {
+      this.el.phaseFlag.textContent = '准备中';
       return;
     }
-    this.el.phoneTime.classList.remove('urgent');
-    if (game.runStart <= 0) {
-      this.el.phoneTime.textContent = '距响铃 --';
+    if (game.bellPhaseActive && game.bellPhaseUntil > now) {
+      const remain = Math.max(0, Math.ceil(game.bellPhaseUntil - now));
+      this.el.phaseFlag.textContent = `铃声 ${remain}s`;
+      this.el.phaseFlag.classList.add('urgent');
+      return;
+    }
+    if (game.detentionMode) {
+      this.el.phaseFlag.classList.add('stage');
+      this.el.phaseFlag.textContent = game.detentionComplete
+        ? '目标完成 · 出口已开'
+        : game.hasClue('note')
+          ? '值日表归档成功 · 出口开'
+          : '任务 · 去程老师办公桌读值日表';
+      return;
+    }
+    if (game.runMode) {
+      this.el.phaseFlag.classList.add('stage');
+      if (game.runStage === 1) {
+        this.el.phaseFlag.textContent = game.ghostWishHelped
+          ? '第一幕完成 · 出口已开'
+          : game.ghostWishKnocked
+            ? '任务笔被碰倒 · 去摆正'
+            : '第一幕 · 等小满碰倒任务笔';
+      } else if (game.runStage === 2) {
+        this.el.phaseFlag.textContent = game.detentionComplete
+          ? '第二幕完成 · 出口已开'
+          : '第二幕 · 去读程老师值日表';
+      } else {
+        this.el.phaseFlag.textContent = '第三幕 · 找失火真相';
+      }
       return;
     }
     const idx = game.bellPhaseIndex;
-    if (idx < GAME_CONFIG.bellPhaseTimes.length) {
-      const at = game.runStart + GAME_CONFIG.bellPhaseTimes[idx];
-      const remain = Math.max(0, Math.ceil(at - now));
-      this.el.phoneTime.textContent = remain > 0 ? `距响铃 ${remain}s` : '即将响铃';
-    } else {
-      this.el.phoneTime.textContent = '今日无铃声';
-    }
+    const remain = idx < GAME_CONFIG.bellPhaseTimes.length
+      ? Math.max(0, Math.ceil(GAME_CONFIG.bellPhaseTimes[idx] - elapsed))
+      : -1;
+    this.el.phaseFlag.textContent = remain >= 0 ? `下次铃声 ${pad(Math.floor(remain / 60))}:${pad(remain % 60)}` : '今日无铃声';
   }
 
   _objectiveText(game) {
-    if (game.runMode && game.runStage === 1 && game.phase === 'investigate') {
-      return '第一幕 · 两支笔：帮值日鬼小满找回圆珠笔，别让鬼发现你';
-    }
-    if (game.runMode && game.runStage === 3 && game.phase === 'investigate') {
+    const escape = game.phase === 'escape';
+    if (game.runMode) {
+      if (game.runStage === 1) {
+        if (escape) return game.ghostWishHelped
+          ? '小满的心愿已完成！跑向走廊出口，前往第二幕！'
+          : '鬼被压制了，出口开了！直接跑也能继续，但小满的心愿还没完成';
+        if (game.ghostWishHelped) return '第一幕完成：小满的笔已摆正，出口亮了，去走廊尽头';
+        if (game.ghostWishKnocked) return '小满碰倒了任务笔！等它走远，靠近值日台按 E 摆正';
+        return '第一幕 · 两支笔：值日台有金色任务笔，等小满碰倒它后帮它摆回原位';
+      }
+      if (game.runStage === 2) {
+        if (escape) return '鬼被压制了！出口已开，跑向禁闭室出口';
+        if (game.detentionComplete) return '第二幕完成：值日表已归档，出口亮了，去走廊尽头';
+        return '第二幕 · 禁闭室：穿过隔间迷宫，去程老师办公桌读值日表';
+      }
+      if (escape) return '第三幕：真相已到手？快跑向出口！';
       return '第三幕 · 旧仓库：找到失火那晚的真相，让两支笔重新并排';
     }
-    if (game.detentionMode && game.phase === 'investigate') {
-      return '禁闭室白盒切片：穿过隔间迷宫，去教师办公室找程老师留下的值日表';
+    if (game.detentionMode) {
+      if (escape) return '程老师被压制了！跑向禁闭室出口';
+      if (game.detentionComplete) return '值日表已归档，出口亮了，去走廊尽头';
+      return '禁闭室切片：穿过隔间迷宫，去程老师办公桌读值日表；黑板粉笔盒可引开它';
     }
     if (game.artifactActive && game.phase !== 'escape') {
       if (game.artifactStage === 0) return '清仓守卫战幕 1：广播封锁，躲开红色警戒区！';
@@ -551,7 +604,7 @@ export class UISystem {
           : '镇店之宝出现了！站进金圈开始守卫！';
       }
     }
-    if (game.phase === 'escape') {
+    if (escape) {
       const weak = game.weakUntil > performance.now() / 1000;
       return weak
         ? `鬼虚弱了：快跑向出口！剩余 ${Math.ceil(game.escapeTimer)} 秒`

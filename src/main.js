@@ -152,6 +152,17 @@ let phoneRang = false;
 let firstScareAt = 0;
 
 events.on('audio', p => audio.play(p.name));
+events.on('clue.found', p => school.markClueRead?.(p.id));
+events.on('detention.noteRead', () => {
+  if (!game.detentionMode || game.detentionComplete) return;
+  game.detentionComplete = true;
+  school.openExit();
+  events.emit('act.card', {
+    title: '第二幕目标完成 · 值日表归档',
+    line: '程老师的值日表已经记进手机，出口门禁亮了！'
+  });
+  events.emit('toast', { text: '值日表已归档，出口开了！', ms: 2200 });
+});
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
 events.on('hitstop', p => {
   game.hitstopUntil = Math.max(game.hitstopUntil, nowSec() + (p?.ms ?? 80) / 1000);
@@ -221,7 +232,22 @@ events.on('game.start', () => {
   ui.closeShop();
   ui.toggleBackpack(false);
   ui.sync(game);
-  events.emit('toast', { text: '实习开始：先找线索，别惊动它。主管：这一单预计到手 12 円。', ms: 3200 });
+  const startToast = RUN_MODE && RUN_STAGE === 1
+    ? '第一幕：值日台有支金色任务笔。先站远观察，小满会过来碰倒它，再替它摆正。'
+    : RUN_MODE && RUN_STAGE === 2
+      ? '第二幕：去程老师办公桌读值日表；黑板的粉笔盒能把它引开。'
+      : RUN_MODE && RUN_STAGE === 3
+        ? '第三幕：去旧仓库找失火那晚的真相。'
+        : '实习开始：先找线索，别惊动它。主管：这一单预计到手 12 円。';
+  events.emit('toast', { text: startToast, ms: 3200 });
+  if (RUN_MODE) {
+    const intro = RUN_STAGE === 1
+      ? { title: '第一幕 · 两支笔', line: '值日鬼小满总想把桌上那支笔摆正。留意金色任务笔，等它碰倒后帮它摆好。' }
+      : RUN_STAGE === 2
+        ? { title: '第二幕 · 禁闭室', line: '穿过隔间迷宫去程老师办公桌读值日表；黑板粉笔盒可以把它引开。' }
+        : { title: '第三幕 · 旧仓库', line: '找失火那晚的真相，让两支笔重新并排。' };
+    events.emit('act.card', intro);
+  }
   audio.play('click');
 });
 events.on('game.win', () => {
@@ -303,6 +329,18 @@ if (RUN_MODE) {
     startBtn.textContent = RUN_STAGE === 1 ? '开始第一幕：值日教室' :
       RUN_STAGE === 2 ? '开始第二幕：禁闭室' : '开始第三幕：旧仓库';
   }
+  const startNote = document.querySelector('.start-note');
+  if (startNote) {
+    startNote.textContent = RUN_STAGE === 1
+      ? '第一幕：找到金色任务笔，观察值日鬼的心愿，帮它摆正后再离开。'
+      : RUN_STAGE === 2
+        ? '第二幕：去程老师办公桌读值日表，黑板粉笔盒可以把它引开。'
+        : '第三幕：去旧仓库找失火那晚的真相。';
+  }
+}
+if (DETENTION_MODE && !RUN_MODE) {
+  const startNote = document.querySelector('.start-note');
+  if (startNote) startNote.textContent = '禁闭室切片：读程老师值日表可开门；黑板粉笔盒负责引开它。';
 }
 window.addEventListener('keydown', e => {
   if (e.code === 'AltLeft' || e.code === 'AltRight') {

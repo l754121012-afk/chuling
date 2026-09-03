@@ -10,16 +10,22 @@ function detentionConfig() {
   cfg.teacherDesk = { x: 0, z: 14.2, rotY: 0 };
   cfg.note = { x: 0.8, y: 1.95, z: 14.2 };
   cfg.platform = { x: 0, z: 14.2, w: 3.6, h: 1.0, d: 2.6 };
-  cfg.lockers = { x: 11, z: 3.5, rotY: -0.2 };
-  cfg.lockerStep = { x: 10, z: 3.5, w: 1.2, h: 0.85, d: 0.9 };
+  cfg.platformLabel = '程老师办公桌';
+  cfg.storyPen = false;
+  cfg.missionLabels = {
+    blackboard: '工具 · 粉笔盒引鬼',
+    note: '任务 · 程老师值日表'
+  };
+  cfg.lockers = { x: 11.2, z: 3.2, rotY: -0.25 };
+  cfg.lockerStep = { x: 9.9, z: 3.2, w: 1.2, h: 0.85, d: 0.9 };
   cfg.blackboard = { x: 0, z: -8.8, y: 1.85, w: 4.4, h: 1.25 };
-  cfg.bookshelf = { x: -11.5, z: -4.5, rotY: 0.2 };
-  cfg.chainTrapSpot = { x: -7.5, z: -6.2, r: 0.9 };
-  cfg.trashCan = { x: -11.5, z: 3 };
-  cfg.plant = { x: 11.5, z: -1 };
-  cfg.charger = { x: 0, z: 18 };
-  cfg.fishTank = { x: -1, z: 17.5 };
-  cfg.crateTarget = { x: -6.8, z: 4, r: 1.1 };
+  cfg.bookshelf = { x: -4.6, z: -5.6, rotY: 0.25 };
+  cfg.chainTrapSpot = { x: -3.6, z: -4.4, r: 0.9 };
+  cfg.trashCan = { x: -7.2, z: -6.8 };
+  cfg.plant = { x: 7.2, z: -6.8 };
+  cfg.charger = { x: -4.8, z: 16.8 };
+  cfg.fishTank = { x: 4.8, z: 16.4 };
+  cfg.crateTarget = null;
   cfg.pillars = [
     { x: -5, z: -2.5, r: 0.55 },
     { x: 5, z: -2.5, r: 0.55 },
@@ -48,27 +54,23 @@ function detentionConfig() {
     { x: -4, z: 15.5, rotY: 0 },
     { x: 4, z: 15.5, rotY: 0 }
   ];
-  cfg.crates = [
-    { x: -9, z: -0.5 },
-    { x: 9, z: -0.5 }
-  ];
+  cfg.crates = [];
   cfg.clutter = [
-    { x: -9, z: 2.5 },
-    { x: 9, z: 2.5 },
-    { x: -2, z: 8.5 },
-    { x: 2, z: 8.5 }
+    { x: -5.2, z: 2.6 },
+    { x: 5.2, z: 2.6 },
+    { x: -2.4, z: 8.2 },
+    { x: 2.4, z: 8.2 }
   ];
   cfg.routeClutter = [
-    { x: -7, z: 4.2, rot: 0.1 },
-    { x: 7, z: 4.2, rot: 0.2 }
+    { x: -5.4, z: 6.2, rot: 0.18 },
+    { x: 5.4, z: 6.2, rot: -0.15 },
+    { x: -3.6, z: 8.6, rot: 0.05 },
+    { x: 3.6, z: 8.6, rot: -0.08 }
   ];
-  cfg.palletStack = { x: -11, z: -2.4, tiers: [0.5, 1.1, 1.7] };
-  cfg.wallLedges = [
-    { x: -12, z: -1, y: 1.6 },
-    { x: -12, z: -1, y: 2.8 }
-  ];
-  cfg.slideRamp = { x: -12, z: 1.5, length: 4, tilt: -0.4 };
-  cfg.rope = { from: { x: -5, z: -2.5 }, to: { x: 5, z: -2.5 }, y: 3.0 };
+  cfg.palletStack = { x: 0, z: 0, tiers: [] };
+  cfg.wallLedges = [];
+  cfg.slideRamp = { x: 0, z: 0, length: 0, tilt: 0 };
+  cfg.rope = { enabled: false, from: { x: 0, z: 0 }, to: { x: 0, z: 0 }, y: 0 };
   cfg.ladders = [
     { x: -4, z: 9, topY: 3.2 },
     { x: 4, z: 9, topY: 3.2 }

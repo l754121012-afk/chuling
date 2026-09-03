@@ -122,6 +122,7 @@ export class GhostSystem {
     this._wishActive = false;
     this._wishPhase = 'idle';
     this._wishUntil = 0;
+    this._wishForceAt = 0;
     this._wishKnockAt = 0;
     this._wishLeaveAt = 0;
     this._wishAckUntil = 0;
@@ -225,9 +226,10 @@ export class GhostSystem {
     this._lookBackCooldown = rand(14, 22);
     this._lookBackActive = false;
     this._lookBackUntil = 0;
-    this._wishNextAt = nowSec() + rand(6, 9);
+    this._wishNextAt = nowSec() + rand(9, 12);
     this._wishActive = false;
     this._wishPhase = 'idle';
+    this._wishForceAt = nowSec() + rand(13, 16);
     this._wishAckUntil = 0;
     this._wishAckPos = null;
     this._minionNextAt = nowSec() + GAME_CONFIG.minionWaveFirstAt;
@@ -1037,34 +1039,54 @@ export class GhostSystem {
         stage.id === 'calm' ||
         stage.id === 'annoyed' ||
         (stage.id === 'angry' && !this._lastSeen && !this._lastNoise);
+      const forceWish = nowSec() >= this._wishForceAt;
       const distPlayer = distance2D(
         this.pawn.body.position.x,
         this.pawn.body.position.z,
         playerPos.x,
         playerPos.z
       );
-      if (busy || !stageOk || distPlayer < 4.5) {
-        this._wishNextAt = nowSec() + 5;
+      if (busy || !stageOk) {
+        this._wishNextAt = nowSec() + (forceWish ? 1.5 : 5);
+        return;
+      }
+      if (!forceWish && distPlayer < 4.5) {
+        this._wishNextAt = nowSec() + 3;
         return;
       }
       this._wishActive = true;
-      this._wishUntil = nowSec() + 7;
+      this._wishUntil = nowSec() + 9;
       this.events.emit('speech', {
         text: '……值日台的笔，还是去摆一下吧。',
         ms: 2400,
         name: '值日鬼'
       });
+      const room = this.scene.L.classroom;
+      const landX = clamp(pen.pos.x - 2.4, room.minX + 1, room.maxX - 1);
+      const landZ = clamp(pen.pos.z + 1.8, room.minZ + 1, room.maxZ - 1);
+      this._placeGhost(landX, 1.2, landZ);
+      this.scene.spawnParticles({ x: landX, y: 1, z: landZ }, '#d9a94e');
+      this.events.emit('toast', { text: '值日鬼悄悄飘向值日台……', ms: 1600 });
       return;
     }
     if (busy || nowSec() >= this._wishUntil) {
       this._wishActive = false;
-      this._wishNextAt = nowSec() + rand(18, 28);
+      this._wishNextAt = nowSec() + (this.game.ghostWishKnocked ? rand(30, 50) : rand(8, 12));
+      if (this.game.ghostWishKnocked) this._wishForceAt = nowSec() + 60;
       return;
     }
     const b = this.pawn.body.position;
     const d = distance2D(b.x, b.z, pen.pos.x, pen.pos.z);
     if (d > 0.9) {
-      this._goTo(pen.pos, Math.min(GHOST_CONFIG.stages[1].speed, 1.45), dt);
+      const room = this.scene.L.classroom;
+      const doorX = (room.minX + room.maxX) / 2;
+      let wishTarget = pen.pos;
+      if (b.z > room.maxZ + 0.5) {
+        wishTarget = { x: doorX, z: room.maxZ + 0.8 };
+      } else if (b.z > room.maxZ - 0.8) {
+        wishTarget = { x: doorX, z: room.maxZ - 1.2 };
+      }
+      this._goTo(wishTarget, Math.min(GHOST_CONFIG.stages[1].speed, 1.45), dt);
       return;
     }
     this.pawn.body.velocity.set(0, 0, 0);
@@ -1078,6 +1100,7 @@ export class GhostSystem {
     if (nowSec() >= this._wishUntil - 0.4) {
       this._wishActive = false;
       this._wishNextAt = nowSec() + rand(30, 50);
+      if (this.game.ghostWishKnocked) this._wishForceAt = nowSec() + 60;
       this._waypoint = this._randomPlayablePoint();
     }
   }

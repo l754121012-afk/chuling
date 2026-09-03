@@ -891,6 +891,36 @@ body.playing canvas {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+#phase-flag {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(60px, calc(env(safe-area-inset-right) + 46px));
+  max-width: 210px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(24, 27, 33, 0.78);
+  color: #ffe9b8;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid #6a7480;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+#phase-flag.urgent {
+  color: #fff2d8;
+  border-color: #e63946;
+  background: rgba(120, 12, 28, 0.9);
+  animation: warnPulse 0.8s ease-in-out infinite;
+}
+
+#phase-flag.stage {
+  border-color: #4cc9f0;
+  color: #d9f4ff;
+}
+
 #mute-btn {
   position: absolute;
   top: max(14px, env(safe-area-inset-top));
@@ -1319,6 +1349,12 @@ body.playing canvas {
   #toast {
     top: 224px;
     max-width: calc(100vw - 24px);
+  }
+
+  #phase-flag {
+    top: max(104px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    max-width: 178px;
   }
 
   #inventory {

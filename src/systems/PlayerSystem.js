@@ -718,11 +718,29 @@ export class PlayerSystem {
       }
     }
 
-    if (this.game.phase === 'escape' && this.refs.exit) {
-      const d = distance2D(pos.x, pos.z, this.refs.exit.pos.x, this.refs.exit.pos.z);
-      if (d < GAME_CONFIG.interactRadius && 3 > bestPriority) {
+    const exit = this.refs.exit;
+    if (exit) {
+      const d = distance2D(pos.x, pos.z, exit.pos.x, exit.pos.z);
+      const exitUsable =
+        this.game.phase === 'escape' ||
+        this.game.detentionComplete ||
+        (this.game.runMode && this.game.runStage === 1 && this.game.ghostWishHelped);
+      if (d < GAME_CONFIG.interactRadius && exitUsable && !exit.locked && 3 > bestPriority) {
+        const runLabel = this.game.runMode && this.game.runStage === 1
+          ? '去第二幕：禁闭室'
+          : this.game.runMode && this.game.runStage === 2
+            ? '离开禁闭室'
+            : '逃出校园';
         bestPriority = 3;
-        best = { type: 'exit', label: '逃出校园', pos: { x: this.refs.exit.pos.x, y: 2.6, z: this.refs.exit.pos.z } };
+        best = { type: 'exit', label: runLabel, pos: { x: exit.pos.x, y: 2.6, z: exit.pos.z } };
+      } else if (d < 3.2 && exit.locked && !exitUsable && 0.8 > bestPriority) {
+        const missing = this.game.runMode && this.game.runStage === 1
+          ? '出口锁着：先替小满把笔摆正'
+          : this.game.detentionMode
+            ? '出口锁着：先读程老师值日表'
+            : '出口还没开';
+        bestPriority = 0.8;
+        best = { type: 'exitLocked', label: missing, pos: { x: exit.pos.x, y: 2.6, z: exit.pos.z } };
       }
     }
 
@@ -741,15 +759,22 @@ export class PlayerSystem {
     }
 
     const wishPen = this.refs.wishPen;
-    if (wishPen && wishPen.state === 'knocked' && !this.game.ghostWishHelped) {
+    if (wishPen && !this.game.ghostWishHelped) {
       const d = distance2D(pos.x, pos.z, wishPen.pos.x, wishPen.pos.z);
       const gp = this.ghost?.getPos?.();
       const ghostFar = gp ? distance2D(gp.x, gp.z, wishPen.pos.x, wishPen.pos.z) > 3.6 : true;
-      if (d < GAME_CONFIG.interactRadius + 0.3 && ghostFar && 4.5 > bestPriority) {
+      if (wishPen.state === 'knocked' && d < GAME_CONFIG.interactRadius + 0.3 && 4.5 > bestPriority) {
         bestPriority = 4.5;
         best = {
-          type: 'wishHelp',
-          label: '替它把笔摆回原位',
+          type: ghostFar ? 'wishHelp' : 'wishWait',
+          label: ghostFar ? '替它把笔摆回原位' : '它还没走远，先退开',
+          pos: { x: wishPen.pos.x, y: wishPen.neatY + 0.5, z: wishPen.pos.z }
+        };
+      } else if (!this.game.ghostWishKnocked && d < GAME_CONFIG.interactRadius + 1.1 && 3.4 > bestPriority) {
+        bestPriority = 3.4;
+        best = {
+          type: 'wishWait',
+          label: '任务笔先别碰：躲远等小满来',
           pos: { x: wishPen.pos.x, y: wishPen.neatY + 0.5, z: wishPen.pos.z }
         };
       }
@@ -816,7 +841,17 @@ export class PlayerSystem {
       }
     }
 
-    const ladder = this.refs.ladders?.[0];
+    let ladder = this.game.ladderClimbing ? this._ladder : null;
+    if (!ladder) {
+      let closestDist = 1.7;
+      for (const cand of this.refs.ladders || []) {
+        const d = distance2D(pos.x, pos.z, cand.x, cand.z);
+        if (d < closestDist) {
+          closestDist = d;
+          ladder = cand;
+        }
+      }
+    }
     if (ladder) {
       const dl = distance2D(pos.x, pos.z, ladder.x, ladder.z);
       if (this.game.ladderClimbing) {
@@ -826,7 +861,12 @@ export class PlayerSystem {
         }
       } else if (dl < 1.6 && pos.y < 1.2 && 2.7 > bestPriority) {
         bestPriority = 2.7;
-        best = { type: 'ladderGrab', label: '爬梯子（W/S 上下）', pos: { x: ladder.x, y: 0.8, z: ladder.z } };
+        best = {
+          type: 'ladderGrab',
+          ladder,
+          label: '爬梯子（W/S 上下）',
+          pos: { x: ladder.x, y: 0.8, z: ladder.z }
+        };
       }
     }
 
@@ -851,6 +891,8 @@ export class PlayerSystem {
       this.items.pickup(target.pickup);
     } else if (target.type === 'exit') {
       this.events.emit('game.win');
+    } else if (target.type === 'exitLocked') {
+      this.events.emit('toast', { text: target.label.replace('出口锁着：', ''), ms: 1800 });
     } else if (target.type === 'clue') {
       if (this.game.detentionMode && target.clue.id === 'blackboard') {
         this._detentionChalk(target.clue.pos);
@@ -858,13 +900,20 @@ export class PlayerSystem {
         this.clues.readClue(target.clue.id);
         if (this.game.detentionMode && target.clue.id === 'note') {
           this.events.emit('toast', {
-            text: '值日表：08:10 粉笔声会把它引去保健室；趁空档去办公室拿钥匙。',
-            ms: 2600
+            text: '值日表已归档：出口门禁亮了，去走廊尽头离开！',
+            ms: 2400
           });
         }
       }
     } else if (target.type === 'wishHelp') {
       this._helpGhostWish();
+    } else if (target.type === 'wishWait') {
+      this.events.emit('toast', {
+        text: target.label === '它还没走远，先退开'
+          ? '值日鬼还守在值日台旁边，先退开等它走远。'
+          : '任务笔还没被碰倒。站远一点，小满会在附近没人时过来碰它。',
+        ms: 2000
+      });
     } else if (target.type === 'ropeGrab') {
       const rope = this.refs.rope;
       const startD = distance2D(
@@ -908,7 +957,7 @@ export class PlayerSystem {
       this.pawn.body.velocity.set(0, 0, 0);
       this.events.emit('toast', { text: '松开绳索', ms: 1000 });
     } else if (target.type === 'ladderGrab') {
-      const ladder = this.refs.ladders?.[0];
+      const ladder = target.ladder || this.refs.ladders?.[0];
       this.game.ladderClimbing = true;
       this._ladder = ladder;
       this.pawn.body.type = CANNON.Body.KINEMATIC;
@@ -1001,6 +1050,13 @@ export class PlayerSystem {
     this.audio?.play('paper');
     this.events.emit('toast', { text: '你替它把笔摆回了原位。', ms: 1800 });
     this.ghost?.acknowledgeWish?.(pen.pos);
+    if (this.game.runMode && this.game.runStage === 1) {
+      this.scene.openExit();
+      this.events.emit('act.card', {
+        title: '第一幕完成 · 笔摆正了',
+        line: '小满记住了这份人情。出口已经亮起，去第二幕。'
+      });
+    }
   }
 
   _detentionChalk(pos) {

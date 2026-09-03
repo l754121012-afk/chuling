@@ -54,6 +54,7 @@ export class SchoolScene {
       pillars: [],
       clutter: [],
       desks: [],
+      beacons: [],
       platform: null,
       itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
@@ -401,37 +402,39 @@ export class SchoolScene {
     }
 
     const crateTarget = this.L.crateTarget;
-    const targetMarker = new THREE.Group();
-    const side = crateTarget.r * 2;
-    const barMat = new THREE.MeshBasicMaterial({
-      color: 0xd8c39a,
-      transparent: true,
-      opacity: 0.85,
-      depthWrite: false
-    });
-    const barW = 0.14;
-    const barH = 0.02;
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(side, barH, barW), barMat);
-    const barTop = bar.clone();
-    barTop.position.z = side / 2 - barW / 2;
-    const barBottom = bar.clone();
-    barBottom.position.z = -side / 2 + barW / 2;
-    const barLeft = bar.clone();
-    barLeft.rotation.y = Math.PI / 2;
-    barLeft.position.x = -side / 2 + barW / 2;
-    const barRight = bar.clone();
-    barRight.rotation.y = Math.PI / 2;
-    barRight.position.x = side / 2 - barW / 2;
-    targetMarker.add(barTop, barBottom, barLeft, barRight);
-    targetMarker.position.set(crateTarget.x, 0.03, crateTarget.z);
-    this.group.add(targetMarker);
-    refs.crateTarget = { x: crateTarget.x, z: crateTarget.z, r: crateTarget.r, mesh: targetMarker };
+    if (crateTarget) {
+      const targetMarker = new THREE.Group();
+      const side = crateTarget.r * 2;
+      const barMat = new THREE.MeshBasicMaterial({
+        color: 0xd8c39a,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false
+      });
+      const barW = 0.14;
+      const barH = 0.02;
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(side, barH, barW), barMat);
+      const barTop = bar.clone();
+      barTop.position.z = side / 2 - barW / 2;
+      const barBottom = bar.clone();
+      barBottom.position.z = -side / 2 + barW / 2;
+      const barLeft = bar.clone();
+      barLeft.rotation.y = Math.PI / 2;
+      barLeft.position.x = -side / 2 + barW / 2;
+      const barRight = bar.clone();
+      barRight.rotation.y = Math.PI / 2;
+      barRight.position.x = side / 2 - barW / 2;
+      targetMarker.add(barTop, barBottom, barLeft, barRight);
+      targetMarker.position.set(crateTarget.x, 0.03, crateTarget.z);
+      this.group.add(targetMarker);
+      refs.crateTarget = { x: crateTarget.x, z: crateTarget.z, r: crateTarget.r, mesh: targetMarker };
+    }
   }
 
   _addVerticalProps(refs) {
     const stack = this.L.palletStack;
     let baseY = 0;
-    for (const h of stack.tiers) {
+    for (const h of stack.tiers || []) {
       const size = 1.1;
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(size, h, size),
@@ -467,39 +470,43 @@ export class SchoolScene {
     }
 
     const ramp = this.L.slideRamp;
-    const rampMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1.2, 0.15, ramp.length),
-      material('#a9744f', 0.85)
-    );
-    rampMesh.position.set(ramp.x, 2.0, ramp.z);
-    rampMesh.rotation.x = ramp.tilt;
-    this.group.add(rampMesh);
-    const rampBody = makeBody({
-      shape: new CANNON.Box(v3(0.6, 0.075, ramp.length / 2)),
-      position: { x: ramp.x, y: 2.0, z: ramp.z },
-      group: GROUPS.PROP,
-      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
-    });
-    rampBody.quaternion.setFromEuler(ramp.tilt, 0, 0);
-    this.physics.add(rampBody);
+    if (ramp.length > 0.01) {
+      const rampMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 0.15, ramp.length),
+        material('#a9744f', 0.85)
+      );
+      rampMesh.position.set(ramp.x, 2.0, ramp.z);
+      rampMesh.rotation.x = ramp.tilt;
+      this.group.add(rampMesh);
+      const rampBody = makeBody({
+        shape: new CANNON.Box(v3(0.6, 0.075, ramp.length / 2)),
+        position: { x: ramp.x, y: 2.0, z: ramp.z },
+        group: GROUPS.PROP,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      rampBody.quaternion.setFromEuler(ramp.tilt, 0, 0);
+      this.physics.add(rampBody);
+    }
 
     const rope = this.L.rope;
-    const rdx = rope.to.x - rope.from.x;
-    const rdz = rope.to.z - rope.from.z;
-    const ropeLen = Math.hypot(rdx, rdz);
-    const ropeMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.03, 0.03, ropeLen, 8),
-      material('#6b4f2f', 0.7)
-    );
-    ropeMesh.position.set(
-      (rope.from.x + rope.to.x) / 2,
-      rope.y,
-      (rope.from.z + rope.to.z) / 2
-    );
-    const ropeDir = new THREE.Vector3(rdx, 0, rdz).normalize();
-    ropeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ropeDir);
-    this.group.add(ropeMesh);
-    refs.rope = { from: { ...rope.from }, to: { ...rope.to }, y: rope.y };
+    if (rope && rope.enabled !== false) {
+      const rdx = rope.to.x - rope.from.x;
+      const rdz = rope.to.z - rope.from.z;
+      const ropeLen = Math.hypot(rdx, rdz);
+      const ropeMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.03, ropeLen, 8),
+        material('#6b4f2f', 0.7)
+      );
+      ropeMesh.position.set(
+        (rope.from.x + rope.to.x) / 2,
+        rope.y,
+        (rope.from.z + rope.to.z) / 2
+      );
+      const ropeDir = new THREE.Vector3(rdx, 0, rdz).normalize();
+      ropeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ropeDir);
+      this.group.add(ropeMesh);
+      refs.rope = { from: { ...rope.from }, to: { ...rope.to }, y: rope.y };
+    }
 
     refs.ladders = [];
     for (const ladder of this.L.ladders) {
@@ -708,6 +715,16 @@ export class SchoolScene {
       body: boardBody,
       pos: { x: board.x, z: board.z }
     });
+    const boardLabel = this.L.missionLabels?.blackboard;
+    if (boardLabel) {
+      refs.clues[refs.clues.length - 1].beacon = this._addBeacon(refs, {
+        x: board.x,
+        y: board.y,
+        z: board.z,
+        text: boardLabel,
+        color: '#f4a261'
+      });
+    }
 
     const note = this.L.note;
     const noteMesh = makePropMesh('note');
@@ -728,33 +745,61 @@ export class SchoolScene {
       body: noteBody,
       pos: { x: note.x, z: note.z }
     });
+    const noteLabel = this.L.missionLabels?.note;
+    if (noteLabel) {
+      refs.clues[refs.clues.length - 1].beacon = this._addBeacon(refs, {
+        x: note.x,
+        y: note.y,
+        z: note.z,
+        text: noteLabel,
+        color: '#ffd166'
+      });
+    }
 
-    const wishPen = makeItemMesh('pen');
-    wishPen.scale.setScalar(3);
-    wishPen.position.set(note.x + 0.65, note.y + 0.12, note.z - 0.2);
-    wishPen.rotation.set(0.15, -0.5, 0.15);
-    this.group.add(wishPen);
-    refs.wishPen = {
-      mesh: wishPen,
-      pos: {
-        x: wishPen.position.x,
-        y: wishPen.position.y,
-        z: wishPen.position.z
-      },
-      neatX: wishPen.position.x,
-      neatY: wishPen.position.y,
-      neatZ: wishPen.position.z,
-      state: 'neat'
-    };
+    const wishPen = this.L.storyPen === false ? null : makeItemMesh('pen');
+    if (wishPen) {
+      wishPen.scale.setScalar(3.4);
+      wishPen.position.set(note.x + 0.65, note.y + 0.12, note.z - 0.2);
+      wishPen.rotation.set(0.15, -0.5, 0.15);
+      wishPen.traverse(child => {
+        if (child.isMesh) {
+          child.material = child.material.clone();
+          child.material.color.set('#ffd166');
+        }
+      });
+      this.group.add(wishPen);
+      refs.wishPen = {
+        mesh: wishPen,
+        pos: {
+          x: wishPen.position.x,
+          y: wishPen.position.y,
+          z: wishPen.position.z
+        },
+        neatX: wishPen.position.x,
+        neatY: wishPen.position.y,
+        neatZ: wishPen.position.z,
+        state: 'neat',
+        marker: this._addBeacon(refs, {
+          x: wishPen.position.x,
+          y: wishPen.position.y,
+          z: wishPen.position.z,
+          text: '任务笔 · 小满的圆珠笔',
+          color: '#ffd166'
+        })
+      };
+    }
+    const platformText = this.L.platformLabel || '值日台';
     const podiumLabel = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        map: textTexture('值日台', {
+        map: textTexture(platformText, {
           bg: '#4a3b12',
           fg: '#ffd166',
-          font: 'bold 60px "Microsoft YaHei", sans-serif',
-          width: 256,
+          font: platformText.length > 4
+            ? 'bold 52px "Microsoft YaHei", sans-serif'
+            : 'bold 60px "Microsoft YaHei", sans-serif',
+          width: platformText.length > 4 ? 512 : 256,
           height: 96,
-          lineHeight: 72,
+          lineHeight: 58,
           pad: 8
         }),
         transparent: true,
@@ -762,8 +807,56 @@ export class SchoolScene {
       })
     );
     podiumLabel.position.set(note.x + 0.7, note.y + 1.25, note.z + 0.25);
-    podiumLabel.scale.set(1.6, 0.6, 1);
+    podiumLabel.scale.set(platformText.length > 4 ? 2.1 : 1.6, 0.6, 1);
     this.group.add(podiumLabel);
+  }
+
+  _addBeacon(refs, { x, y, z, text, color = '#ffd166' }) {
+    const group = new THREE.Group();
+    const ringMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.72, 0.88, 32), ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.08;
+    const beamMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.16
+    });
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.1, 8), beamMat);
+    beam.position.y = 1.1;
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture(text, {
+          bg: '#221a12',
+          fg: '#ffe9b8',
+          font: 'bold 42px "Microsoft YaHei", sans-serif',
+          width: 640,
+          height: 128,
+          lineHeight: 54,
+          pad: 10
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    sprite.position.y = 2.5;
+    sprite.scale.set(2.25, 0.62, 1);
+    group.add(ring, beam, sprite);
+    group.position.set(x, y, z);
+    this.group.add(group);
+    refs.beacons.push({ group, ring, beam, sprite });
+    return group;
+  }
+
+  markClueRead(id) {
+    const clue = this.refs?.clues?.find(c => c.id === id);
+    if (clue?.beacon) clue.beacon.visible = false;
   }
 
   _addExit(refs) {
@@ -1172,6 +1265,26 @@ export class SchoolScene {
         light.intensity = 0.12 + Math.random() * 0.45;
       } else {
         light.intensity = 0.3;
+      }
+    }
+
+    const beaconT = nowSec();
+    for (const b of this.refs?.beacons || []) {
+      if (!b.group.visible) continue;
+      const pulse = 1 + Math.sin(beaconT * 3.2) * 0.07;
+      b.ring.scale.setScalar(pulse);
+      b.beam.material.opacity = 0.12 + (Math.sin(beaconT * 3.2) * 0.5 + 0.5) * 0.12;
+      b.sprite.material.opacity = 0.82 + Math.sin(beaconT * 2.4) * 0.18;
+    }
+    const storyPen = this.refs?.wishPen;
+    if (storyPen?.marker) {
+      storyPen.marker.visible = !game.ghostWishHelped;
+      if (storyPen.marker.visible) {
+        storyPen.marker.position.set(
+          storyPen.mesh.position.x,
+          storyPen.mesh.position.y,
+          storyPen.mesh.position.z
+        );
       }
     }
   }
