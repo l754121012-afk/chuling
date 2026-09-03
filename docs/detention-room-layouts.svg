@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1180" viewBox="0 0 1720 1180">
+  <style>
+    .bg{fill:#15161a;}
+    .panel{fill:#f7f1e2;stroke:#5a4d37;stroke-width:2;}
+    .h{font:bold 26px "Microsoft YaHei";fill:#2b2118;}
+    .t{font:16px "Microsoft YaHei";fill:#4b4134;}
+    .s{font:13px "Microsoft YaHei";fill:#4b4134;}
+    .gold{font:bold 18px "Microsoft YaHei";fill:#b7791f;}
+    .room{fill:#efe3cc;stroke:#8a6d3b;stroke-width:3;}
+    .wall{fill:#cfd3d8;stroke:#59616e;}
+  </style>
+  <rect class="bg" width="1720" height="1180"/>
+  <text x="40" y="48" font-size="32" font-family="Microsoft YaHei" font-weight="700" fill="#ffe9b8">禁闭区 · 俯视与玩家视角布置稿</text>
+  <text x="40" y="84" font-size="17" font-family="Microsoft YaHei" fill="#d8cbb4">先用禁闭区示范“同一空间两种读法”，确认后再逐房间铺开</text>
+
+  <!-- top view -->
+  <g>
+    <rect x="34" y="110" width="800" height="950" class="panel"/>
+    <text x="60" y="150" class="h">A · 俯视布置</text>
+    <rect x="100" y="210" width="650" height="760" class="room"/>
+
+    <!-- windows -->
+    <rect x="170" y="202" width="150" height="24" fill="#bfe3ea" stroke="#3f7fa6"/>
+    <rect x="520" y="202" width="150" height="24" fill="#bfe3ea" stroke="#3f7fa6"/>
+
+    <!-- blackboard -->
+    <rect x="120" y="300" width="250" height="110" fill="#5d6b5a" stroke="#2f3a30"/>
+    <text x="245" y="360" text-anchor="middle" font-size="15" font-family="Microsoft YaHei" fill="#eef2df">黑板/值日表</text>
+    <rect x="105" y="405" width="290" height="22" fill="#7b5a34"/>
+    <text x="250" y="421" text-anchor="middle" font-size="12" font-family="Microsoft YaHei" fill="#ffe9b8">粉笔盒</text>
+
+    <!-- mirror -->
+    <rect x="520" y="300" width="120" height="160" rx="8" fill="#bfe3ea" stroke="#8f6b35" stroke-width="8"/>
+    <text x="580" y="380" text-anchor="middle" font-size="15" font-family="Microsoft YaHei">值日镜</text>
+
+    <!-- center desk -->
+    <rect x="300" y="520" width="210" height="110" fill="#b56b4f" stroke="#7d3f2c" stroke-width="3"/>
+    <text x="405" y="580" text-anchor="middle" font-size="15" font-family="Microsoft YaHei" fill="#fff2df">禁闭桌</text>
+
+    <!-- phone -->
+    <rect x="690" y="570" width="40" height="100" fill="#4a5560"/>
+    <circle cx="710" cy="600" r="10" fill="#e63946"/>
+    <text x="735" y="615" font-size="14" font-family="Microsoft YaHei">旧电话</text>
+
+    <!-- bed -->
+    <rect x="160" y="650" width="180" height="70" fill="#8a6d3b" stroke="#57401f"/>
+    <text x="250" y="695" text-anchor="middle" font-size="14" font-family="Microsoft YaHei">可钻病床</text>
+
+    <!-- cabinet -->
+    <rect x="560" y="760" width="120" height="150" fill="#8a6d3b" stroke="#57401f"/>
+    <text x="620" y="840" text-anchor="middle" font-size="14" font-family="Microsoft YaHei">档案柜</text>
+
+    <!-- door -->
+    <rect x="330" y="962" width="100" height="18" fill="#fff" stroke="#59616e"/>
+    <text x="380" y="1005" text-anchor="middle" font-size="14" font-family="Microsoft YaHei">禁闭室门</text>
+
+    <!-- ghost route -->
+    <path d="M380 450 C470 470 600 480 650 560 C700 650 620 740 540 780 C450 820 320 780 260 700" fill="none" stroke="#9b5de5" stroke-width="5" stroke-dasharray="10 8"/>
+    <text x="660" y="860" font-size="14" font-family="Microsoft YaHei" fill="#6a4e9b">程老师巡视线</text>
+
+    <text x="115" y="940" font-size="14" font-family="Microsoft YaHei">可钻/可翻：桌底、病床底、黑板后、档案柜顶</text>
+  </g>
+
+  <!-- player view -->
+  <g>
+    <rect x="850" y="110" width="840" height="950" class="panel"/>
+    <text x="880" y="150" class="h">B · 玩家视角（进门一眼）</text>
+
+    <!-- perspective walls -->
+    <polygon points="1040,420 1450,420 1560,950 930,950" fill="#ddd4c2" stroke="#5a4d37" stroke-width="3"/>
+    <polygon points="1040,420 1450,420 1450,950 1040,950" fill="#d4cbb9" stroke="#5a4d37"/>
+    <line x1="1040" y1="420" x2="1040" y2="950" stroke="#5a4d37" stroke-width="4"/>
+    <line x1="1450" y1="420" x2="1450" y2="950" stroke="#5a4d37" stroke-width="4"/>
+
+    <!-- ceiling back line -->
+    <line x1="1040" y1="420" x2="1450" y2="420" stroke="#5a4d37" stroke-width="5"/>
+    <line x1="930" y1="950" x2="1560" y2="950" stroke="#5a4d37" stroke-width="6"/>
+
+    <!-- blackboard back -->
+    <rect x="1130" y="470" width="290" height="170" fill="#5d6b5a" stroke="#2f3a30" stroke-width="4"/>
+    <text x="1275" y="555" text-anchor="middle" font-size="16" font-family="Microsoft YaHei" fill="#eef2df">值日表</text>
+    <rect x="1130" y="640" width="290" height="26" fill="#7b5a34"/>
+    <text x="1275" y="660" text-anchor="middle" font-size="13" font-family="Microsoft YaHei" fill="#ffe9b8">粉笔盒</text>
+
+    <!-- center desk -->
+    <polygon points="1150,710 1400,710 1440,860 1110,860" fill="#b56b4f" stroke="#7d3f2c" stroke-width="3"/>
+    <text x="1275" y="810" text-anchor="middle" font-size="15" font-family="Microsoft YaHei" fill="#fff2df">禁闭桌</text>
+
+    <!-- mirror -->
+    <rect x="860" y="520" width="130" height="220" rx="8" fill="#bfe3ea" stroke="#8f6b35" stroke-width="9"/>
+    <text x="925" y="640" text-anchor="middle" font-size="15" font-family="Microsoft YaHei">值日镜</text>
+
+    <!-- cabinet -->
+    <rect x="1500" y="610" width="80" height="220" fill="#8a6d3b" stroke="#57401f" stroke-width="3"/>
+    <text x="1540" y="710" text-anchor="middle" font-size="13" font-family="Microsoft YaHei">档案柜</text>
+
+    <!-- phone -->
+    <rect x="1540" y="860" width="60" height="90" fill="#4a5560"/>
+    <text x="1600" y="910" font-size="12" font-family="Microsoft YaHei">电话</text>
+
+    <text x="910" y="1020" font-size="14" font-family="Microsoft YaHei">进门信息量：粉笔盒、值日镜、禁闭桌、档案柜、旧电话同屏可见；黑板后与病床底属于第二眼路线</text>
+  </g>
+
+  <text x="40" y="1100" font-size="15" font-family="Microsoft YaHei" fill="#d8cbb4">下一步：把同一方法复制到其余 13 个空间，并给每个“主视角信息密度”设验收线：一眼能看到 3-5 个可猜可互动的东西，不是空房。</text>
+</svg>
