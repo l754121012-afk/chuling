@@ -47,6 +47,22 @@ export class UISystem {
       shopBtn: document.getElementById('shop-btn'),
       relicBtn: document.getElementById('relic-btn'),
       economyBalance: document.getElementById('economy-balance'),
+      debtLine: document.getElementById('debt-line'),
+      debtPaidWin: document.getElementById('debt-paid-win'),
+      debtPaidLose: document.getElementById('debt-paid-lose'),
+      gachaBtn: document.getElementById('gacha-btn'),
+      gachaModal: document.getElementById('gacha-modal'),
+      gachaClose: document.querySelector('.gacha-close'),
+      gachaBalance: document.getElementById('gacha-balance'),
+      gachaPullBtn: document.getElementById('gacha-pull-btn'),
+      gachaResult: document.getElementById('gacha-result'),
+      wheelModal: document.getElementById('wheel-modal'),
+      wheelClose: document.querySelector('.wheel-close'),
+      wheelDisc: document.getElementById('wheel-disc'),
+      wheelSpinBtn: document.getElementById('wheel-spin-btn'),
+      wheelResult: document.getElementById('wheel-result'),
+      wheelBtnWin: document.getElementById('wheel-btn-win'),
+      wheelBtnLose: document.getElementById('wheel-btn-lose'),
       voteModal: document.getElementById('vote-modal'),
       votePrompt: document.getElementById('vote-prompt'),
       voteOptions: document.getElementById('vote-options'),
@@ -111,6 +127,13 @@ export class UISystem {
     this.el.backpackClose?.addEventListener('click', () => this.toggleBackpack(false));
     this.el.shopBtn?.addEventListener('click', () => this.openShop('points'));
     this.el.relicBtn?.addEventListener('click', () => this.openShop('relics'));
+    this.el.gachaBtn?.addEventListener('click', () => this.openGacha());
+    this.el.gachaClose?.addEventListener('click', () => this.closeGacha());
+    this.el.gachaPullBtn?.addEventListener('click', () => this.pullGacha());
+    this.el.wheelBtnWin?.addEventListener('click', () => this.openWheel());
+    this.el.wheelBtnLose?.addEventListener('click', () => this.openWheel());
+    this.el.wheelClose?.addEventListener('click', () => this.closeWheel());
+    this.el.wheelSpinBtn?.addEventListener('click', () => this.spinWheel());
     this.el.shopClose?.addEventListener('click', () => this.closeShop());
     this.el.mute.addEventListener('click', () => {
       this.el.mute.classList.toggle('muted');
@@ -199,6 +222,62 @@ export class UISystem {
     const open = force ?? this.el.backpackModal.classList.contains('hidden');
     this.el.backpackModal.classList.toggle('hidden', !open);
     if (open) this.renderBackpack();
+  }
+
+  openGacha() {
+    this.el.gachaModal?.classList.remove('hidden');
+    this.renderGacha();
+  }
+
+  closeGacha() {
+    this.el.gachaModal?.classList.add('hidden');
+  }
+
+  renderGacha() {
+    if (!this.el.gachaBalance) return;
+    this.el.gachaBalance.textContent = `👻 灵异纪念品：${this.economy.relics}`;
+    this.el.gachaResult.textContent = '';
+  }
+
+  pullGacha() {
+    const result = this.economy.gachaRelic();
+    if (!result) {
+      this.el.gachaResult.textContent = '纪念品不够：先去多坑几只鬼。';
+      return;
+    }
+    this.renderGacha();
+    this.el.gachaResult.textContent = `扭蛋机吐出：${result.name}`;
+    this.renderEconomyBalance();
+  }
+
+  openWheel() {
+    if (!this.el.wheelModal) return;
+    this.el.wheelModal.classList.remove('hidden');
+    this._wheelUsed = this._wheelUsed || false;
+    if (this.el.wheelDisc) {
+      this.el.wheelDisc.style.background =
+        'conic-gradient(#ffd166 0 60deg,#ff6b6b 60deg 120deg,#8ef0c8 120deg 180deg,#b48cff 180deg 240deg,#ff9f45 240deg 300deg,#5ad1ff 300deg 360deg)';
+    }
+    if (this.el.wheelSpinBtn) this.el.wheelSpinBtn.disabled = this._wheelUsed;
+    if (this.el.wheelResult) {
+      this.el.wheelResult.textContent = this._wheelUsed
+        ? '免费机会已经用过了。'
+        : '每次委托结算后有一次免费转盘机会。';
+    }
+  }
+
+  closeWheel() {
+    this.el.wheelModal?.classList.add('hidden');
+  }
+
+  spinWheel() {
+    if (this._wheelUsed) return;
+    this._wheelUsed = true;
+    if (this.el.wheelSpinBtn) this.el.wheelSpinBtn.disabled = true;
+    const result = this.economy.wheelSpin();
+    this.el.wheelResult.textContent = `转出：${result.label}，+${result.reward.toLocaleString()} 金币` +
+      (result.debtPaid > 0 ? `，自动还债 ${result.debtPaid.toLocaleString()}` : '');
+    this.renderEconomyBalance();
   }
 
   renderBackpack() {
@@ -302,7 +381,13 @@ export class UISystem {
 
   renderEconomyBalance() {
     if (!this.el.economyBalance) return;
-    this.el.economyBalance.textContent = `🪙 ${this.economy.coins} · 🛒 ${this.economy.points} · 👻 ${this.economy.relics}`;
+    this.el.economyBalance.textContent =
+      `🪙 ${this.economy.coins} · 🛒 ${this.economy.points} · 👻 ${this.economy.relics}`;
+    if (this.el.debtLine) {
+      this.el.debtLine.textContent = this.economy.debt > 0
+        ? `催债单：还欠 ${this.economy.debt.toLocaleString()} 円`
+        : '催债单：还清了！（主管：我不信）';
+    }
   }
 
   sync(game) {
@@ -562,7 +647,13 @@ export class UISystem {
 
   renderSettlement(rowsEl, totalEl, lineEl, settlement) {
     const ratingEl = rowsEl === this.el.settlementRows ? this.el.settlementRating : this.el.loseRating;
+    const debtPaidEl = rowsEl === this.el.settlementRows ? this.el.debtPaidWin : this.el.debtPaidLose;
     if (ratingEl) ratingEl.textContent = `节目效果评分：${settlement.rating} · ${settlement.title}`;
+    if (debtPaidEl) {
+      debtPaidEl.textContent = this.economy.debt > 0
+        ? `已还债 ${settlement.debtPaid || 0}，剩余欠款 ${this.economy.debt.toLocaleString()}`
+        : `欠款已还清！`;
+    }
     rowsEl.innerHTML = '';
     if (settlement.ghostReport) {
       const ghostBlock = document.createElement('div');

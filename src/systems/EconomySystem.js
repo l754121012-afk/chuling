@@ -47,6 +47,7 @@ export class EconomySystem {
           coins: Math.max(0, raw.coins || 0),
           points: Math.max(0, raw.points),
           relics: Math.max(0, raw.relics || 0),
+          debt: Math.max(0, raw.debt || 8888),
           unlocks: raw.unlocks || {},
           ghost: {
             encounters: Math.max(0, ghost.encounters || 0),
@@ -65,6 +66,7 @@ export class EconomySystem {
       coins: 0,
       points: 0,
       relics: 0,
+      debt: 8888,
       unlocks: {},
       ghost: { encounters: 0, seeds: [], lastLine: '', lastScore: 0, helpedCount: 0, leftCount: 0 }
     };
@@ -135,11 +137,70 @@ export class EconomySystem {
     chance = Math.min(0.95, chance);
     const guaranteed = settlement.rating === 'S' && game.finisherDone;
     const relics = guaranteed ? 1 : Math.random() < chance ? 1 : 0;
-    this.state.coins += Math.max(0, Math.floor(settlement.total / 100));
+    const coins = Math.max(0, Math.floor(settlement.total / 100));
+    this._lastRunCoins = Math.max(100, coins);
+    this.state.coins += coins;
     this.state.points += points;
     this.state.relics += relics;
     this.save();
     return { points, relics };
+  }
+
+  payDebt(amount) {
+    const paid = Math.min(this.state.debt, Math.max(0, Math.floor(amount)));
+    this.state.coins = Math.max(0, this.state.coins - paid);
+    this.state.debt = Math.max(0, this.state.debt - paid);
+    if (paid > 0) this.save();
+    return paid;
+  }
+
+  wheelSpin() {
+    const table = [
+      { mult: 1, label: '原样拿走' },
+      { mult: 1.2, label: '工资 ×1.2' },
+      { mult: 1.5, label: '工资 ×1.5' },
+      { mult: 2, label: '工资 ×2' },
+      { mult: 3, label: '工资 ×3' },
+      { mult: 5, label: '老板发疯 ×5' }
+    ];
+    const pick = table[Math.floor(Math.random() * table.length)];
+    const base = this._lastRunCoins || 100;
+    const reward = Math.max(10, Math.round(base * pick.mult));
+    this.state.coins += reward;
+    const debtPaid = this.payDebt(this.state.coins);
+    this.save();
+    return { ...pick, reward, base, debtPaid };
+  }
+
+  gachaRelic() {
+    if (this.state.relics < 1) return null;
+    this.state.relics -= 1;
+    const pool = [
+      { type: 'points', amount: 1000, name: '积分 +1000' },
+      { type: 'coins', amount: 6000, name: '金币 +6000' },
+      { type: 'unlock', id: 'start_tape', name: '修正带补给' },
+      { type: 'unlock', id: 'start_crossbow', name: '玩具弩补给' },
+      { type: 'unlock', id: 'free_pass', name: '主管免责卡' },
+      { type: 'unlock', id: 'stamina_potion', name: '体力恢复药' },
+      { type: 'relic', amount: 1, name: '纪念品保底回赠' }
+    ];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick.type === 'points') {
+      this.state.points += pick.amount;
+    } else if (pick.type === 'coins') {
+      this.state.coins += pick.amount;
+    } else if (pick.type === 'unlock') {
+      if (this.state.unlocks[pick.id]) {
+        this.state.points += 500;
+        pick.name = `${pick.name}（已拥有→积分+500）`;
+      } else {
+        this.state.unlocks[pick.id] = true;
+      }
+    } else if (pick.type === 'relic') {
+      this.state.relics += 1;
+    }
+    this.save();
+    return pick;
   }
 
   shopPrice(id) {
@@ -194,6 +255,10 @@ export class EconomySystem {
 
   get coins() {
     return this.state.coins;
+  }
+
+  get debt() {
+    return this.state.debt;
   }
 
   get relics() {

@@ -1360,3 +1360,112 @@ body.playing canvas {
     grid-template-columns: 1fr;
   }
 }
+
+.debt-line,
+.debt-paid-line {
+  color: #ff6b6b !important;
+  font-weight: 700;
+}
+
+#wheel-btn-win,
+#wheel-btn-lose {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #e0a94e;
+  border-radius: 6px;
+  background: #6b4a1d;
+  color: #ffe9b8;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wheel-card {
+  text-align: center;
+}
+
+#wheel-visual {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 18px auto;
+}
+
+#wheel-disc {
+  margin: 0 auto;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 6px solid #f4d35e;
+  box-shadow: 0 0 22px rgba(244, 211, 94, 0.45);
+}
+
+#wheel-pointer {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 22px solid #e63946;
+}
+
+#wheel-spin-btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #f4a261;
+  color: #2b2118;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#wheel-result,
+#gacha-result {
+  margin-top: 12px;
+  min-height: 22px;
+  color: #ffe9b8;
+  line-height: 1.5;
+}
+
+#gacha-machine {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px dashed #b48cff;
+  border-radius: 8px;
+  background: rgba(180, 140, 255, 0.12);
+  color: #e6d8ff;
+}
+
+#gacha-pull-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #b48cff;
+  border-radius: 6px;
+  background: #4b3a6b;
+  color: #f1e8ff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.case-board {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid #d4c7ab;
+  border-radius: 6px;
+  background: rgba(255, 248, 230, 0.85);
+  text-align: left;
+  font-size: 12px;
+  color: #6a5250;
+}
+
+.case-board span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--red-dark);
+  font-weight: 700;
+}
+
+.case-board p {
+  margin: 3px 0;
+}

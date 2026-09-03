@@ -223,6 +223,7 @@ events.on('game.win', () => {
   const winSettlement = settlement.calculate(game);
   const winEcon = economy.award(game, winSettlement);
   winSettlement.ghostReport = economy.recordGhostEncounter(game, winSettlement);
+  winSettlement.debtPaid = economy.payDebt(economy.coins);
   winSettlement.rows.push(
     { label: '百元店积分', amount: winEcon.points, currency: 'points' },
     { label: '灵异纪念品', amount: winEcon.relics, currency: 'relic' }
@@ -242,6 +243,7 @@ events.on('game.lost', () => {
   const loseSettlement = settlement.calculate(game);
   const loseEcon = economy.award(game, loseSettlement);
   loseSettlement.ghostReport = economy.recordGhostEncounter(game, loseSettlement);
+  loseSettlement.debtPaid = economy.payDebt(economy.coins);
   loseSettlement.rows.push(
     { label: '百元店积分', amount: loseEcon.points, currency: 'points' },
     { label: '灵异纪念品', amount: loseEcon.relics, currency: 'relic' }
