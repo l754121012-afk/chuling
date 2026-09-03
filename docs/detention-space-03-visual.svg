@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1450" viewBox="0 0 1720 1450">
+  <style>
+    .bg{fill:#15161a;}
+    .panel{fill:#f7f1e2;stroke:#5a4d37;stroke-width:2;}
+    .h{font:bold 25px "Microsoft YaHei";fill:#2b2118;}
+    .t{font:15px "Microsoft YaHei";fill:#2b2118;}
+    .s{font:13px "Microsoft YaHei";fill:#4b4134;}
+    .gold{font:bold 18px "Microsoft YaHei";fill:#b7791f;}
+    .room{fill:#efe3cc;stroke:#8a6d3b;stroke-width:3;}
+    .move{fill:#b56b4f;stroke:#7d3f2c;}
+  </style>
+  <rect class="bg" width="1720" height="1450"/>
+  <text x="40" y="48" font-size="32" font-family="Microsoft YaHei" font-weight="700" fill="#ffe9b8">空间 03 · 禁闭隔间迷宫 · 三视图</text>
+  <text x="40" y="84" font-size="17" font-family="Microsoft YaHei" fill="#d8cbb4">用推拉挡板改变隔间方向：同一间房，三种路线，程老师会被声音/规则牵着走</text>
+
+  <!-- top -->
+  <g>
+    <rect x="34" y="110" width="620" height="600" class="panel"/>
+    <text x="60" y="150" class="h">A · 俯视</text>
+    <rect x="70" y="210" width="550" height="450" class="room"/>
+    <!-- grid cells -->
+    <g stroke="#7d5a33" stroke-width="3">
+      <line x1="70" y1="330" x2="620" y2="330"/><line x1="70" y1="450" x2="620" y2="450"/><line x1="70" y1="570" x2="620" y2="570"/>
+      <line x1="250" y1="210" x2="250" y2="660"/><line x1="430" y1="210" x2="430" y2="660"/>
+    </g>
+    <!-- openings -->
+    <g fill="#fff">
+      <rect x="70" y="290" width="20" height="45"/><rect x="235" y="500" width="20" height="45"/>
+      <rect x="425" y="330" width="20" height="45"/><rect x="130" y="560" width="20" height="45"/>
+    </g>
+    <!-- slide panels -->
+    <rect x="260" y="300" width="24" height="90" class="move"/>
+    <rect x="380" y="480" width="24" height="90" class="move"/>
+    <rect x="110" y="450" width="100" height="20" class="move"/>
+    <!-- high window -->
+    <rect x="450" y="220" width="100" height="20" fill="#bfe3ea" stroke="#3f7fa6"/>
+    <!-- table holes -->
+    <circle cx="180" cy="380" r="22" fill="#8a6d3b"/>
+    <circle cx="510" cy="380" r="22" fill="#8a6d3b"/>
+    <text x="335" y="270" text-anchor="middle" class="s">高窗可看全图</text>
+    <text x="335" y="635" text-anchor="middle" class="s">入口（保健区）</text>
+    <text x="620" y="430" text-anchor="middle" transform="rotate(90 620 430)" class="s">通往教师办公室后门</text>
+  </g>
+
+  <!-- player view -->
+  <g>
+    <rect x="670" y="110" width="1020" height="600" class="panel"/>
+    <text x="700" y="150" class="h">B · 玩家视角</text>
+    <polygon points="770,300 1040,300 1180,720 650,720" fill="#d9c7ad" stroke="#7d5a33"/>
+    <polygon points="1040,300 1250,300 1420,720 1180,720" fill="#e6d7bd" stroke="#7d5a33"/>
+    <line x1="1040" y1="300" x2="1180" y2="720" stroke="#7d5a33" stroke-width="5"/>
+    <rect x="820" y="360" width="180" height="300" fill="#c39a6b" stroke="#7d5a33" stroke-width="4"/>
+    <text x="910" y="530" text-anchor="middle" class="t" transform="rotate(90 910 530)">推拉隔板</text>
+    <rect x="1040" y="430" width="130" height="230" fill="#d6cba9" stroke="#7d5a33" stroke-width="4"/>
+    <text x="1105" y="560" text-anchor="middle" class="t" transform="rotate(90 1105 560)">粉笔线</text>
+    <circle cx="1180" cy="380" r="20" fill="#bfe3ea" stroke="#3f7fa6"/>
+    <text x="1180" y="370" text-anchor="middle" class="s">高窗</text>
+    <text x="700" y="660" class="s">第一眼：挡板不是墙，是能推的墙；高窗和粉笔线提示“迷宫可读”</text>
+  </g>
+
+  <!-- objects -->
+  <g>
+    <rect x="34" y="730" width="820" height="650" class="panel"/>
+    <text x="60" y="770" class="h">C · 互动单体</text>
+    <g transform="translate(70,800)">
+      <rect width="250" height="250" rx="10" fill="#efe3cc" stroke="#7d5a33"/>
+      <rect x="60" y="60" width="130" height="18" fill="#b56b4f"/>
+      <rect x="60" y="100" width="130" height="18" fill="#b56b4f"/>
+      <text x="125" y="220" text-anchor="middle" class="gold">推拉挡板</text>
+      <text x="125" y="245" text-anchor="middle" class="s">E 推一格/长按连推</text>
+    </g>
+    <g transform="translate(360,800)">
+      <rect width="250" height="250" rx="10" fill="#e4e9e3" stroke="#3f7f5a"/>
+      <line x1="60" y1="190" x2="190" y2="60" stroke="#f4a261" stroke-width="6"/>
+      <text x="125" y="220" text-anchor="middle" class="gold">粉笔线</text>
+      <text x="125" y="245" text-anchor="middle" class="s">把程老师引向指定格</text>
+    </g>
+    <g transform="translate(670,800)">
+      <rect width="250" height="250" rx="10" fill="#e4ecf2" stroke="#3f7fa6"/>
+      <rect x="70" y="50" width="110" height="140" fill="#bfe3ea" stroke="#3f7fa6"/>
+      <text x="125" y="220" text-anchor="middle" class="gold">高窗</text>
+      <text x="125" y="245" text-anchor="middle" class="s">看到程老师位置与开格</text>
+    </g>
+  </g>
+
+  <!-- flows -->
+  <g>
+    <rect x="870" y="730" width="820" height="650" class="panel"/>
+    <text x="900" y="770" class="h">D · 三流派</text>
+    <g transform="translate(920,820)">
+      <rect width="750" height="160" rx="12" fill="#f4d6d0" stroke="#8f2f24"/>
+      <text x="20" y="40" class="gold">战斗流：踢挡板</text>
+      <text x="20" y="80" class="s">把挡板踢向程老师造成硬直，代价是隔间彻底封死一条路。</text>
+      <text x="20" y="115" class="s">爽点：板倒鬼倒；代价：路线消失。</text>
+      <rect x="0" y="190" width="750" height="160" rx="12" fill="#efe3cc" stroke="#7d5a33"/>
+      <text x="20" y="230" class="gold">戏耍流：粉笔线+连推</text>
+      <text x="20" y="270" class="s">在 A 格画线，推挡板把它引到 B 格，再用 C 格假门困住。</text>
+      <text x="20" y="305" class="s">爽点：它撞穿假门时玩家从它身后经过。</text>
+      <rect x="0" y="380" width="750" height="160" rx="12" fill="#e5d8ef" stroke="#6a4e9b"/>
+      <text x="20" y="420" class="gold">解谜流：高窗读迷宫</text>
+      <text x="20" y="460" class="s">不动任何挡板，从高窗记下 08:30 的开格组合，安静穿过。</text>
+      <text x="20" y="495" class="s">奖励：隔间墙上刻字全部保留。</text>
+      <text x="0" y="600" class="s">叙事：隔间越多，说明程老师越怕学生失控；粉笔线最终指向“它自己困在规则里”。</text>
+    </g>
+  </g>
+</svg>
