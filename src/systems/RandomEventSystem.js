@@ -531,6 +531,23 @@ export class RandomEventSystem {
   _spawnArtifactLockouts() {
     const pending = this.game.artifactPending || this._pickTreasureSpot();
     this.game.artifactPending = pending;
+    const c = this.scene.L.classroom;
+    const co = this.scene.L.corridor;
+    const corners = [
+      { x: c.minX, z: c.minZ },
+      { x: c.maxX, z: c.minZ },
+      { x: c.minX, z: c.maxZ },
+      { x: c.maxX, z: c.maxZ },
+      { x: co.minX, z: co.maxZ },
+      { x: co.maxX, z: co.maxZ },
+      { x: co.minX, z: co.minZ },
+      { x: co.maxX, z: co.minZ }
+    ];
+    let coverRadius = 8;
+    for (const p of corners) {
+      coverRadius = Math.max(coverRadius, distance2D(p.x, p.z, pending.x, pending.z) + 3);
+    }
+    const startRadius = Math.max(GAME_CONFIG.artifactRingStartRadius, coverRadius);
     const group = new THREE.Group();
     const outerMat = new THREE.MeshBasicMaterial({
       color: 0xff4d4d,
@@ -579,13 +596,13 @@ export class RandomEventSystem {
       wall,
       startAt: nowSec(),
       dangerAt: nowSec() + 2,
-      startRadius: GAME_CONFIG.artifactRingStartRadius,
+      startRadius,
       endRadius: GAME_CONFIG.artifactRingEndRadius,
       radius: GAME_CONFIG.artifactRingStartRadius,
       pushed: false
     };
     this.game.artifactLockoutZones = [zone];
-    this._setArtifactRingRadius(zone, zone.startRadius);
+    this._setArtifactRingRadius(zone, startRadius);
     this.events.emit('toast', {
       text: '红幕警戒区出现：会向镇店之宝方向收缩！',
       ms: 2400

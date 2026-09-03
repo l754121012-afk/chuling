@@ -10,6 +10,7 @@ export class InputSystem {
     this._down = false;
     this._rightDown = false;
     this._rightPressed = false;
+    this._rightReleased = false;
     this._lastX = null;
     this._lastY = null;
     this._pointerX = window.innerWidth / 2;
@@ -102,6 +103,7 @@ export class InputSystem {
   _onMouseUp(e) {
     if (e.button === 2) {
       this._rightDown = false;
+      this._rightReleased = true;
       return;
     }
     if (e.button !== 0) return;
@@ -166,6 +168,12 @@ export class InputSystem {
   justRightPressed() {
     if (!this._rightPressed) return false;
     this._rightPressed = false;
+    return true;
+  }
+
+  justRightReleased() {
+    if (!this._rightReleased) return false;
+    this._rightReleased = false;
     return true;
   }
 

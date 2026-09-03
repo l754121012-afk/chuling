@@ -27,6 +27,16 @@ export class PlayerSystem {
     this._flashCooldown = 0;
     this._whipCooldown = 0;
     this._heavyCooldown = 0;
+    this._heavyCharging = false;
+    this._heavyChargeAt = 0;
+    this._tornadoUntil = 0;
+    this._tornadoHitAt = 0;
+    this._tornadoCooldownUntil = 0;
+    this._tornadoFollow = false;
+    this._tornadoFollowUntil = 0;
+    this._tornadoFollowX = 0;
+    this._tornadoFollowZ = 0;
+    this._enhancedComboUntil = 0;
     this._dodgeCooldown = 0;
     this._rollUntil = 0;
     this._rollStart = 0;
@@ -154,6 +164,7 @@ export class PlayerSystem {
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
     this._whipCooldown = Math.max(0, this._whipCooldown - dt);
     this._heavyCooldown = Math.max(0, this._heavyCooldown - dt);
+    if (nowSec() < this._tornadoUntil) this._updateTornado(dt);
     this._dodgeCooldown = Math.max(0, this._dodgeCooldown - dt);
     this._stationeryCooldown = Math.max(0, this._stationeryCooldown - dt);
     if (this._dodgeStationeryAt > 0 && nowSec() >= this._dodgeStationeryAt) {
@@ -231,8 +242,18 @@ export class PlayerSystem {
 
     this._syncPlayerMesh();
     const hSpeed = Math.hypot(body.velocity.x, body.velocity.z);
+    const tornadoing = nowSec() < this._tornadoUntil;
     const rolling = nowSec() < this._rollUntil;
-    if (rolling) {
+    if (tornadoing) {
+      this.pawn.mesh.rotation.y = nowSec() * 18;
+      this.pawn.mesh.rotation.x = Math.sin(nowSec() * 17) * 0.35;
+      this.pawn.mesh.rotation.z = Math.sin(nowSec() * 21) * 0.22;
+      this.pawn.mesh.scale.set(
+        1.08 + Math.sin(nowSec() * 24) * 0.06,
+        1.25 + Math.sin(nowSec() * 24) * 0.12,
+        1.08 + Math.cos(nowSec() * 24) * 0.06
+      );
+    } else if (rolling) {
       const rollT = Math.min(1, Math.max(0, (nowSec() - this._rollStart) / GAME_CONFIG.dodgeDuration));
       const spin = rollT * Math.PI * 4.8;
       const squash = Math.sin(spin * 2);
@@ -266,7 +287,7 @@ export class PlayerSystem {
       this.phoneLight.intensity = f * 1.9;
       this.phoneLight.distance = 5 + f * 6;
     }
-    if (!rolling) this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
+    if (!rolling && !tornadoing) this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
     if (this.game.hiding) {
       this.pawn.mesh.visible = false;
     } else if (nowSec() < this.game.invincibleUntil) {
@@ -382,6 +403,48 @@ export class PlayerSystem {
       return;
     }
     this._throwJumpUsed = false;
+    if (nowSec() < this._tornadoUntil) {
+      let moveX = 0;
+      let moveZ = 0;
+      if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
+      if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
+      if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
+      if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
+      const yaw = this.camera.yaw;
+      const fwdX = -Math.sin(yaw);
+      const fwdZ = -Math.cos(yaw);
+      const rightX = Math.cos(yaw);
+      const rightZ = -Math.sin(yaw);
+      let dirX = fwdX * moveZ + rightX * moveX;
+      let dirZ = fwdZ * moveZ + rightZ * moveX;
+      if (this._tornadoFollow && nowSec() < this._tornadoFollowUntil && this.ghost) {
+        const gp = this.ghost.getPos();
+        const dx = gp.x - body.position.x;
+        const dz = gp.z - body.position.z;
+        const d = Math.hypot(dx, dz);
+        if (d < 1.7) {
+          this._tornadoFollow = false;
+          this._tornadoFollowUntil = 0;
+        } else {
+          dirX = dx / d;
+          dirZ = dz / d;
+          body.velocity.set(dirX * 13, body.velocity.y, dirZ * 13);
+          return;
+        }
+      }
+      const len = Math.hypot(dirX, dirZ);
+      if (len < 0.1) {
+        body.velocity.x *= 0.96;
+        body.velocity.z *= 0.96;
+      } else {
+        body.velocity.set(
+          (dirX / len) * GAME_CONFIG.tornadoMoveSpeed,
+          body.velocity.y,
+          (dirZ / len) * GAME_CONFIG.tornadoMoveSpeed
+        );
+      }
+      return;
+    }
     if (nowSec() < this.game.dodgingUntil) {
       body.velocity.set(this._dodgeVX, body.velocity.y, this._dodgeVZ);
       return;
@@ -1101,7 +1164,15 @@ export class PlayerSystem {
     const usable = !this.game.notebookOpen && !this.game.hiding;
 
     if (this.game.whipMode) {
-      if (this.input.justRightPressed()) this._doHeavyWhip();
+      if (this.input.isRightDown() && !this._heavyCharging && nowSec() >= this._tornadoUntil) {
+        this._heavyCharging = true;
+        this._heavyChargeAt = nowSec();
+      }
+      if (this.input.justRightReleased() && this._heavyCharging) {
+        this._heavyCharging = false;
+        const held = nowSec() - this._heavyChargeAt;
+        this._resolveHeavyRelease(held);
+      }
       if (click && usable && !this._tryParry()) this._doWhip();
     } else if (def.type === 'throw') {
       if (this.input.justRightPressed()) {
@@ -1180,6 +1251,7 @@ export class PlayerSystem {
     if (this.game.hiding || this.game.notebookOpen) return;
     if (this.game.ropeClimbing || this.game.ladderClimbing) return;
     this.game.whipMode = !this.game.whipMode;
+    this._heavyCharging = false;
     this.game.whipCombo = 0;
     this.aiming = false;
     this._comboReady = false;
@@ -1240,6 +1312,99 @@ export class PlayerSystem {
       0.5
     );
     this.events.emit('toast', { text: '重击！！', ms: 1200 });
+  }
+
+  _resolveHeavyRelease(held) {
+    if (this.game.hiding || this.game.notebookOpen) return;
+    if (nowSec() < this.game.playerStunUntil) return;
+    const enhanced = nowSec() < this._enhancedComboUntil && !!this.ghost;
+    const charged = held >= GAME_CONFIG.tornadoChargeTime;
+    if (charged || enhanced) {
+      this._startTornado(enhanced);
+      return;
+    }
+    this._doHeavyWhip();
+  }
+
+  _startTornado(follow = false) {
+    if (nowSec() < this._tornadoCooldownUntil) {
+      this.events.emit('toast', { text: '龙卷风还在转晕，等一会儿再蓄！', ms: 1300 });
+      return;
+    }
+    if (this.game.stamina < GAME_CONFIG.tornadoStaminaCost) {
+      this.events.emit('toast', { text: '体力不够转龙卷风！', ms: 1300 });
+      return;
+    }
+    this._heavyCharging = false;
+    this._heavyCooldown = 0;
+    this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.tornadoStaminaCost);
+    this.game.dodgingUntil = 0;
+    this._tornadoUntil = nowSec() + GAME_CONFIG.tornadoDuration;
+    this._tornadoHitAt = nowSec();
+    this._tornadoCooldownUntil = nowSec() + GAME_CONFIG.tornadoDuration + GAME_CONFIG.tornadoCooldown;
+    this._tornadoFollow = follow;
+    this._tornadoFollowUntil = 0;
+    this.playPose('roll', GAME_CONFIG.tornadoDuration + 0.1);
+    this.audio?.play('whoosh');
+    this.events.emit('camera.shake', { amount: 0.35 });
+    this.events.emit('toast', {
+      text: follow ? '连携升龙卷！！跟着它卷过去！' : '龙卷风模式：2 秒可移动，身边全是粉碎区！',
+      ms: 2000
+    });
+    this.scene.spawnParticles(this.getPos(), '#ffe08a');
+    if (follow && this.ghost) {
+      const pp = this.getPos();
+      const gp = this.ghost.getPos();
+      const dx = gp.x - pp.x;
+      const dz = gp.z - pp.z;
+      const dist = Math.hypot(dx, dz) || 1;
+      this._tornadoFollowUntil = nowSec() + Math.min(1.0, dist / 12);
+      this._tornadoFollowX = dx / dist;
+      this._tornadoFollowZ = dz / dist;
+    }
+  }
+
+  _updateTornado(dt) {
+    if (nowSec() >= this._tornadoUntil) return;
+    const pos = this.getPos();
+    if (nowSec() >= this._tornadoHitAt) {
+      this._tornadoHitAt = nowSec() + GAME_CONFIG.tornadoHitInterval;
+      this._tornadoDamageNear(pos);
+    }
+    if (Math.random() < dt * 32) {
+      const a = Math.random() * Math.PI * 2;
+      const r = rand(0.4, 2.4);
+      this.scene.spawnParticles(
+        { x: pos.x + Math.cos(a) * r, y: 0.5 + Math.random() * 1.6, z: pos.z + Math.sin(a) * r },
+        Math.random() < 0.5 ? '#ffe08a' : '#d9c8a0'
+      );
+    }
+  }
+
+  _tornadoDamageNear(pos) {
+    let hitAny = false;
+    if (this.ghost) {
+      const gp = this.ghost.getPos();
+      const d = distance2D(gp.x, gp.z, pos.x, pos.z);
+      if (d < GAME_CONFIG.tornadoRadius) {
+        hitAny = true;
+        const len = Math.max(0.3, d);
+        this.ghost.knockback(((gp.x - pos.x) / len) * 3.5, ((gp.z - pos.z) / len) * 3.5, 0.25);
+        this.ghost.damage(1, { rage: 0 });
+      }
+      for (const m of this.ghost._minions || []) {
+        if (distance2D(m.x, m.z, pos.x, pos.z) < GAME_CONFIG.tornadoRadius + 0.8) {
+          hitAny = true;
+          this.ghost._damageMinion(m, 1);
+        }
+      }
+    }
+    if (hitAny) {
+      this.events.emit('hitstop', { ms: 45 });
+      this.events.emit('camera.shake', { amount: 0.18 });
+      this.audio?.play('whip');
+      this.rage?.addDrama?.(2, 'tornado');
+    }
   }
 
   _findWhipTargetMinion(range, cone) {
@@ -1324,6 +1489,11 @@ export class PlayerSystem {
       this.game.dodgingUntil = nowSec() + 0.45;
     }
     this.events.emit('toast', { text: '连携技成功！！', ms: 1800 });
+    this._enhancedComboUntil = nowSec() + 2.5;
+    this.events.emit('toast', {
+      text: '连携窗口开启：下一次重击会龙卷风追击！',
+      ms: 1800
+    });
   }
 
   _doWhip() {
