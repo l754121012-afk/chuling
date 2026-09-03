@@ -404,7 +404,9 @@ export class UISystem {
       {
         id: 'detention02',
         name: '02 禁闭室怪谈',
-        state: done.has('classroom01') ? '下一单·内容施工中' : '完成第一单后解锁'
+        state: done.has('classroom01')
+          ? '白盒切片可测（上方按钮）'
+          : '可直接测试白盒切片'
       }
     ];
     this.el.caseBoard.innerHTML = '<span>单子板</span>';
@@ -531,6 +533,9 @@ export class UISystem {
   }
 
   _objectiveText(game) {
+    if (game.detentionMode && game.phase === 'investigate') {
+      return '禁闭室白盒切片：穿过隔间迷宫，去教师办公室找程老师留下的值日表';
+    }
     if (game.artifactActive && game.phase !== 'escape') {
       if (game.artifactStage === 0) return '清仓守卫战幕 1：广播封锁，躲开红色警戒区！';
       if (game.artifactStage === 1) return '清仓守卫战幕 2：抢清仓道具，鬼马上就来了！';

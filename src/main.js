@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { PALETTE } from './config/palette.js';
 import { textTexture } from './core/PlaceholderAssets.js';
 import { GAME_CONFIG } from './config/game.js';
+import { LEVEL_CONFIG } from './config/level.js';
+import { DETENTION_SLICE_CONFIG } from './config/detentionSlice.js';
 import { EventBus } from './core/EventBus.js';
 import { GameState } from './core/GameState.js';
 import { PhysicsWorld } from './core/Physics.js';
@@ -38,7 +40,13 @@ const events = new EventBus();
 const physics = new PhysicsWorld();
 const game = new GameState();
 const economy = new EconomySystem();
-const school = new SchoolScene(physics, events, scene);
+const DETENTION_MODE = new URLSearchParams(window.location.search).get('case') === 'detention';
+const school = new SchoolScene(
+  physics,
+  events,
+  scene,
+  DETENTION_MODE ? DETENTION_SLICE_CONFIG : LEVEL_CONFIG
+);
 const refs = school.build();
 school.applyCosmetics(economy.unlocks);
 scene.add(school.group);
@@ -183,6 +191,7 @@ events.on('ghost.stage', p => {
 });
 events.on('game.start', () => {
   game.reset();
+  game.detentionMode = DETENTION_MODE;
   game.phase = 'investigate';
   game.runStart = nowSec();
   input.allowLock = true;
@@ -267,6 +276,9 @@ ui.el.fullscreenBtn.addEventListener('click', () => {
   } else {
     document.exitFullscreen?.();
   }
+});
+document.getElementById('detention-btn')?.addEventListener('click', () => {
+  window.location.search = DETENTION_MODE ? '' : '?case=detention';
 });
 window.addEventListener('keydown', e => {
   if (e.code === 'AltLeft' || e.code === 'AltRight') {

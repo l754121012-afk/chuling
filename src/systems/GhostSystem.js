@@ -1013,6 +1013,7 @@ export class GhostSystem {
   }
 
   _updateHiddenWish(dt, playerPos, stage) {
+    if (this.game.detentionMode) return;
     if (this.game.phase !== 'investigate' || this.game.ghostWishHelped) return;
     const pen = this.scene.refs?.wishPen;
     if (!pen) return;

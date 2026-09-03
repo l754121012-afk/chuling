@@ -722,7 +722,12 @@ export class PlayerSystem {
       const d = distance2D(pos.x, pos.z, clue.pos.x, clue.pos.z);
       if (d < GAME_CONFIG.interactRadius && 2.5 > bestPriority) {
         bestPriority = 2.5;
-        best = { type: 'clue', clue, label: '查看线索', pos: { x: clue.pos.x, y: 1.7, z: clue.pos.z } };
+        const detentionLabel = this.game.detentionMode
+          ? clue.id === 'blackboard'
+            ? '摇粉笔盒制造声音'
+            : '查看值日表'
+          : '查看线索';
+        best = { type: 'clue', clue, label: detentionLabel, pos: { x: clue.pos.x, y: 1.7, z: clue.pos.z } };
       }
     }
 
@@ -838,7 +843,17 @@ export class PlayerSystem {
     } else if (target.type === 'exit') {
       this.events.emit('game.win');
     } else if (target.type === 'clue') {
-      this.clues.readClue(target.clue.id);
+      if (this.game.detentionMode && target.clue.id === 'blackboard') {
+        this._detentionChalk(target.clue.pos);
+      } else {
+        this.clues.readClue(target.clue.id);
+        if (this.game.detentionMode && target.clue.id === 'note') {
+          this.events.emit('toast', {
+            text: '值日表：08:10 粉笔声会把它引去保健室；趁空档去办公室拿钥匙。',
+            ms: 2600
+          });
+        }
+      }
     } else if (target.type === 'wishHelp') {
       this._helpGhostWish();
     } else if (target.type === 'ropeGrab') {
@@ -977,6 +992,21 @@ export class PlayerSystem {
     this.audio?.play('paper');
     this.events.emit('toast', { text: '你替它把笔摆回了原位。', ms: 1800 });
     this.ghost?.acknowledgeWish?.(pen.pos);
+  }
+
+  _detentionChalk(pos) {
+    this.playPose('use', 0.5);
+    this.scene.spawnParticles({ x: pos.x, y: pos.y + 0.4, z: pos.z }, '#e9e2d2');
+    this.scene.spawnHitRing({ x: pos.x, y: 0.3, z: pos.z }, '#e9e2d2');
+    this.audio?.play('paper');
+    this.events.emit('noise', { pos: { x: pos.x, z: pos.z }, radius: 60, rage: 0 });
+    if (this.ghost) {
+      this.ghost._lastNoise = { x: pos.x, z: pos.z };
+    }
+    this.events.emit('toast', {
+      text: '粉笔盒发出刺耳声音！程老师被引过去了！',
+      ms: 1800
+    });
   }
 
   _kickProp(prop) {

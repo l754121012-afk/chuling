@@ -81,6 +81,7 @@ export class RandomEventSystem {
   }
 
   update(dt) {
+    if (this.game.detentionMode) return;
     if (!this.game.isPlaying() || this.game.phase !== 'investigate') return;
     if (
       this.game.nextEventAt > 0 &&

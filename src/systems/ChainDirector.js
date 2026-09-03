@@ -25,6 +25,7 @@ export class ChainDirector {
   }
 
   update(dt) {
+    if (this.game.detentionMode) return;
     if (!this.game.isPlaying() || this.game.phase !== 'investigate') {
       this._hideMarkers();
       return;

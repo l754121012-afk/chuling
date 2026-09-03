@@ -116,6 +116,7 @@ export class GameState {
     this.ghostScore = 0;
     this.ghostWishKnocked = false;
     this.ghostWishHelped = false;
+    this.detentionMode = false;
   }
 
   addItem(id, n = 1) {

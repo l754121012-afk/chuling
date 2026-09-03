@@ -27,11 +27,11 @@ function scaleLevelConfig(cfg, s = 1.25) {
 }
 
 export class SchoolScene {
-  constructor(physics, events, threeScene = null) {
+  constructor(physics, events, threeScene = null, levelConfig = LEVEL_CONFIG) {
     this.physics = physics;
     this.events = events;
     this.threeScene = threeScene;
-    this.L = scaleLevelConfig(LEVEL_CONFIG);
+    this.L = scaleLevelConfig(levelConfig);
     this.group = new THREE.Group();
     this.flickerLights = [];
     this.footprints = [];
