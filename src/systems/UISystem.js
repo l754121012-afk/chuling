@@ -533,6 +533,12 @@ export class UISystem {
   }
 
   _objectiveText(game) {
+    if (game.runMode && game.runStage === 1 && game.phase === 'investigate') {
+      return '第一幕 · 两支笔：帮值日鬼小满找回圆珠笔，别让鬼发现你';
+    }
+    if (game.runMode && game.runStage === 3 && game.phase === 'investigate') {
+      return '第三幕 · 旧仓库：找到失火那晚的真相，让两支笔重新并排';
+    }
     if (game.detentionMode && game.phase === 'investigate') {
       return '禁闭室白盒切片：穿过隔间迷宫，去教师办公室找程老师留下的值日表';
     }

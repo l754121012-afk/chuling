@@ -40,14 +40,13 @@ const events = new EventBus();
 const physics = new PhysicsWorld();
 const game = new GameState();
 const economy = new EconomySystem();
-const DETENTION_MODE = new URLSearchParams(window.location.search).get('case') === 'detention';
-const DETENTION_AUTO = new URLSearchParams(window.location.search).get('auto') === '1';
-const school = new SchoolScene(
-  physics,
-  events,
-  scene,
-  DETENTION_MODE ? DETENTION_SLICE_CONFIG : LEVEL_CONFIG
-);
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const DETENTION_MODE = URL_PARAMS.get('case') === 'detention';
+const DETENTION_AUTO = URL_PARAMS.get('auto') === '1';
+const RUN_MODE = URL_PARAMS.get('run') === 'two_pens';
+const RUN_STAGE = Number(URL_PARAMS.get('stage') || (DETENTION_MODE ? 2 : 1));
+const LEVEL_CONFIG_TO_USE = RUN_STAGE === 2 ? DETENTION_SLICE_CONFIG : LEVEL_CONFIG;
+const school = new SchoolScene(physics, events, scene, LEVEL_CONFIG_TO_USE);
 const refs = school.build();
 school.applyCosmetics(economy.unlocks);
 scene.add(school.group);
@@ -192,7 +191,9 @@ events.on('ghost.stage', p => {
 });
 events.on('game.start', () => {
   game.reset();
-  game.detentionMode = DETENTION_MODE;
+  game.detentionMode = DETENTION_MODE || RUN_STAGE === 2;
+  game.runMode = RUN_MODE;
+  game.runStage = RUN_STAGE;
   game.phase = 'investigate';
   game.runStart = nowSec();
   input.allowLock = true;
@@ -234,7 +235,7 @@ events.on('game.win', () => {
   const winEcon = economy.award(game, winSettlement);
   winSettlement.ghostReport = economy.recordGhostEncounter(game, winSettlement);
   winSettlement.debtPaid = economy.payDebt(economy.coins);
-  economy.completeCase('classroom01');
+  if (!RUN_MODE || RUN_STAGE === 1) economy.completeCase('classroom01');
   winSettlement.rows.push(
     { label: '百元店积分', amount: winEcon.points, currency: 'points' },
     { label: '灵异纪念品', amount: winEcon.relics, currency: 'relic' }
@@ -243,6 +244,12 @@ events.on('game.win', () => {
   ui.showBest();
   ui.showWin(winSettlement);
   ui.sync(game);
+  if (RUN_MODE && RUN_STAGE < 3) {
+    const next = RUN_STAGE === 1
+      ? '?case=detention&run=two_pens&stage=2&auto=1'
+      : '?run=two_pens&stage=3&auto=1';
+    setTimeout(() => { window.location.search = next; }, 3200);
+  }
 });
 events.on('game.lost', () => {
   game.phase = 'lost';
@@ -281,11 +288,21 @@ ui.el.fullscreenBtn.addEventListener('click', () => {
 document.getElementById('detention-btn')?.addEventListener('click', () => {
   window.location.search = DETENTION_MODE ? '' : '?case=detention&auto=1';
 });
+document.getElementById('run-btn')?.addEventListener('click', () => {
+  window.location.search = '?run=two_pens&stage=1&auto=1';
+});
 if (DETENTION_MODE) {
   const startBtn = document.getElementById('start-btn');
   const toggleBtn = document.getElementById('detention-btn');
   if (startBtn) startBtn.textContent = '开始禁闭室切片';
   if (toggleBtn) toggleBtn.textContent = '返回值日教室';
+}
+if (RUN_MODE) {
+  const startBtn = document.getElementById('start-btn');
+  if (startBtn) {
+    startBtn.textContent = RUN_STAGE === 1 ? '开始第一幕：值日教室' :
+      RUN_STAGE === 2 ? '开始第二幕：禁闭室' : '开始第三幕：旧仓库';
+  }
 }
 window.addEventListener('keydown', e => {
   if (e.code === 'AltLeft' || e.code === 'AltRight') {
@@ -422,7 +439,7 @@ function tick() {
   input.update();
 }
 
-if (DETENTION_MODE && DETENTION_AUTO) {
+if ((DETENTION_MODE || RUN_MODE) && DETENTION_AUTO) {
   setTimeout(() => events.emit('game.start'), 180);
 }
 ui.sync(game);

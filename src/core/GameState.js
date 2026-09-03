@@ -118,6 +118,8 @@ export class GameState {
     this.ghostWishKnocked = false;
     this.ghostWishHelped = false;
     this.detentionMode = false;
+    this.runMode = false;
+    this.runStage = 1;
   }
 
   addItem(id, n = 1) {
