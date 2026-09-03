@@ -746,6 +746,24 @@ export class SchoolScene {
       neatZ: wishPen.position.z,
       state: 'neat'
     };
+    const podiumLabel = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('值日台', {
+          bg: '#4a3b12',
+          fg: '#ffd166',
+          font: 'bold 60px "Microsoft YaHei", sans-serif',
+          width: 256,
+          height: 96,
+          lineHeight: 72,
+          pad: 8
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    podiumLabel.position.set(note.x + 0.7, note.y + 1.25, note.z + 0.25);
+    podiumLabel.scale.set(1.6, 0.6, 1);
+    this.group.add(podiumLabel);
   }
 
   _addExit(refs) {

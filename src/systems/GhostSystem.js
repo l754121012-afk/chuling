@@ -1048,6 +1048,11 @@ export class GhostSystem {
       }
       this._wishActive = true;
       this._wishUntil = nowSec() + 7;
+      this.events.emit('speech', {
+        text: '……值日台的笔，还是去摆一下吧。',
+        ms: 2400,
+        name: '值日鬼'
+      });
       return;
     }
     if (busy || nowSec() >= this._wishUntil) {
@@ -1086,7 +1091,7 @@ export class GhostSystem {
     this.scene.spawnParticles({ x: pen.mesh.position.x, y: pen.neatY + 0.3, z: pen.mesh.position.z }, '#f4a261');
     this.scene.spawnHitRing({ x: pen.mesh.position.x, y: 0.3, z: pen.mesh.position.z }, '#f4a261');
     this.audio?.play('paper');
-    this.events.emit('speech', { text: '……笔怎么又歪了。', ms: 2000 });
+    this.events.emit('speech', { text: '……笔怎么又歪了。', ms: 2000, name: '值日鬼' });
   }
 
   acknowledgeWish(pos) {
@@ -1891,7 +1896,7 @@ export class GhostSystem {
       if (arrived) {
         this._wishAckUntil = 0;
         this._wishAckPos = null;
-        this.events.emit('speech', { text: '……谢了。', ms: 1500 });
+        this.events.emit('speech', { text: '……谢了。', ms: 1500, name: '值日鬼' });
         this.audio?.play('paper');
       }
       return;
@@ -2238,6 +2243,6 @@ export class GhostSystem {
   _speak(text, ms) {
     if (this._speechTimer > 0) return;
     this._speechTimer = ms / 1000;
-    this.events.emit('speech', { text, ms });
+    this.events.emit('speech', { text, ms, name: '值日鬼' });
   }
 }

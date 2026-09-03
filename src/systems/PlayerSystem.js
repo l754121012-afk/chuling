@@ -234,15 +234,15 @@ export class PlayerSystem {
     const rolling = nowSec() < this._rollUntil;
     if (rolling) {
       const rollT = Math.min(1, Math.max(0, (nowSec() - this._rollStart) / GAME_CONFIG.dodgeDuration));
-      const spin = rollT * Math.PI * 2.35;
+      const spin = rollT * Math.PI * 4.8;
       const squash = Math.sin(spin * 2);
       this.pawn.mesh.rotation.y = Math.atan2(this._rollDirX, this._rollDirZ);
       this.pawn.mesh.rotation.x = spin;
       this.pawn.mesh.rotation.z = Math.sin(spin * 2.4) * 0.16;
       this.pawn.mesh.scale.set(
         1 + Math.max(0, squash) * 0.16,
-        Math.max(0.68, 1 - Math.abs(squash) * 0.3),
-        1 - Math.abs(squash) * 0.08
+        Math.max(0.55, 1 - Math.abs(squash) * 0.42),
+        1 - Math.abs(squash) * 0.14
       );
       if (Math.random() < dt * 26) {
         this.scene.spawnParticles(

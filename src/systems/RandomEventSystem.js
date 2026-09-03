@@ -22,6 +22,7 @@ export class RandomEventSystem {
     this._supplyTimer = 0;
     this._artifactTempts = [];
     this._artifactTemptTimer = 0;
+    this._artifactRingPulseAt = 0;
     events.on('pun.horse', pos => this._triggerHorse(pos));
     events.on('env.chain', pos => this._triggerChain(pos));
   }
@@ -56,6 +57,7 @@ export class RandomEventSystem {
     this.game.artifactPending = null;
     this._artifactTempts.forEach(t => this.scene.group.remove(t.mesh));
     this._artifactTempts = [];
+    this._artifactRingPulseAt = 0;
     this.game.rebelItem = Math.random() < 0.6
       ? ['pen', 'glue', 'tape', 'crossbow', 'mine'][Math.floor(Math.random() * 5)]
       : null;
@@ -972,6 +974,20 @@ export class RandomEventSystem {
     zone.wall.material.opacity = 0.18 + pulse * 0.15;
     const distToCenter = distance2D(p.x, p.z, zone.x, zone.z);
     if (!danger || distToCenter <= zone.radius + 0.2) return;
+    if (nowSec() >= this._artifactRingPulseAt) {
+      this._artifactRingPulseAt = nowSec() + 1.2;
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        this.scene.spawnParticles(
+          {
+            x: zone.x + Math.cos(a) * zone.radius,
+            y: 0.4,
+            z: zone.z + Math.sin(a) * zone.radius
+          },
+          '#ff6b6b'
+        );
+      }
+    }
     this.game.stamina = Math.max(0, this.game.stamina - GAME_CONFIG.artifactLockoutDrain * dt);
     if (this.game.stamina <= 0 && !zone.pushed) {
       zone.pushed = true;

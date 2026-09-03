@@ -52,6 +52,9 @@ export class UISystem {
       voteOptions: document.getElementById('vote-options'),
       toast: document.getElementById('toast'),
       speech: document.getElementById('speech'),
+      dialogue: document.getElementById('dialogue'),
+      dialogueName: document.getElementById('dialogue-name'),
+      dialogueText: document.getElementById('dialogue-text'),
       prompt: document.getElementById('prompt'),
       notebook: document.getElementById('notebook'),
       notebookList: document.getElementById('notebook-list'),
@@ -462,17 +465,23 @@ export class UISystem {
   }
 
   showToast(text, ms = 1800) {
+    if (typeof text === 'string' && text.startsWith('主管：')) {
+      this.showSpeech(text.slice(3), ms, '主管');
+      return;
+    }
     clearTimeout(this._toastTimer);
     this.el.toast.textContent = text;
     this.el.toast.classList.add('show');
     this._toastTimer = setTimeout(() => this.el.toast.classList.remove('show'), ms);
   }
 
-  showSpeech(text, ms = 1800) {
+  showSpeech(text, ms = 1800, name = '值日鬼') {
     clearTimeout(this._speechTimer);
-    this.el.speech.textContent = text;
-    this.el.speech.classList.add('show');
-    this._speechTimer = setTimeout(() => this.el.speech.classList.remove('show'), ms);
+    if (!this.el.dialogue) return;
+    this.el.dialogueName.textContent = name;
+    this.el.dialogueText.textContent = text;
+    this.el.dialogue.classList.remove('hidden');
+    this._speechTimer = setTimeout(() => this.el.dialogue.classList.add('hidden'), ms);
   }
 
   showPrompt(p) {
@@ -607,7 +616,7 @@ export class UISystem {
     this.events.on('clue.found', () => this.sync(this.game));
     this.events.on('escape.start', () => this.sync(this.game));
     this.events.on('toast', p => this.showToast(p.text, p.ms));
-    this.events.on('speech', p => this.showSpeech(p.text, p.ms));
+    this.events.on('speech', p => this.showSpeech(p.text, p.ms, p.name));
     this.events.on('interact.prompt', p => this.showPrompt(p));
     this.events.on('ghost.visual', p => {
       this.el.vignette.style.setProperty('--danger', String(p.danger));
