@@ -1469,3 +1469,8 @@ body.playing canvas {
 .case-board p {
   margin: 3px 0;
 }
+
+.case-board .case-done {
+  color: #2f7d43;
+  font-weight: 700;
+}

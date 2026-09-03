@@ -49,6 +49,7 @@ export class EconomySystem {
           relics: Math.max(0, raw.relics || 0),
           debt: Math.max(0, raw.debt || 8888),
           unlocks: raw.unlocks || {},
+          completedCases: Array.isArray(raw.completedCases) ? raw.completedCases : [],
           ghost: {
             encounters: Math.max(0, ghost.encounters || 0),
             seeds: Array.isArray(ghost.seeds) ? ghost.seeds : [],
@@ -68,6 +69,7 @@ export class EconomySystem {
       relics: 0,
       debt: 8888,
       unlocks: {},
+      completedCases: [],
       ghost: { encounters: 0, seeds: [], lastLine: '', lastScore: 0, helpedCount: 0, leftCount: 0 }
     };
   }
@@ -201,6 +203,13 @@ export class EconomySystem {
     }
     this.save();
     return pick;
+  }
+
+  completeCase(id) {
+    if (!this.state.completedCases.includes(id)) {
+      this.state.completedCases.push(id);
+      this.save();
+    }
   }
 
   shopPrice(id) {

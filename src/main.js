@@ -224,6 +224,7 @@ events.on('game.win', () => {
   const winEcon = economy.award(game, winSettlement);
   winSettlement.ghostReport = economy.recordGhostEncounter(game, winSettlement);
   winSettlement.debtPaid = economy.payDebt(economy.coins);
+  economy.completeCase('classroom01');
   winSettlement.rows.push(
     { label: '百元店积分', amount: winEcon.points, currency: 'points' },
     { label: '灵异纪念品', amount: winEcon.relics, currency: 'relic' }

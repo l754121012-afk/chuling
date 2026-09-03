@@ -48,6 +48,7 @@ export class UISystem {
       relicBtn: document.getElementById('relic-btn'),
       economyBalance: document.getElementById('economy-balance'),
       debtLine: document.getElementById('debt-line'),
+      caseBoard: document.getElementById('case-board'),
       debtPaidWin: document.getElementById('debt-paid-win'),
       debtPaidLose: document.getElementById('debt-paid-lose'),
       gachaBtn: document.getElementById('gacha-btn'),
@@ -141,6 +142,7 @@ export class UISystem {
     this.sync(this.game);
     this.showBest();
     this.renderEconomyBalance();
+    this.renderCaseBoard();
   }
 
   saveBest(game, settlement) {
@@ -387,6 +389,30 @@ export class UISystem {
       this.el.debtLine.textContent = this.economy.debt > 0
         ? `催债单：还欠 ${this.economy.debt.toLocaleString()} 円`
         : '催债单：还清了！（主管：我不信）';
+    }
+  }
+
+  renderCaseBoard() {
+    if (!this.el.caseBoard) return;
+    const done = new Set(this.economy.state.completedCases || []);
+    const cases = [
+      {
+        id: 'classroom01',
+        name: '01 值日教室',
+        state: done.has('classroom01') ? '已完成，可再刷' : '当前可接'
+      },
+      {
+        id: 'detention02',
+        name: '02 禁闭室怪谈',
+        state: done.has('classroom01') ? '下一单·内容施工中' : '完成第一单后解锁'
+      }
+    ];
+    this.el.caseBoard.innerHTML = '<span>单子板</span>';
+    for (const c of cases) {
+      const row = document.createElement('p');
+      row.className = done.has(c.id) ? 'case-done' : '';
+      row.textContent = `${c.name} — ${c.state}`;
+      this.el.caseBoard.appendChild(row);
     }
   }
 
