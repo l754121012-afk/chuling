@@ -70,8 +70,8 @@ function detentionConfig() {
   cfg.slideRamp = { x: -12, z: 1.5, length: 4, tilt: -0.4 };
   cfg.rope = { from: { x: -5, z: -2.5 }, to: { x: 5, z: -2.5 }, y: 3.0 };
   cfg.ladders = [
-    { x: -5.5, z: 9, topY: 3.2 },
-    { x: 5.5, z: 9, topY: 3.2 }
+    { x: -4, z: 9, topY: 3.2 },
+    { x: 4, z: 9, topY: 3.2 }
   ];
   cfg.highCatwalk = [
     { from: { x: -5.5, z: 9 }, to: { x: 5.5, z: 9 }, y: 3.4 },

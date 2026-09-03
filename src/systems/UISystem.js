@@ -1,6 +1,6 @@
 import { ITEM_DEFS } from '../config/items.js';
 import { GAME_CONFIG } from '../config/game.js';
-import { CLUE_TEXT } from './ClueSystem.js';
+import { CLUE_TEXT, DETENTION_CLUE_TEXT } from './ClueSystem.js';
 import { POINTS_SHOP, RELIC_SHOP } from './EconomySystem.js';
 
 export class UISystem {
@@ -655,15 +655,32 @@ export class UISystem {
     this.el.notebook.classList.toggle('hidden', !open);
     if (open) {
       this.el.notebookList.innerHTML = '';
-      for (const [id, clue] of Object.entries(CLUE_TEXT)) {
+      const groups = {};
+      const textMap = this.game.detentionMode ? DETENTION_CLUE_TEXT : CLUE_TEXT;
+      for (const [id, clue] of Object.entries(textMap)) {
+        if (!this.game.hasClue(id)) continue;
+        (groups['线索'] ||= []).push({ title: clue.title, text: clue.text });
+      }
+      for (const note of this.game.notebookEntries || []) {
+        (groups[note.category || '其它'] ||= []).push({
+          title: note.title,
+          text: note.text
+        });
+      }
+      for (const [category, entries] of Object.entries(groups)) {
+        const head = document.createElement('div');
+        head.className = 'clue-group';
+        head.textContent = category;
+        this.el.notebookList.appendChild(head);
+        for (const entry of entries) {
         const row = document.createElement('div');
         row.className = 'clue-row';
-        const found = this.game.hasClue(id);
         row.innerHTML = `
-          <div class="clue-title">${found ? clue.title : '？？？'}</div>
-          <div class="clue-text">${found ? clue.text : '还没有找到这条线索。'}</div>
+          <div class="clue-title">${entry.title}</div>
+          <div class="clue-text">${entry.text}</div>
         `;
         this.el.notebookList.appendChild(row);
+        }
       }
     }
   }

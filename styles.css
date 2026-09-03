@@ -1057,6 +1057,13 @@ body.playing canvas {
   gap: 10px;
 }
 
+.clue-group {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8f2f24;
+}
+
 .clue-row {
   border-left: 4px solid var(--red);
   background: #fffdf5;

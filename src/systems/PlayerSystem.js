@@ -652,6 +652,15 @@ export class PlayerSystem {
 
   _safeReleasePos() {
     const pos = this.getPos();
+    if (this._ladder) {
+      const ladder = this._ladder;
+      const side = ladder.x > 0 ? -1 : 1;
+      return {
+        x: ladder.x + side * 1.4,
+        y: Math.max(0.7, ladder.topY - 0.5),
+        z: ladder.z
+      };
+    }
     for (const p of this.scene.refs.pillars || []) {
       const d = distance2D(pos.x, pos.z, p.pos.x, p.pos.z);
       if (d < (p.r || 0.55) + 0.1) {
@@ -1003,6 +1012,12 @@ export class PlayerSystem {
     if (this.ghost) {
       this.ghost._lastNoise = { x: pos.x, z: pos.z };
     }
+    this.game.addNote(
+      'detention_chalk',
+      '方法',
+      '粉笔盒引鬼',
+      '黑板 E 摇动粉笔盒，程老师会去声音位置；趁它离开隔间时穿过。'
+    );
     this.events.emit('toast', {
       text: '粉笔盒发出刺耳声音！程老师被引过去了！',
       ms: 1800

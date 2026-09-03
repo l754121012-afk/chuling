@@ -19,6 +19,7 @@ export class GameState {
     this.battery = 100;
     this.batteryMax = 100;
     this.clues = new Set();
+    this.notebookEntries = [];
     this.inventory = new Map();
     this.equipped = 'pen';
     this.quickSlots = ['pen', 'glue', 'tape', 'stapler'];
@@ -146,6 +147,11 @@ export class GameState {
 
   hasClue(id) {
     return this.clues.has(id);
+  }
+
+  addNote(id, category, title, text) {
+    if (this.notebookEntries.some(n => n.id === id)) return;
+    this.notebookEntries.push({ id, category, title, text });
   }
 
   isPlaying() {
