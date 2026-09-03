@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1780" height="1420" viewBox="0 0 1780 1420">
+  <style>
+    .bg{fill:#141519;}
+    .panel{fill:#f7f1e2;stroke:#5a4d37;stroke-width:2;}
+    .h{font:bold 26px "Microsoft YaHei";fill:#2b2118;}
+    .t{font:16px "Microsoft YaHei";fill:#4b4134;}
+    .s{font:13px "Microsoft YaHei";fill:#4b4134;}
+    .gold{font:bold 18px "Microsoft YaHei";fill:#b7791f;}
+    .red{fill:#c94f3d;}
+  </style>
+  <rect class="bg" width="1780" height="1420"/>
+  <text x="40" y="48" font-size="32" font-family="Microsoft YaHei" font-weight="700" fill="#ffe9b8">禁闭室互动单体与玩家解法 · 三视角设定稿</text>
+  <text x="40" y="84" font-size="17" font-family="Microsoft YaHei" fill="#d8cbb4">每个物件都支持战斗流 / 戏耍流 / 潜行解谜流；正面对抗会推进或破坏安静故事，由关卡的“情绪目标”决定</text>
+
+  <!-- Card 1 chalk -->
+  <g>
+    <rect x="34" y="110" width="560" height="610" class="panel"/>
+    <text x="60" y="150" class="h">A · 粉笔盒</text>
+    <g transform="translate(60,180)">
+      <rect x="0" y="10" width="130" height="90" fill="#9aa7ad" stroke="#59616e"/>
+      <rect x="110" y="5" width="130" height="70" fill="#8f989e" stroke="#59616e"/>
+      <rect x="0" y="115" width="130" height="60" fill="#9aa7ad" stroke="#59616e"/>
+      <text x="65" y="95" text-anchor="middle" class="s">正视</text>
+      <text x="185" y="55" text-anchor="middle" class="s">侧视</text>
+      <text x="65" y="155" text-anchor="middle" class="s">顶视</text>
+    </g>
+    <text x="60" y="300" class="gold">玩法分支</text>
+    <text x="60" y="330" class="s">战斗：踢翻粉笔盒制造巨响，引程老师冲刺过来</text>
+    <text x="60" y="355" class="s">戏耍：把粉笔摆成线路图，让它循声走进旧办公室</text>
+    <text x="60" y="380" class="s">解谜：只观察粉笔断口，判断它最后一次被谁使用</text>
+    <text x="60" y="420" class="gold">叙事</text>
+    <text x="60" y="450" class="s">粉笔是程老师维持“课堂秩序”的教具；玩家擦掉/重写时，等于在动摇它的规则。</text>
+  </g>
+
+  <!-- Card 2 phone -->
+  <g>
+    <rect x="610" y="110" width="560" height="610" class="panel"/>
+    <text x="636" y="150" class="h">B · 墙边旧电话</text>
+    <g transform="translate(650,180)">
+      <rect x="0" y="20" width="130" height="90" fill="#6a7480" stroke="#2c343d"/>
+      <circle cx="30" cy="42" r="7" class="red"/>
+      <circle cx="30" cy="75" r="7" class="red"/>
+      <rect x="150" y="15" width="130" height="75" fill="#8a8f98" stroke="#2c343d"/>
+      <rect x="0" y="130" width="130" height="40" fill="#4a5560" stroke="#2c343d"/>
+      <text x="65" y="80" text-anchor="middle" class="s">正视</text>
+      <text x="215" y="60" text-anchor="middle" class="s">侧视</text>
+      <text x="65" y="155" text-anchor="middle" class="s">顶视</text>
+    </g>
+    <text x="636" y="300" class="gold">玩法分支</text>
+    <text x="636" y="330" class="s">战斗：砸坏听筒触发全楼铃声，制造硬直窗口</text>
+    <text x="636" y="355" class="s">戏耍：拨通总机，把“下课铃”提前到程老师最远位置</text>
+    <text x="636" y="380" class="s">解谜：不接、不响，读取来电记录拼出失火当晚最后一通电话</text>
+    <text x="636" y="420" class="gold">叙事</text>
+    <text x="636" y="450" class="s">电话是校务处通知的象征；它让程老师永远在等待“上面”的命令。</text>
+  </g>
+
+  <!-- Card 3 blackboard -->
+  <g>
+    <rect x="1186" y="110" width="560" height="610" class="panel"/>
+    <text x="1212" y="150" class="h">C · 值日表 / 黑板</text>
+    <g transform="translate(1230,180)">
+      <rect x="0" y="0" width="190" height="100" fill="#5d6b5a" stroke="#2f3a30"/>
+      <text x="95" y="55" text-anchor="middle" class="s" fill="#e8eedd">粉笔字规则</text>
+      <rect x="220" y="10" width="110" height="70" fill="#8a6d3b"/>
+      <text x="275" y="55" text-anchor="middle" class="s" fill="#ffe9b8">可擦</text>
+    </g>
+    <text x="1212" y="300" class="gold">玩法分支</text>
+    <text x="1212" y="330" class="s">战斗：把黑板整块推倒，直接改变走廊封堵方向</text>
+    <text x="1212" y="355" class="s">戏耍：擦掉“门=锁”，改写成“门=倒”，让程老师撞门</text>
+    <text x="1212" y="380" class="s">解谜：抄下原字，还原它当年真正写下的规则</text>
+    <text x="1212" y="420" class="gold">叙事</text>
+    <text x="1212" y="450" class="s">黑板上的规则是程老师为自己建的牢；玩家最后重写它，等于替它解开心结。</text>
+  </g>
+
+  <!-- Card 4 cabinet -->
+  <g>
+    <rect x="34" y="740" width="560" height="610" class="panel"/>
+    <text x="60" y="780" class="h">D · 档案柜 / 小满笔帽</text>
+    <g transform="translate(60,810)">
+      <rect x="0" y="0" width="150" height="180" fill="#8a6d3b" stroke="#57401f"/>
+      <rect x="8" y="8" width="134" height="38" fill="#6f5730" stroke="#57401f"/>
+      <rect x="8" y="55" width="134" height="38" fill="#6f5730" stroke="#57401f"/>
+      <rect x="8" y="102" width="134" height="38" fill="#6f5730" stroke="#57401f"/>
+      <text x="75" y="205" text-anchor="middle" class="s">正视</text>
+    </g>
+    <text x="60" y="1030" class="gold">玩法分支</text>
+    <text x="60" y="1060" class="s">战斗：直接撞开，噪音会让程老师立刻赶来</text>
+    <text x="60" y="1085" class="s">戏耍：用粉笔在柜前画圈，诱它自己撞开</text>
+    <text x="60" y="1110" class="s">解谜：用笔帽开锁，安静取得旧档案</text>
+    <text x="60" y="1150" class="gold">叙事</text>
+    <text x="60" y="1180" class="s">笔帽和小满的笔身分离是“被没收”的象征；两支笔重聚，故事才闭合。</text>
+  </g>
+
+  <!-- Card 5 boiler/electrical -->
+  <g>
+    <rect x="610" y="740" width="560" height="610" class="panel"/>
+    <text x="636" y="780" class="h">E · 锅炉 / 旧配电间</text>
+    <g transform="translate(650,810)">
+      <rect x="0" y="40" width="100" height="140" fill="#7a4b2e" stroke="#4b301a"/>
+      <circle cx="50" cy="70" r="25" fill="#4b301a"/>
+      <rect x="140" y="10" width="90" height="150" fill="#4a5560" stroke="#2c343d"/>
+      <text x="185" y="90" text-anchor="middle" class="s" fill="#ffe9b8">配电</text>
+    </g>
+    <text x="636" y="1030" class="gold">玩法分支</text>
+    <text x="636" y="1060" class="s">战斗：破坏配电让全楼灯灭，程老师视野骤降</text>
+    <text x="636" y="1085" class="s">戏耍：错接线路制造假响铃，把它引到错误层</text>
+    <text x="636" y="1110" class="s">解谜：按火灾前图纸接线，复原“事故不是人为”的证据</text>
+    <text x="636" y="1150" class="gold">叙事</text>
+    <text x="636" y="1180" class="s">配电间是“锅”的实体化：程老师背了很久的锅，其实只是老化线路。</text>
+  </g>
+
+  <!-- Matrix -->
+  <g>
+    <rect x="1186" y="740" width="560" height="610" class="panel"/>
+    <text x="1212" y="780" class="h">F · 解法光谱检查</text>
+    <g transform="translate(1220,830)">
+      <rect width="490" height="44" x="0" y="0" fill="#c9a96f"/>
+      <text x="245" y="29" text-anchor="middle" class="t" fill="#fff7e0">情绪目标：从压迫到安静悲伤</text>
+      <rect width="490" height="44" y="55" fill="#efe3cc"/>
+      <text x="245" y="83" text-anchor="middle" class="s">最优解法：潜行 + 解谜 + 重写规则</text>
+      <rect width="490" height="44" y="110" fill="#f4d6d0"/>
+      <text x="245" y="138" text-anchor="middle" class="s">战斗可用，但会加速“程老师暴走”，丢失记录碎片</text>
+      <rect width="490" height="44" y="165" fill="#e5d8ef"/>
+      <text x="245" y="193" text-anchor="middle" class="s">戏耍可用，最多每时段两次，第三次它不再受骗</text>
+      <text x="0" y="270" class="gold">每个房间自检</text>
+      <text x="0" y="300" class="s">□ 有 1 个能改变程老师路线的声音/空间物</text>
+      <text x="0" y="328" class="s">□ 有 1 条安静路线和 1 条硬闯后果</text>
+      <text x="0" y="356" class="s">□ 战斗玩家不空手，但安静玩家拿更好的结局</text>
+      <text x="0" y="384" class="s">□ 叙事碎片不因战斗强制消失，只变难拿</text>
+    </g>
+  </g>
+  <text x="40" y="1390" font-size="15" font-family="Microsoft YaHei" fill="#d8cbb4">确认后进入下一层：把每个物件补成“互动-结果-失败-叙事”四态表，并出俯视/玩家视角两张布置图。</text>
+</svg>
