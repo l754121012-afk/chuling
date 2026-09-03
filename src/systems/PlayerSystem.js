@@ -175,7 +175,7 @@ export class PlayerSystem {
       this._shiftTapHandled = false;
     }
     if (this._shiftTapAt > 0 && !this._shiftTapHandled) {
-      if (nowSec() - this._shiftTapAt > 0.18) {
+      if (nowSec() - this._shiftTapAt > GAME_CONFIG.sprintActivateDelay) {
         this._shiftTapHandled = true;
       } else if (!shiftDown) {
         this._shiftTapHandled = true;
@@ -448,7 +448,11 @@ export class PlayerSystem {
       dirZ /= len;
     }
 
-    const sprint = this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight');
+    const shiftDownNow = this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight');
+    const shiftHeldLong =
+      this._shiftTapAt > 0 &&
+      nowSec() - this._shiftTapAt >= GAME_CONFIG.sprintActivateDelay;
+    const sprint = shiftDownNow && shiftHeldLong;
     const canSprint = sprint && this.game.stamina > GAME_CONFIG.staminaMinToSprint;
     const sticky = this.game.stickyUntil > nowSec();
     this.crouching = this.input.isDown('KeyC') || this.input.isDown('ControlLeft');
@@ -517,7 +521,10 @@ export class PlayerSystem {
 
   _handleStamina(dt, body) {
     const moving = Math.hypot(body.velocity.x, body.velocity.z) > 0.4;
-    const sprinting = this.input.isDown('ShiftLeft') && moving &&
+    const sprinting = this.input.isDown('ShiftLeft') &&
+      this._shiftTapAt > 0 &&
+      nowSec() - this._shiftTapAt >= GAME_CONFIG.sprintActivateDelay &&
+      moving &&
       this.game.stamina > GAME_CONFIG.staminaMinToSprint;
     if (sprinting) {
       this.game.stamina = clamp(

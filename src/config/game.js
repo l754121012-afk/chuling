@@ -9,6 +9,7 @@ export const GAME_CONFIG = {
   jumpStaminaCost: 8,
   walkSpeed: 3.38,
   sprintSpeed: 6.0,
+  sprintActivateDelay: 0.32,
   throwCooldown: 0.35,
   interactRadius: 2.2,
   pickupRadius: 2.0,
