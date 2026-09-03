@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="2320" viewBox="0 0 1720 2320">
+  <style>
+    .bg{fill:#141519;}
+    .card{fill:#f7f1e2;stroke:#5a4d37;stroke-width:2;}
+    .title{font:bold 22px "Microsoft YaHei";fill:#8f2f24;}
+    .t{font:14px "Microsoft YaHei";fill:#2b2118;}
+    .s{font:12px "Microsoft YaHei";fill:#4b4134;}
+    .gold{font:bold 15px "Microsoft YaHei";fill:#b7791f;}
+    .box{fill:#efe3cc;stroke:#7d5a33;stroke-width:2;}
+  </style>
+  <rect class="bg" width="1720" height="2320"/>
+  <text x="40" y="42" font-size="32" font-family="Microsoft YaHei" font-weight="700" fill="#ffe9b8">禁闭室 04-14 空间最终收口图</text>
+  <text x="40" y="80" font-size="17" font-family="Microsoft YaHei" fill="#d8cbb4">11 个空间一次出齐：一眼信息、核心互动、三流派、失败后果、叙事、路线验收</text>
+
+  <g transform="translate(40,100)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">04 教师办公室</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="35" y="80" width="90" height="90" fill="#c39a6b"/><rect x="150" y="90" width="35" height="130" fill="#8a6d3b"/><circle cx="168" cy="110" r="8" fill="#e63946"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">红笔/印章/暖水瓶/日程</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">调换处分对象/插入空档</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">暖水瓶翻倒=全楼巡查</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">它给自己写满处分</text>
+    <text x="20" y="330" class="s">路线：后门到隔间 / 楼梯到资料室</text>
+  </g>
+  <g transform="translate(600,100)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">05 资料室</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="40" y="75" width="40" height="180" fill="#8a6d3b"/><rect x="90" y="75" width="40" height="180" fill="#8a6d3b"/><rect x="140" y="75" width="40" height="180" fill="#8a6d3b"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">三档案柜/缺页袋/旧照片</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">借阅卡伪造/三份比对</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">档案被撕页永久缺失</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">小满档案少一页</text>
+    <text x="20" y="330" class="s">路线：夹层口/教师办公室</text>
+  </g>
+  <g transform="translate(1160,100)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">06 档案阁夹层</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="40" y="110" width="50" height="145" fill="#8a6d3b"/><rect x="140" y="110" width="50" height="145" fill="#8a6d3b"/><line x1="40" y1="125" x2="190" y2="125" stroke="#4b4134" stroke-width="4"/>
+    <circle cx="110" cy="155" r="8" fill="#8f2f24"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">爬柜/横梁/通风口</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">坠落砸鬼/引它撞梁/取笔帽</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">横梁断裂封楼下</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">笔帽刻着小满名字</text>
+    <text x="20" y="330" class="s">路线：资料室到锅炉捷径</text>
+  </g>
+
+  <g transform="translate(40,480)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">07 地下锅炉房</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <circle cx="90" cy="150" r="55" fill="#7a4b2e"/><rect x="160" y="80" width="35" height="150" fill="#4a5560"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">锅炉/蒸汽阀/煤斗</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">重启蒸汽/错阀诱鬼/顺序关阀</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">爆管后地下灌蒸汽</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">失火当晚有人加班</text>
+    <text x="20" y="330" class="s">路线：配电间/仓库/档案阁捷径</text>
+  </g>
+  <g transform="translate(600,480)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">08 旧配电间</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="40" y="80" width="150" height="150" fill="#4a5560"/><line x1="60" y1="110" x2="170" y2="110" stroke="#ffd166"/><line x1="60" y1="150" x2="170" y2="150" stroke="#ffd166"/><circle cx="115" cy="220" r="10" fill="#e63946"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">烧焦箱/图纸/时间标签</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">停电/假铃/按图接线</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">电弧炸响=暴走</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">起火是老化线路</text>
+    <text x="20" y="330" class="s">路线：锅炉/消防仓库</text>
+  </g>
+  <g transform="translate(1160,480)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">09 消防仓库/原点</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="45" y="90" width="50" height="80" fill="#7d4a3b"/><rect x="105" y="90" width="50" height="80" fill="#7d4a3b"/><rect x="165" y="80" width="30" height="150" fill="#8a6d3b"/>
+    <circle cx="110" cy="220" r="12" fill="#b7791f"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">油桶/棉被/双笔槽</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">强进/棉被骗火/倒放还原</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">真结局锁死</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">双笔槽在此</text>
+    <text x="20" y="330" class="s">路线：倒放世界入口</text>
+  </g>
+
+  <g transform="translate(40,860)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">10 内院/消防梯</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="45" y="80" width="130" height="55" fill="#c9d3bc"/><rect x="45" y="165" width="55" height="90" fill="#c9d3bc"/><rect x="145" y="165" width="55" height="90" fill="#c9d3bc"/><line x1="150" y1="185" x2="190" y2="130" stroke="#4b4134" stroke-width="3"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">垃圾箱/消防梯/铁门</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">垃圾箱挡路/引鬼上楼/校工路线</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">消防梯收回</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">校工证词=无纵火</text>
+    <text x="20" y="330" class="s">路线：屋顶/一楼外环</text>
+  </g>
+  <g transform="translate(600,860)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">11 屋顶水箱区</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="40" y="100" width="60" height="110" fill="#7f97a3"/><rect x="120" y="100" width="60" height="110" fill="#7f97a3"/><line x1="40" y1="80" x2="180" y2="80" stroke="#4a5560" stroke-width="5"/><circle cx="110" cy="65" r="8" fill="#ffd166"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">水管架/喇叭/水箱</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">水管甩倒/喇叭引角/水箱后绕</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">水箱盖封死</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">俯瞰火灾伤疤</text>
+    <text x="20" y="330" class="s">路线：记忆下课铃触发</text>
+  </g>
+  <g transform="translate(1160,860)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">12 记忆走廊</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="45" y="80" width="55" height="140" fill="#c8b7de"/><rect x="130" y="80" width="55" height="140" fill="#c8b7de"/><rect x="70" y="200" width="90" height="22" fill="#5d6b5a"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">会变的门/循环钟</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">破墙/两声回头/擦改门规则</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">循环提前重置丢页</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">规则就是它的牢</text>
+    <text x="20" y="330" class="s">路线：现实层/记忆层交界</text>
+  </g>
+
+  <g transform="translate(40,1240)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">13 火灾前倒放世界</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <path d="M35 240 L185 240" stroke="#8f2f24" stroke-width="5"/><rect x="50" y="110" width="70" height="40" fill="#7d4a3b"/><rect x="135" y="90" width="45" height="80" fill="#8a6d3b"/><path d="M185 250 L100 170 L20 250" fill="none" stroke="#3f7f5a" stroke-dasharray="5 5"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">灰烬物/倒放钟</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">强推倒放物/灰烬门/按序还原</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">倒放卡住</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">火灾不是学生的错</text>
+    <text x="20" y="330" class="s">路线：真相层入口</text>
+  </g>
+  <g transform="translate(600,1240)">
+    <rect width="520" height="360" class="card"/>
+    <text x="20" y="34" class="title">14 火灾后真相层</text>
+    <rect x="20" y="55" width="200" height="200" class="box"/>
+    <rect x="40" y="90" width="70" height="100" fill="#fff"/><rect x="120" y="90" width="70" height="100" fill="#fff"/><circle cx="75" cy="140" r="7" fill="#b7791f"/><circle cx="155" cy="140" r="7" fill="#8f2f24"/>
+    <text x="235" y="80" class="gold">玩家一眼</text><text x="235" y="105" class="s">两张记录/双笔槽</text>
+    <text x="235" y="140" class="gold">核心</text><text x="235" y="165" class="s">撕记录/照片叠影/安静重写</text>
+    <text x="235" y="200" class="gold">失败</text><text x="235" y="225" class="s">坏结局分支</text>
+    <text x="235" y="260" class="gold">叙事</text><text x="235" y="285" class="s">两支笔并排闭合</text>
+    <text x="20" y="330" class="s">路线：通关/结算</text>
+  </g>
+
+  <text x="40" y="1640" font-size="15" font-family="Microsoft YaHei" fill="#d8cbb4">收口完成：04-14 已一次出齐；空间 01-03 另有高精度三视图。进入实现前需要做“关卡场景切换架构”与“可玩白盒切片”，我会按此清单推进。</text>
+</svg>
