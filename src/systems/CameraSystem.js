@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { clamp, lerp, nowSec } from '../core/Utils.js';
+import { lerp, nowSec } from '../core/Utils.js';
 
 export class CameraSystem {
   constructor(camera, world) {
     this.camera = camera;
     this.world = world;
-    this.yaw = 0;
-    this.pitch = 0.42;
-    this.dist = 5.4;
+    this.yaw = -Math.PI / 4;
+    this.pitch = 0.78;
+    this.dist = 15;
     this.raycaster = new THREE.Raycaster();
     this.raycaster.camera = camera;
     this._faded = new Map();
@@ -16,9 +16,6 @@ export class CameraSystem {
   }
 
   update(input, targetPos, dt = 1 / 60) {
-    this.yaw -= input.look.x * 0.005;
-    this.pitch = clamp(this.pitch + input.look.y * 0.004, -0.15, 1.15);
-
     const cp = new THREE.Vector3(
       targetPos.x + Math.sin(this.yaw) * Math.cos(this.pitch) * this.dist,
       targetPos.y + 2.0 + Math.sin(this.pitch) * this.dist,
