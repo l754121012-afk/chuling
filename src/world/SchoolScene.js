@@ -820,16 +820,49 @@ export class SchoolScene {
         label.position.set(0, stop.y + 1.55, 0);
         label.scale.set(2.2, 0.55, 1);
         group.add(sphere, ring, label);
+        let lockLabel = null;
+        if (route.requireClue) {
+          lockLabel = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: textTexture('泡泡待机 · 先读值日表', {
+                bg: '#4a1f2c',
+                fg: '#ffe3a8',
+                font: 'bold 30px "Microsoft YaHei", sans-serif',
+                width: 420,
+                height: 88,
+                lineHeight: 38,
+                pad: 6
+              }),
+              transparent: true,
+              depthWrite: false
+            })
+          );
+          lockLabel.position.set(0, stop.y + 2.15, 0);
+          lockLabel.scale.set(2.1, 0.5, 1);
+          group.add(lockLabel);
+        }
         group.position.set(stop.x, 0, stop.z);
         this.group.add(group);
-        refs.bubbles.push({ x: stop.x, z: stop.z, y: stop.y, to: stop.to, group, sphere, ring });
+        refs.bubbles.push({
+          x: stop.x,
+          z: stop.z,
+          y: stop.y,
+          to: stop.to,
+          group,
+          sphere,
+          ring,
+          requireClue: route.requireClue || null,
+          lockLabel
+        });
       }
     }
   }
 
   _addDoors(refs) {
     for (const doorCfg of this.L.doors || []) {
-      const box = this._box(doorCfg.w, 5.2, doorCfg.d, { x: doorCfg.x, y: 2.6, z: doorCfg.z }, '#5d6f7a');
+      const h = doorCfg.levelY ? 1.8 : 5.2;
+      const centerY = doorCfg.levelY ? doorCfg.levelY + 0.8 : 2.6;
+      const box = this._box(doorCfg.w, h, doorCfg.d, { x: doorCfg.x, y: centerY, z: doorCfg.z }, '#5d6f7a');
       const sign = new THREE.Sprite(
         new THREE.SpriteMaterial({
           map: textTexture(doorCfg.label || '门禁', {
@@ -845,7 +878,7 @@ export class SchoolScene {
           depthWrite: false
         })
       );
-      sign.position.set(0, 3.5, 0);
+      sign.position.set(0, h / 2 + 0.35, 0);
       sign.scale.set(2.0, 0.55, 1);
       box.mesh.add(sign);
       const lockSign = new THREE.Sprite(
@@ -863,7 +896,7 @@ export class SchoolScene {
           depthWrite: false
         })
       );
-      lockSign.position.set(0, 1.8, 0.08);
+      lockSign.position.set(0, -h / 2 + 0.45, 0.08);
       lockSign.scale.set(1.5, 0.45, 1);
       box.mesh.add(lockSign);
       const doorRef = {
@@ -873,8 +906,10 @@ export class SchoolScene {
         sign,
         lockSign,
         pos: { x: doorCfg.x, z: doorCfg.z },
+        levelY: doorCfg.levelY || 0.8,
         locked: !!doorCfg.locked,
-        unlockEvent: doorCfg.unlockEvent || null
+        unlockEvent: doorCfg.unlockEvent || null,
+        requireClue: doorCfg.requireClue || null
       };
       this._applyDoorLock(doorRef, doorRef.locked);
       refs.doors.push(doorRef);
@@ -1686,7 +1721,11 @@ export class SchoolScene {
     for (const bubble of this.refs?.bubbles || []) {
       const pulse = 1 + Math.sin(beaconT * 2.2) * 0.12;
       bubble.sphere.scale.setScalar(pulse);
-      bubble.sphere.material.opacity = 0.2 + (Math.sin(beaconT * 2.2) * 0.5 + 0.5) * 0.2;
+      const unlocked = !bubble.requireClue || game.hasClue(bubble.requireClue);
+      bubble.sphere.material.opacity = unlocked
+        ? 0.2 + (Math.sin(beaconT * 2.2) * 0.5 + 0.5) * 0.2
+        : 0.08;
+      if (bubble.lockLabel) bubble.lockLabel.visible = !unlocked;
       bubble.ring.scale.setScalar(pulse * 1.15);
     }
     const storyPen = this.refs?.wishPen;

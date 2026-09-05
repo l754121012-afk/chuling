@@ -194,14 +194,14 @@ events.on('npc.talk', () => {
     });
   } else if (game.detentionScheduleRead) {
     events.emit('speech', {
-      text: '纸人指了指二楼：值日表读完了，处分记录在档案阁的楼面上。',
+      text: '纸人指了指泡泡：泡泡启动了。上 2F 后，档案门会亮起，按 E 开门。',
       ms: 2200,
       name: '小满纸人'
     });
   } else {
     events.emit('speech', {
-      text: '纸人指着天花板：程老师的日程在二楼。别硬闯中间那扇门，先找泡泡或绕迷宫。',
-      ms: 2600,
+      text: '纸人指着中央过道：值日表在一楼的过道桌上。读完它，泡泡才会启动。',
+      ms: 2400,
       name: '小满纸人'
     });
   }
@@ -227,10 +227,10 @@ events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
   game.detentionScheduleRead = true;
   events.emit('act.card', {
-    title: '值日表归档 · 还差一份记录',
-    line: '08:10 粉笔声会把程老师引向禁闭区；趁它离开，去办公桌读处分记录。'
+    title: '值日表归档 · 泡泡启动',
+    line: '回到入口坐纸箱泡泡上 2F，档案门会亮起；按 E 开门读处分记录。'
   });
-  events.emit('toast', { text: '值日表已归档：办公桌上还压着处分记录。', ms: 2200 });
+  events.emit('toast', { text: '值日表已归档：泡泡启动了，档案门也解锁了。', ms: 2400 });
 });
 events.on('detention.recordRead', () => {
   if (!game.detentionMode || game.detentionComplete) return;
@@ -240,7 +240,6 @@ events.on('detention.recordRead', () => {
   }
   game.detentionComplete = true;
   school.openExit();
-  school.setDoor('archive_door', false);
   events.emit('act.card', {
     title: '第二幕完成 · 下课铃响了',
     line: '处分记录被重写：该受罚的人不是程老师。出口门禁亮了。'
@@ -341,8 +340,8 @@ events.on('game.start', () => {
   if (game.detentionMode) {
     setTimeout(() => {
       events.emit('speech', {
-        text: '小满纸人指着天花板：程老师的日程在二楼。别硬闯门禁，先找泡泡或绕迷宫。',
-        ms: 2800,
+        text: '小满纸人指着中央过道：值日表在一楼过道桌上，读完泡泡才会启动。',
+        ms: 2600,
         name: '小满纸人'
       });
     }, 2600);

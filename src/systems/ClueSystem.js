@@ -19,7 +19,7 @@ const DETENTION_CLUE_TEXT = {
   },
   note: {
     title: '程老师值日表',
-    text: '08:10 粉笔声 -> 禁闭区；08:40 电话响 -> 办公室。值日表归档后，办公桌上还压着程老师的处分记录，读它才能开门。'
+    text: '08:10 粉笔声 -> 禁闭区；08:40 电话响 -> 办公室。值日表归档后，入口泡泡会启动，到 2F 档案门读处分记录。'
   },
   record: {
     title: '程老师处分记录',
@@ -64,7 +64,7 @@ export class ClueSystem {
         'detention_schedule',
         '日程',
         '程老师值日表',
-        '08:10 粉笔声 -> 禁闭区；08:40 电话响 -> 办公室。值日表归档后，办公桌上还压着程老师的处分记录。'
+        '08:10 粉笔声 -> 禁闭区；08:40 电话响 -> 办公室。值日表归档后泡泡启动，2F 档案门解锁。'
       );
       this.events.emit('detention.noteRead');
       if (this.game.hasClue('record')) this.events.emit('detention.recordRead');

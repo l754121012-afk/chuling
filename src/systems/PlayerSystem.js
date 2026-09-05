@@ -951,12 +951,19 @@ export class PlayerSystem {
       const verticalOk = Math.abs(pos.y - bubble.y) < 1.5;
       if (db < 1.7 && verticalOk && 2.6 > bestPriority) {
         bestPriority = 2.6;
-        best = {
-          type: 'bubble',
-          bubble,
-          label: 'E 钻进泡泡',
-          pos: { x: bubble.x, y: bubble.y + 0.8, z: bubble.z }
-        };
+        const unlocked = !bubble.requireClue || this.game.hasClue(bubble.requireClue);
+        best = unlocked
+          ? {
+              type: 'bubble',
+              bubble,
+              label: 'E 钻进泡泡',
+              pos: { x: bubble.x, y: bubble.y + 0.8, z: bubble.z }
+            }
+          : {
+              type: 'bubbleLocked',
+              label: '泡泡待机：先去中央过道读值日表',
+              pos: { x: bubble.x, y: bubble.y + 0.8, z: bubble.z }
+            };
       }
     }
 
@@ -990,12 +997,15 @@ export class PlayerSystem {
     for (const door of this.refs.doors || []) {
       if (!door.locked) continue;
       const dd = distance2D(pos.x, pos.z, door.pos.x, door.pos.z);
-      if (dd < 1.9 && 2.5 > bestPriority) {
+      const verticalOk = Math.abs(pos.y - (door.levelY ?? 0.8)) < 1.3;
+      if (dd < 1.9 && verticalOk && 2.5 > bestPriority) {
         bestPriority = 2.5;
         best = {
           type: 'doorLocked',
           door,
-          label: '门禁锁着',
+          label: door.requireClue && this.game.hasClue(door.requireClue)
+            ? 'E 打开档案门'
+            : '门禁锁着',
           pos: { x: door.pos.x, y: 2.1, z: door.pos.z }
         };
       }
@@ -1026,6 +1036,8 @@ export class PlayerSystem {
       this.events.emit('toast', { text: target.label.replace('出口锁着：', ''), ms: 1800 });
     } else if (target.type === 'bubble') {
       this._startBubble(target.bubble);
+    } else if (target.type === 'bubbleLocked') {
+      this.events.emit('toast', { text: '泡泡还没启动：先去中央过道读程老师值日表。', ms: 2000 });
     } else if (target.type === 'npc') {
       this.events.emit('npc.talk');
     } else if (target.type === 'wageSlip') {
@@ -1038,10 +1050,18 @@ export class PlayerSystem {
       this.audio?.play('paper');
       this.events.emit('wage.pickup');
     } else if (target.type === 'doorLocked') {
-      const label = target.door?.id === 'archive_door'
-        ? '档案阁门禁锁着：读完值日表和处分记录后会自动打开。'
-        : '这扇门暂时被校务铃锁住了。';
-      this.events.emit('toast', { text: label, ms: 2200 });
+      const door = target.door;
+      if (door?.requireClue && this.game.hasClue(door.requireClue)) {
+        this.scene.setDoor(door.id, false);
+        this.events.emit('toast', { text: '档案门开了！进去读处分记录。', ms: 2000 });
+      } else if (door?.requireClue) {
+        this.events.emit('toast', {
+          text: '档案门锁着：先到中央过道读程老师值日表。',
+          ms: 2200
+        });
+      } else {
+        this.events.emit('toast', { text: '这扇门暂时被校务铃锁住了。', ms: 1800 });
+      }
     } else if (target.type === 'clue') {
       if (this.game.detentionMode && target.clue.id === 'blackboard') {
         this._detentionChalk(target.clue.pos);
@@ -1049,7 +1069,7 @@ export class PlayerSystem {
         this.clues.readClue(target.clue.id);
         if (this.game.detentionMode && target.clue.id === 'note') {
           this.events.emit('toast', {
-            text: '值日表已归档：办公桌上还有一份程老师的处分记录，读它才能开门。',
+            text: '值日表已归档：泡泡启动，回入口坐泡泡上 2F 开档案门。',
             ms: 2600
           });
         } else if (this.game.detentionMode && target.clue.id === 'record') {

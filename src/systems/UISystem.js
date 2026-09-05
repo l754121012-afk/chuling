@@ -709,8 +709,8 @@ export class UISystem {
       this.el.phaseFlag.textContent = game.detentionComplete
         ? '目标完成 · 出口已开'
         : game.detentionScheduleRead
-          ? '值日表已归档 · 去读处分记录'
-          : '任务 · 去程老师办公桌读值日表';
+          ? '泡泡已启动 · 上 2F 档案门'
+          : '任务 · 中央过道读值日表';
       return;
     }
     if (game.runMode) {
@@ -725,8 +725,8 @@ export class UISystem {
         this.el.phaseFlag.textContent = game.detentionComplete
           ? '第二幕完成 · 出口已开'
           : game.detentionScheduleRead
-            ? '第二幕 · 去读处分记录'
-            : '第二幕 · 去读程老师值日表';
+            ? '第二幕 · 泡泡启动上 2F'
+            : '第二幕 · 中央过道读值日表';
       } else {
         this.el.phaseFlag.textContent = '第三幕 · 找失火真相';
       }
@@ -752,9 +752,9 @@ export class UISystem {
       }
       if (game.runStage === 2) {
         if (escape) return '鬼被压制了！出口已开，跑向禁闭室出口';
-        if (game.detentionComplete) return '第二幕完成：处分记录已重写，出口亮了，去走廊尽头';
-        if (game.detentionScheduleRead) return '第二幕 · 禁闭室：值日表已归档，趁程老师被引开去读办公桌上的处分记录';
-        return '第二幕 · 禁闭室：穿过隔间迷宫，先读程老师值日表';
+      if (game.detentionComplete) return '第二幕完成：处分记录已重写，出口亮了，去走廊尽头';
+      if (game.detentionScheduleRead) return '第二幕：值日表已归档，泡泡启动；回入口上 2F，档案门亮起后按 E 开门读处分记录';
+      return '第二幕：先到中央过道读程老师值日表；读完入口泡泡才会启动';
       }
       if (escape) return '第三幕：真相已到手？快跑向出口！';
       return '第三幕 · 旧仓库：找到失火那晚的真相，让两支笔重新并排';
@@ -762,8 +762,8 @@ export class UISystem {
     if (game.detentionMode) {
       if (escape) return '程老师被压制了！跑向禁闭室出口';
       if (game.detentionComplete) return '处分记录已重写，出口亮了，去走廊尽头';
-      if (game.detentionScheduleRead) return '西翼禁闭室：值日表已归档，去档案阁读处分记录；黑板粉笔可引开程老师';
-      return '西翼禁闭室：穿过值班室、禁闭迷宫与档案阁，去程老师办公桌读值日表，再找处分记录';
+      if (game.detentionScheduleRead) return '西翼：值日表已归档，泡泡启动；上 2F 档案门按 E 开门读处分记录';
+      return '西翼：先到中央过道读值日表；泡泡和档案门会在读完后解锁';
     }
     if (game.artifactActive && game.phase !== 'escape') {
       if (game.artifactStage === 0) return '清仓守卫战幕 1：广播封锁，躲开红色警戒区！';

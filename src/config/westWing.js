@@ -9,10 +9,10 @@ function westWingConfig() {
   cfg.playerStart = { x: -19, z: -6 };
   cfg.ghostSpawn = { x: 15, z: -8 };
   cfg.exit = { x: 0, z: 23.4 };
-  cfg.teacherDesk = { x: 11, z: 15.5, rotY: 0.2 };
-  cfg.note = { x: -4, y: 4.7, z: 12.5 };
+  cfg.teacherDesk = { x: 0, z: 5.5, rotY: 0.1 };
+  cfg.note = { x: 0.7, y: 1.95, z: 5.5 };
   cfg.record = { x: 4, y: 4.7, z: 12.5 };
-  cfg.platform = { x: 11, z: 15.5, w: 5, h: 1, d: 4 };
+  cfg.platform = { x: 0, z: 5.5, w: 5, h: 1, d: 4 };
   cfg.secondFloor = { x: 0, z: 12.5, w: 22, d: 7, topY: 4.25, h: 0.5 };
   cfg.platformLabel = '程老师办公桌';
   cfg.storyPen = false;
@@ -64,14 +64,15 @@ function westWingConfig() {
   ];
   cfg.doors = [
     {
-      id: 'archive_door',
+      id: 'record_door',
       x: 2,
-      z: 8,
-      w: 4,
+      z: 12.5,
+      w: 3,
       d: 0.3,
-      label: '档案阁门禁',
+      label: '档案门',
       locked: true,
-      unlockEvent: 'detentionComplete'
+      requireClue: 'note',
+      levelY: 4.4
     },
     {
       id: 'maze_door',
@@ -139,7 +140,8 @@ function westWingConfig() {
       from: { x: -20, z: -6, y: 0.9 },
       to: { x: 0, z: 11.8, y: 4.3 },
       color: '#8ef0c8',
-      label: '纸箱泡泡 · 上档案阁'
+      label: '纸箱泡泡 · 上档案阁',
+      requireClue: 'note'
     },
     {
       from: { x: 4, z: 13, y: 4.4 },
