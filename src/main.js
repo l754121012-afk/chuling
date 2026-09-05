@@ -24,8 +24,13 @@ import { EconomySystem } from './systems/EconomySystem.js';
 import { RandomEventSystem } from './systems/RandomEventSystem.js';
 import { nowSec } from './core/Utils.js';
 
+const URL_PARAMS = new URLSearchParams(window.location.search);
 const canvas = document.getElementById('game-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  preserveDrawingBuffer: URL_PARAMS.get('shot') === '1'
+});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -41,7 +46,6 @@ const events = new EventBus();
 const physics = new PhysicsWorld();
 const game = new GameState();
 const economy = new EconomySystem();
-const URL_PARAMS = new URLSearchParams(window.location.search);
 const DETENTION_MODE = URL_PARAMS.get('case') === 'detention';
 const DETENTION_AUTO = URL_PARAMS.get('auto') === '1';
 const RUN_MODE = URL_PARAMS.get('run') === 'two_pens';
