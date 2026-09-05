@@ -62,7 +62,7 @@ input.onLockChange = locked => {
   if (hint) {
     hint.textContent = locked
       ? '鼠标已锁定：按 Esc 释放'
-      : 'WASD 移动 · 点击画面锁定鼠标 · 左键使用道具 · E 互动 · Tab 手机';
+      : 'WASD 移动 · G 鞭子攻击开关（关=道具模式）· 左键用道具/抽鞭子 · E 互动 · Tab 手机';
   }
   if (locked) events.emit('toast', { text: '鼠标已锁定，按 Esc 释放', ms: 1800 });
 };
@@ -251,12 +251,12 @@ events.on('game.start', () => {
   ui.toggleBackpack(false);
   ui.sync(game);
   const startToast = RUN_MODE && RUN_STAGE === 1
-    ? '第一幕：值日台有支金色任务笔。先站远观察，小满会过来碰倒它，再替它摆正。'
+    ? '第一幕：值日台有支金色任务笔，先站远看小满碰倒它。按 G 开启鞭子攻击，关掉 G 后左键照常使用道具。'
     : RUN_MODE && RUN_STAGE === 2
       ? '第二幕：先读值日表，再趁程老师被引开去读处分记录。'
       : RUN_MODE && RUN_STAGE === 3
         ? '第三幕：去旧仓库找失火那晚的真相。'
-        : '实习开始：先找线索，别惊动它。主管：这一单预计到手 12 円。';
+        : '按 G 切换鞭子攻击模式；关闭 G 后左键照常使用道具。先找线索，别惊动它。';
   events.emit('toast', { text: startToast, ms: 3200 });
   if (RUN_MODE) {
     const intro = RUN_STAGE === 1

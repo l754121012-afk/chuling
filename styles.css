@@ -1429,28 +1429,95 @@ body.playing canvas {
 
 #wheel-visual {
   position: relative;
-  width: 220px;
-  height: 220px;
-  margin: 18px auto;
+  width: 246px;
+  height: 246px;
+  margin: 16px auto;
 }
 
 #wheel-disc {
-  margin: 0 auto;
-  width: 200px;
-  height: 200px;
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 222px;
+  height: 222px;
   border-radius: 50%;
-  border: 6px solid #f4d35e;
-  box-shadow: 0 0 22px rgba(244, 211, 94, 0.45);
+  border: 7px solid #d9b44a;
+  box-shadow:
+    0 0 24px rgba(244, 211, 94, 0.5),
+    inset 0 0 14px rgba(43, 33, 24, 0.35);
+  overflow: hidden;
+}
+
+.wheel-label {
+  position: absolute;
+  width: 76px;
+  transform: translate(-50%, -50%);
+  color: #2b2118;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
+  pointer-events: none;
+}
+
+.wheel-label small {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.78;
 }
 
 #wheel-pointer {
   position: absolute;
-  top: -8px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-top: 22px solid #e63946;
+  width: 6px;
+  height: 96px;
+  margin-left: -3px;
+  margin-top: -8px;
+  border-radius: 4px;
+  background: linear-gradient(#fff4d8, #e63946 62%, #8f2f24);
+  transform-origin: 50% 8px;
+  transform: rotate(-30deg);
+  z-index: 4;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
+}
+
+#wheel-pointer::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -7px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 18px solid #e63946;
+}
+
+#wheel-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff2c2, #d9a93f 70%);
+  border: 3px solid #6b4a1d;
+  z-index: 5;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+}
+
+#wheel-visual.spinning {
+  animation: wheelJiggle 0.13s ease-in-out infinite;
+}
+
+@keyframes wheelJiggle {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, -2px); }
+  80% { transform: translate(1px, 2px); }
 }
 
 #wheel-spin-btn {

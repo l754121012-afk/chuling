@@ -15,6 +15,9 @@ export class UISystem {
     this._flashTimer = null;
     this._actCardTimer = null;
     this._parryTimer = null;
+    this._wheelAngle = -30;
+    this._wheelSpinTimer = null;
+    this._wheelSpinning = false;
     this._registerEvents();
   }
 
@@ -59,7 +62,9 @@ export class UISystem {
       gachaResult: document.getElementById('gacha-result'),
       wheelModal: document.getElementById('wheel-modal'),
       wheelClose: document.querySelector('.wheel-close'),
+      wheelVisual: document.getElementById('wheel-visual'),
       wheelDisc: document.getElementById('wheel-disc'),
+      wheelPointer: document.getElementById('wheel-pointer'),
       wheelSpinBtn: document.getElementById('wheel-spin-btn'),
       wheelResult: document.getElementById('wheel-result'),
       wheelBtnWin: document.getElementById('wheel-btn-win'),
@@ -257,9 +262,10 @@ export class UISystem {
     if (!this.el.wheelModal) return;
     this.el.wheelModal.classList.remove('hidden');
     this._wheelUsed = this._wheelUsed || false;
-    if (this.el.wheelDisc) {
-      this.el.wheelDisc.style.background =
-        'conic-gradient(#ffd166 0 60deg,#ff6b6b 60deg 120deg,#8ef0c8 120deg 180deg,#b48cff 180deg 240deg,#ff9f45 240deg 300deg,#5ad1ff 300deg 360deg)';
+    this._renderWheelLabels();
+    if (this.el.wheelPointer) {
+      this.el.wheelPointer.style.transition = 'none';
+      this.el.wheelPointer.style.transform = `rotate(${this._wheelAngle}deg)`;
     }
     if (this.el.wheelSpinBtn) this.el.wheelSpinBtn.disabled = this._wheelUsed;
     if (this.el.wheelResult) {
@@ -273,14 +279,63 @@ export class UISystem {
     this.el.wheelModal?.classList.add('hidden');
   }
 
+  _renderWheelLabels() {
+    const disc = this.el.wheelDisc;
+    if (!disc) return;
+    const colors = ['#ffd166', '#ff8f8f', '#8ef0c8', '#b48cff', '#ff9f45', '#5ad1ff'];
+    const options = this.economy?.wheelOptions?.() || [];
+    const base = Math.max(0, this.economy?._lastRunCoins || 100);
+    disc.style.background = `conic-gradient(${colors.map((c, i) => `${c} ${i * 60}deg ${(i + 1) * 60}deg`).join(',')})`;
+    disc.innerHTML = '';
+    const radius = 74;
+    options.forEach((opt, i) => {
+      const angle = (i * 60 + 30) * Math.PI / 180;
+      const reward = Math.max(10, Math.round(base * opt.mult));
+      const label = document.createElement('div');
+      label.className = 'wheel-label';
+      label.style.left = `${50 + Math.sin(angle) * radius}%`;
+      label.style.top = `${50 - Math.cos(angle) * radius}%`;
+      label.innerHTML = `<span>${opt.label.replace('工资 ', '')}</span><small>≈ +${reward.toLocaleString()}</small>`;
+      disc.appendChild(label);
+    });
+  }
+
   spinWheel() {
-    if (this._wheelUsed) return;
+    if (this._wheelUsed || this._wheelSpinning) return;
     this._wheelUsed = true;
     if (this.el.wheelSpinBtn) this.el.wheelSpinBtn.disabled = true;
     const result = this.economy.wheelSpin();
-    this.el.wheelResult.textContent = `转出：${result.label}，+${result.reward.toLocaleString()} 金币` +
-      (result.debtPaid > 0 ? `，自动还债 ${result.debtPaid.toLocaleString()}` : '');
-    this.renderEconomyBalance();
+    const targetSector = (result.index * 60 + 30) % 360;
+    const current = ((this._wheelAngle % 360) + 360) % 360;
+    const turns = 3 + Math.floor(Math.random() * 3);
+    const delta = (targetSector - current + 360) % 360;
+    this._wheelAngle += turns * 360 + delta;
+    this._wheelSpinning = true;
+    this.el.wheelVisual?.classList.add('spinning');
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([40, 30, 40, 30, 60, 30, 90]);
+    }
+    if (this.el.wheelResult) this.el.wheelResult.textContent = '转盘在震……指针正在找老板的钱包！';
+    requestAnimationFrame(() => {
+      if (!this.el.wheelPointer) return;
+      this.el.wheelPointer.style.transition = 'transform 2s cubic-bezier(.12,.72,.16,1)';
+      this.el.wheelPointer.style.transform = `rotate(${this._wheelAngle}deg)`;
+    });
+    clearTimeout(this._wheelSpinTimer);
+    this._wheelSpinTimer = setTimeout(() => {
+      this._wheelSpinning = false;
+      this.el.wheelVisual?.classList.remove('spinning');
+      if (this.el.wheelPointer) {
+        this.el.wheelPointer.style.transition = 'none';
+        this.el.wheelPointer.style.transform = `rotate(${this._wheelAngle}deg)`;
+      }
+      if (this.el.wheelResult) {
+        this.el.wheelResult.textContent = `指针停在：${result.label}，+${result.reward.toLocaleString()} 金币` +
+          (result.debtPaid > 0 ? `，自动还债 ${result.debtPaid.toLocaleString()}` : '');
+      }
+      this.renderEconomyBalance();
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(160);
+    }, 2050);
   }
 
   renderBackpack() {
@@ -501,7 +556,13 @@ export class UISystem {
       this.el.whipHint.classList.toggle('combo', comboActive);
       this.el.whipHint.classList.toggle('active', game.whipMode);
       if (this.el.whipLabel) {
-        this.el.whipLabel.textContent = game.whipMode ? '模式中·左键连抽' : '鞭子';
+        this.el.whipLabel.textContent = game.whipMode
+          ? '攻击模式·左键连抽'
+          : '开攻击模式·关=道具';
+      }
+      const keyBadge = this.el.whipHint?.querySelector('span');
+      if (keyBadge) {
+        keyBadge.textContent = game.whipMode ? '关' : 'G';
       }
       if (this.el.whipCombo) {
         this.el.whipCombo.textContent = comboActive ? `x${game.whipCombo}` : '';

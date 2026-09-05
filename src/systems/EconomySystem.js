@@ -156,8 +156,8 @@ export class EconomySystem {
     return paid;
   }
 
-  wheelSpin() {
-    const table = [
+  wheelOptions() {
+    return [
       { mult: 1, label: '原样拿走' },
       { mult: 1.2, label: '工资 ×1.2' },
       { mult: 1.5, label: '工资 ×1.5' },
@@ -165,13 +165,18 @@ export class EconomySystem {
       { mult: 3, label: '工资 ×3' },
       { mult: 5, label: '老板发疯 ×5' }
     ];
-    const pick = table[Math.floor(Math.random() * table.length)];
+  }
+
+  wheelSpin() {
+    const table = this.wheelOptions();
+    const index = Math.floor(Math.random() * table.length);
+    const pick = table[index];
     const base = this._lastRunCoins || 100;
     const reward = Math.max(10, Math.round(base * pick.mult));
     this.state.coins += reward;
     const debtPaid = this.payDebt(this.state.coins);
     this.save();
-    return { ...pick, reward, base, debtPaid };
+    return { ...pick, reward, base, debtPaid, index };
   }
 
   gachaRelic() {

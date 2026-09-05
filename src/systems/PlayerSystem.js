@@ -1374,8 +1374,8 @@ export class PlayerSystem {
     this.playPose(this.game.whipMode ? 'use' : 'idle', 0.3);
     this.events.emit('toast', {
       text: this.game.whipMode
-        ? '鞭子模式：按住或点击左键连抽，再按 G 关闭'
-        : '鞭子模式已关闭',
+        ? '鞭子攻击模式：左键连抽 / 右键重击；再按 G 切回道具模式'
+        : '鞭子模式已关闭：左键恢复正常使用道具',
       ms: 2000
     });
   }
@@ -1405,13 +1405,16 @@ export class PlayerSystem {
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
     const fwdZ = -Math.cos(yaw);
-    const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
-    if (dist > 5.5 || dot < 0.35) {
+    const dot = (dx * fwdX + dz * fwdZ) / Math.max(0.01, dist);
+    const pointBlank = dist < 0.8;
+    if (dist > 5.5 || (!pointBlank && dot < 0.35)) {
       this.events.emit('toast', { text: '重击挥空了！', ms: 1200 });
       return;
     }
     const kb = 14 * (this.game.desperate ? 1.4 : 1);
-    this.ghost.knockback((dx / dist) * kb, (dz / dist) * kb, 0.55);
+    const hitX = dist > 0.05 ? dx / dist : fwdX;
+    const hitZ = dist > 0.05 ? dz / dist : fwdZ;
+    this.ghost.knockback(hitX * kb, hitZ * kb, 0.55);
     this.ghost._spinTimer = 1.2;
     this.ghost._dashFlash = 0.4;
     this.ghost.damage(3, { rage: 0 });
@@ -1534,9 +1537,9 @@ export class PlayerSystem {
       const dx = m.x - pp.x;
       const dz = m.z - pp.z;
       const dist = Math.hypot(dx, dz);
-      if (dist < 0.4 || dist > range || dist >= bestDist) continue;
-      const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
-      if (dot < cone) continue;
+      if (dist < 0.01 || dist > range || dist >= bestDist) continue;
+      const dot = (dx * fwdX + dz * fwdZ) / Math.max(0.01, dist);
+      if (dist >= 0.8 && dot < cone) continue;
       best = m;
       bestDist = dist;
     }
@@ -1650,8 +1653,9 @@ export class PlayerSystem {
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
     const fwdZ = -Math.cos(yaw);
-    const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
-    if (dist > GAME_CONFIG.whipRange || dist < 0.5 || dot < GAME_CONFIG.whipCone) {
+    const dot = (dx * fwdX + dz * fwdZ) / Math.max(0.01, dist);
+    const pointBlank = dist < 0.8;
+    if (dist > GAME_CONFIG.whipRange || (!pointBlank && dot < GAME_CONFIG.whipCone)) {
       this._whipMiss();
       return;
     }
@@ -1664,9 +1668,11 @@ export class PlayerSystem {
     const rageAmount = GAME_CONFIG.whipRageBase + (combo >= 10 ? 8 : combo >= 5 ? 5 : 0);
     this.rage.add(rageAmount, 'whip');
     const kb = GAME_CONFIG.whipKnockback * (this.game.desperate ? 1.5 : 1);
+    const hitX = dist > 0.05 ? dx / dist : fwdX;
+    const hitZ = dist > 0.05 ? dz / dist : fwdZ;
     this.ghost.knockback(
-      (dx / dist) * kb,
-      (dz / dist) * kb,
+      hitX * kb,
+      hitZ * kb,
       0.35
     );
     this.ghost._spinTimer = GAME_CONFIG.whipSpinDuration;
@@ -1756,8 +1762,8 @@ export class PlayerSystem {
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
     const fwdZ = -Math.cos(yaw);
-    const dot = ((gp.x - pp.x) * fwdX + (gp.z - pp.z) * fwdZ) / (dist || 1);
-    if (dot < (this.game.desperate ? 0.1 : 0.3)) return false;
+    const dot = ((gp.x - pp.x) * fwdX + (gp.z - pp.z) * fwdZ) / Math.max(0.01, dist);
+    if (dist >= 0.8 && dot < (this.game.desperate ? 0.1 : 0.3)) return false;
     this.playPose('use', 0.45);
     const parried = this.ghost.parrySucceeded();
     if (parried) this._restoreStamina(GAME_CONFIG.staminaParryReward);
