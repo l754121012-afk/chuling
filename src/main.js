@@ -251,6 +251,7 @@ events.on('game.start', () => {
   ui.closeShop();
   ui.toggleBackpack(false);
   ui.sync(game);
+  sessionStorage.removeItem('exorcist_auto_ok');
   const startToast = RUN_MODE && RUN_STAGE === 1
     ? '第一幕：值日台有支金色任务笔，先站远看小满碰倒它。按 G 开启鞭子攻击，关掉 G 后左键照常使用道具。'
     : RUN_MODE && RUN_STAGE === 2
@@ -293,6 +294,11 @@ events.on('game.win', () => {
     const next = RUN_STAGE === 1
       ? '?case=detention&run=two_pens&stage=2&auto=1'
       : '?run=two_pens&stage=3&auto=1';
+    try {
+      sessionStorage.setItem('exorcist_auto_ok', '1');
+    } catch {
+      // storage unavailable; next stage can still be entered manually
+    }
     setTimeout(() => { window.location.search = next; }, 3200);
   }
 });
@@ -331,9 +337,11 @@ ui.el.fullscreenBtn.addEventListener('click', () => {
   }
 });
 document.getElementById('detention-btn')?.addEventListener('click', () => {
+  try { sessionStorage.setItem('exorcist_auto_ok', '1'); } catch { /* no storage */ }
   window.location.search = DETENTION_MODE ? '' : '?case=detention&auto=1';
 });
 document.getElementById('run-btn')?.addEventListener('click', () => {
+  try { sessionStorage.setItem('exorcist_auto_ok', '1'); } catch { /* no storage */ }
   window.location.search = '?run=two_pens&stage=1&auto=1';
 });
 if (DETENTION_MODE) {
@@ -521,7 +529,13 @@ function tick() {
   input.update();
 }
 
-if ((DETENTION_MODE || RUN_MODE) && DETENTION_AUTO) {
+let allowAutoStart = false;
+try {
+  allowAutoStart = sessionStorage.getItem('exorcist_auto_ok') === '1';
+} catch {
+  allowAutoStart = false;
+}
+if ((DETENTION_MODE || RUN_MODE) && DETENTION_AUTO && allowAutoStart) {
   setTimeout(() => events.emit('game.start'), 180);
 }
 ui.sync(game);
