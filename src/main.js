@@ -150,18 +150,34 @@ const randomEvents = new RandomEventSystem({
 });
 let phoneRang = false;
 let firstScareAt = 0;
+let detentionBellStep = 0;
+let detentionBellAt = 0;
 
 events.on('audio', p => audio.play(p.name));
 events.on('clue.found', p => school.markClueRead?.(p.id));
 events.on('detention.noteRead', () => {
+  if (!game.detentionMode || game.detentionScheduleRead) return;
+  game.detentionScheduleRead = true;
+  events.emit('act.card', {
+    title: '值日表归档 · 还差一份记录',
+    line: '08:10 粉笔声会把程老师引向禁闭区；趁它离开，去办公桌读处分记录。'
+  });
+  events.emit('toast', { text: '值日表已归档：办公桌上还压着处分记录。', ms: 2200 });
+});
+events.on('detention.recordRead', () => {
   if (!game.detentionMode || game.detentionComplete) return;
+  if (!game.detentionScheduleRead) {
+    events.emit('toast', { text: '处分记录太重：先读值日表，才知道它该在哪一天被重写。', ms: 2400 });
+    return;
+  }
   game.detentionComplete = true;
   school.openExit();
   events.emit('act.card', {
-    title: '第二幕目标完成 · 值日表归档',
-    line: '程老师的值日表已经记进手机，出口门禁亮了！'
+    title: '第二幕完成 · 下课铃响了',
+    line: '处分记录被重写：该受罚的人不是程老师。出口门禁亮了。'
   });
-  events.emit('toast', { text: '值日表已归档，出口开了！', ms: 2200 });
+  events.emit('audio', { name: 'phone' });
+  events.emit('toast', { text: '你替程老师写正了最后一笔，出口开了！', ms: 2600 });
 });
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
 events.on('hitstop', p => {
@@ -217,6 +233,8 @@ events.on('game.start', () => {
   }
   phoneRang = false;
   firstScareAt = nowSec() + 8;
+  detentionBellStep = 0;
+  detentionBellAt = nowSec() + 10;
   document.body.classList.add('playing');
   player.resetHiding();
   game.addItem('pen', 2);
@@ -235,7 +253,7 @@ events.on('game.start', () => {
   const startToast = RUN_MODE && RUN_STAGE === 1
     ? '第一幕：值日台有支金色任务笔。先站远观察，小满会过来碰倒它，再替它摆正。'
     : RUN_MODE && RUN_STAGE === 2
-      ? '第二幕：去程老师办公桌读值日表；黑板的粉笔盒能把它引开。'
+      ? '第二幕：先读值日表，再趁程老师被引开去读处分记录。'
       : RUN_MODE && RUN_STAGE === 3
         ? '第三幕：去旧仓库找失火那晚的真相。'
         : '实习开始：先找线索，别惊动它。主管：这一单预计到手 12 円。';
@@ -244,7 +262,7 @@ events.on('game.start', () => {
     const intro = RUN_STAGE === 1
       ? { title: '第一幕 · 两支笔', line: '值日鬼小满总想把桌上那支笔摆正。留意金色任务笔，等它碰倒后帮它摆好。' }
       : RUN_STAGE === 2
-        ? { title: '第二幕 · 禁闭室', line: '穿过隔间迷宫去程老师办公桌读值日表；黑板粉笔盒可以把它引开。' }
+        ? { title: '第二幕 · 禁闭室', line: '读程老师值日表和处分记录；08:10 粉笔声、08:40 电话响会改变它的位置。' }
         : { title: '第三幕 · 旧仓库', line: '找失火那晚的真相，让两支笔重新并排。' };
     events.emit('act.card', intro);
   }
@@ -334,13 +352,13 @@ if (RUN_MODE) {
     startNote.textContent = RUN_STAGE === 1
       ? '第一幕：找到金色任务笔，观察值日鬼的心愿，帮它摆正后再离开。'
       : RUN_STAGE === 2
-        ? '第二幕：去程老师办公桌读值日表，黑板粉笔盒可以把它引开。'
+        ? '第二幕：读程老师值日表和处分记录，趁 08:10/08:40 的空档行动。'
         : '第三幕：去旧仓库找失火那晚的真相。';
   }
 }
 if (DETENTION_MODE && !RUN_MODE) {
   const startNote = document.querySelector('.start-note');
-  if (startNote) startNote.textContent = '禁闭室切片：读程老师值日表可开门；黑板粉笔盒负责引开它。';
+  if (startNote) startNote.textContent = '禁闭室切片：读值日表和处分记录可开门；黑板粉笔盒负责引开程老师。';
 }
 window.addEventListener('keydown', e => {
   if (e.code === 'AltLeft' || e.code === 'AltRight') {
@@ -411,6 +429,30 @@ function tick() {
     player.update(simDt);
     const p2 = player.getPos();
     ghost.update(simDt, p2);
+    if (game.detentionMode && !game.detentionComplete && game.phase === 'investigate') {
+      const elapsed = now - game.runStart;
+      const board = school.refs?.clues?.find(c => c.id === 'blackboard')?.pos;
+      const record = school.refs?.clues?.find(c => c.id === 'record')?.pos;
+      if (detentionBellStep === 0 && now >= detentionBellAt && board) {
+        detentionBellStep = 1;
+        ghost._lastSeen = null;
+        ghost._lastNoise = { x: board.x, z: board.z };
+        events.emit('audio', { name: 'chalk' });
+        events.emit('act.card', {
+          title: '08:10 · 粉笔声',
+          line: '程老师被引向禁闭区黑板。办公桌方向现在空了，去读处分记录！'
+        });
+      } else if (detentionBellStep === 1 && elapsed >= 40 && record) {
+        detentionBellStep = 2;
+        ghost._lastSeen = null;
+        ghost._lastNoise = { x: record.x, z: record.z };
+        events.emit('audio', { name: 'phone' });
+        events.emit('act.card', {
+          title: '08:40 · 电话响',
+          line: '程老师冲向办公室！想读记录的话，先用黑板粉笔把它引开。'
+        });
+      }
+    }
     items.update(simDt, p2, ghost.getPos());
     chain.update(simDt);
     randomEvents.update(simDt);

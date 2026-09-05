@@ -728,6 +728,12 @@ export class SchoolScene {
 
     const note = this.L.note;
     const noteMesh = makePropMesh('note');
+    noteMesh.traverse(child => {
+      if (child.isMesh) {
+        child.material = child.material.clone();
+        child.material.color.set('#ffe9b8');
+      }
+    });
     noteMesh.position.set(note.x, note.y, note.z);
     noteMesh.rotation.y = -0.4;
     noteMesh.rotation.x = -0.15;
@@ -754,6 +760,44 @@ export class SchoolScene {
         text: noteLabel,
         color: '#ffd166'
       });
+    }
+
+    const record = this.L.record;
+    if (record) {
+      const recordMesh = makePropMesh('note');
+      recordMesh.traverse(child => {
+        if (child.isMesh) {
+          child.material = child.material.clone();
+          child.material.color.set('#e8b9ad');
+        }
+      });
+      recordMesh.position.set(record.x, record.y, record.z);
+      recordMesh.rotation.set(-0.18, 1.1, 0.08);
+      recordMesh.scale.setScalar(1.35);
+      this.group.add(recordMesh);
+      const recordBody = makeBody({
+        shape: new CANNON.Box(v3(0.36, 0.25, 0.02)),
+        position: { x: record.x, y: record.y, z: record.z },
+        group: GROUPS.PROP,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP
+      });
+      this.physics.add(recordBody);
+      refs.clues.push({
+        id: 'record',
+        mesh: recordMesh,
+        body: recordBody,
+        pos: { x: record.x, z: record.z }
+      });
+      const recordLabel = this.L.missionLabels?.record;
+      if (recordLabel) {
+        refs.clues[refs.clues.length - 1].beacon = this._addBeacon(refs, {
+          x: record.x,
+          y: record.y,
+          z: record.z,
+          text: recordLabel,
+          color: '#e08f7a'
+        });
+      }
     }
 
     const wishPen = this.L.storyPen === false ? null : makeItemMesh('pen');

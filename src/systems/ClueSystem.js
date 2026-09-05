@@ -19,7 +19,11 @@ const DETENTION_CLUE_TEXT = {
   },
   note: {
     title: '程老师值日表',
-    text: '08:10 粉笔声 -> 保健室；08:40 电话响 -> 办公室。值日表归档后，禁闭室出口门禁会打开。'
+    text: '08:10 粉笔声 -> 禁闭区；08:40 电话响 -> 办公室。值日表归档后，办公桌上还压着程老师的处分记录，读它才能开门。'
+  },
+  record: {
+    title: '程老师处分记录',
+    text: '旧保健室失火的处分写着“学生小满”，签字栏却被划掉重写：“我签。这个学生不该背锅。”你替程老师把最后一笔写正。'
   }
 };
 
@@ -60,9 +64,19 @@ export class ClueSystem {
         'detention_schedule',
         '日程',
         '程老师值日表',
-        '08:10 粉笔声 -> 保健室；08:40 电话响 -> 办公室。值日表归档后，出口门禁打开。'
+        '08:10 粉笔声 -> 禁闭区；08:40 电话响 -> 办公室。值日表归档后，办公桌上还压着程老师的处分记录。'
       );
       this.events.emit('detention.noteRead');
+      if (this.game.hasClue('record')) this.events.emit('detention.recordRead');
+    }
+    if (this.game.detentionMode && id === 'record') {
+      this.game.addNote(
+        'detention_record',
+        '档案',
+        '程老师处分记录',
+        '处分写着学生小满，签字栏被划掉重写：“我签。这个学生不该背锅。”你替程老师把最后一笔写正。'
+      );
+      this.events.emit('detention.recordRead');
     }
   }
 }

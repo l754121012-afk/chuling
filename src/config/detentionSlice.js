@@ -9,12 +9,14 @@ function detentionConfig() {
   cfg.exit = { x: 0, z: 19 };
   cfg.teacherDesk = { x: 0, z: 14.2, rotY: 0 };
   cfg.note = { x: 0.8, y: 1.95, z: 14.2 };
+  cfg.record = { x: -1.4, y: 1.95, z: 14.2 };
   cfg.platform = { x: 0, z: 14.2, w: 3.6, h: 1.0, d: 2.6 };
   cfg.platformLabel = '程老师办公桌';
   cfg.storyPen = false;
   cfg.missionLabels = {
     blackboard: '工具 · 粉笔盒引鬼',
-    note: '任务 · 程老师值日表'
+    note: '任务 · 程老师值日表',
+    record: '任务 · 程老师处分记录'
   };
   cfg.lockers = { x: 11.2, z: 3.2, rotY: -0.25 };
   cfg.lockerStep = { x: 9.9, z: 3.2, w: 1.2, h: 0.85, d: 0.9 };

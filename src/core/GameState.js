@@ -118,6 +118,7 @@ export class GameState {
     this.ghostWishKnocked = false;
     this.ghostWishHelped = false;
     this.detentionMode = false;
+    this.detentionScheduleRead = false;
     this.detentionComplete = false;
     this.runMode = false;
     this.runStage = 1;

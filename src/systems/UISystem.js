@@ -514,7 +514,8 @@ export class UISystem {
     const now = performance.now() / 1000;
     const pad = n => String(n).padStart(2, '0');
     const elapsed = game.runStart > 0 ? Math.max(0, now - game.runStart) : 0;
-    const clockSec = Math.floor(8 * 3600 + elapsed);
+    const clockElapsed = game.detentionMode ? elapsed * 60 : elapsed;
+    const clockSec = Math.floor(8 * 3600 + clockElapsed);
     const hh = Math.floor(clockSec / 3600) % 24;
     const mm = Math.floor(clockSec / 60) % 60;
     const ss = clockSec % 60;
@@ -522,7 +523,9 @@ export class UISystem {
       if (game.runStart <= 0) {
         this.el.phoneTime.textContent = '08:00:00';
       } else {
-        this.el.phoneTime.textContent = `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+        this.el.phoneTime.textContent = game.detentionMode
+          ? `${pad(hh)}:${pad(mm)}`
+          : `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
       }
       this.el.phoneTime.classList.toggle('urgent', game.bellPhaseActive && game.bellPhaseUntil > now);
     }
@@ -542,8 +545,8 @@ export class UISystem {
       this.el.phaseFlag.classList.add('stage');
       this.el.phaseFlag.textContent = game.detentionComplete
         ? '目标完成 · 出口已开'
-        : game.hasClue('note')
-          ? '值日表归档成功 · 出口开'
+        : game.detentionScheduleRead
+          ? '值日表已归档 · 去读处分记录'
           : '任务 · 去程老师办公桌读值日表';
       return;
     }
@@ -558,7 +561,9 @@ export class UISystem {
       } else if (game.runStage === 2) {
         this.el.phaseFlag.textContent = game.detentionComplete
           ? '第二幕完成 · 出口已开'
-          : '第二幕 · 去读程老师值日表';
+          : game.detentionScheduleRead
+            ? '第二幕 · 去读处分记录'
+            : '第二幕 · 去读程老师值日表';
       } else {
         this.el.phaseFlag.textContent = '第三幕 · 找失火真相';
       }
@@ -584,16 +589,18 @@ export class UISystem {
       }
       if (game.runStage === 2) {
         if (escape) return '鬼被压制了！出口已开，跑向禁闭室出口';
-        if (game.detentionComplete) return '第二幕完成：值日表已归档，出口亮了，去走廊尽头';
-        return '第二幕 · 禁闭室：穿过隔间迷宫，去程老师办公桌读值日表';
+        if (game.detentionComplete) return '第二幕完成：处分记录已重写，出口亮了，去走廊尽头';
+        if (game.detentionScheduleRead) return '第二幕 · 禁闭室：值日表已归档，趁程老师被引开去读办公桌上的处分记录';
+        return '第二幕 · 禁闭室：穿过隔间迷宫，先读程老师值日表';
       }
       if (escape) return '第三幕：真相已到手？快跑向出口！';
       return '第三幕 · 旧仓库：找到失火那晚的真相，让两支笔重新并排';
     }
     if (game.detentionMode) {
       if (escape) return '程老师被压制了！跑向禁闭室出口';
-      if (game.detentionComplete) return '值日表已归档，出口亮了，去走廊尽头';
-      return '禁闭室切片：穿过隔间迷宫，去程老师办公桌读值日表；黑板粉笔盒可引开它';
+      if (game.detentionComplete) return '处分记录已重写，出口亮了，去走廊尽头';
+      if (game.detentionScheduleRead) return '禁闭室切片：值日表已归档，去读办公桌上的处分记录；黑板粉笔可引开程老师';
+      return '禁闭室切片：去程老师办公桌读值日表，再找处分记录';
     }
     if (game.artifactActive && game.phase !== 'escape') {
       if (game.artifactStage === 0) return '清仓守卫战幕 1：广播封锁，躲开红色警戒区！';

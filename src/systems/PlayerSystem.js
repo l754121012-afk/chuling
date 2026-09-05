@@ -737,7 +737,9 @@ export class PlayerSystem {
         const missing = this.game.runMode && this.game.runStage === 1
           ? '出口锁着：先替小满把笔摆正'
           : this.game.detentionMode
-            ? '出口锁着：先读程老师值日表'
+            ? this.game.detentionScheduleRead
+              ? '出口锁着：先读程老师处分记录'
+              : '出口锁着：先读程老师值日表'
             : '出口还没开';
         bestPriority = 0.8;
         best = { type: 'exitLocked', label: missing, pos: { x: exit.pos.x, y: 2.6, z: exit.pos.z } };
@@ -752,7 +754,11 @@ export class PlayerSystem {
         const detentionLabel = this.game.detentionMode
           ? clue.id === 'blackboard'
             ? '摇粉笔盒制造声音'
-            : '查看值日表'
+            : clue.id === 'note'
+              ? '查看值日表'
+              : clue.id === 'record'
+                ? '查看处分记录'
+                : '查看线索'
           : '查看线索';
         best = { type: 'clue', clue, label: detentionLabel, pos: { x: clue.pos.x, y: 1.7, z: clue.pos.z } };
       }
@@ -900,7 +906,14 @@ export class PlayerSystem {
         this.clues.readClue(target.clue.id);
         if (this.game.detentionMode && target.clue.id === 'note') {
           this.events.emit('toast', {
-            text: '值日表已归档：出口门禁亮了，去走廊尽头离开！',
+            text: '值日表已归档：办公桌上还有一份程老师的处分记录，读它才能开门。',
+            ms: 2600
+          });
+        } else if (this.game.detentionMode && target.clue.id === 'record') {
+          this.events.emit('toast', {
+            text: this.game.detentionScheduleRead
+              ? '处分记录读完了：你替程老师补上了最后一笔。'
+              : '处分记录太重：先读值日表对照日程。',
             ms: 2400
           });
         }
