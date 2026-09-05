@@ -29,7 +29,7 @@ const canvas = document.getElementById('game-canvas');
 const renderer = new THREE.WebGLRenderer({
   canvas,
   antialias: true,
-  preserveDrawingBuffer: URL_PARAMS.get('shot') === '1'
+  preserveDrawingBuffer: true
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -159,7 +159,32 @@ let phoneRang = false;
 let firstScareAt = 0;
 let detentionBellStep = 0;
 let detentionBellAt = 0;
+let reviewDist = 120;
 const itemGuidesShown = new Set();
+
+function capture2k() {
+  const width = 2560;
+  const height = 1440;
+  const oldPixelRatio = renderer.getPixelRatio();
+  const oldAspect = camera.aspect;
+  renderer.setPixelRatio(1);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height, false);
+  renderer.render(scene, camera);
+  const dataUrl = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = 'exorcist-2k-shot.png';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  camera.aspect = oldAspect;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(oldPixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  events.emit('toast', { text: '2K 截图已保存', ms: 2200 });
+}
 
 events.on('audio', p => audio.play(p.name));
 events.on('review.toggle', () => {
@@ -428,6 +453,7 @@ ui.el.fullscreenBtn.addEventListener('click', () => {
 document.getElementById('review-btn')?.addEventListener('click', () => {
   events.emit('review.toggle');
 });
+document.getElementById('shot-2k-btn')?.addEventListener('click', () => capture2k());
 document.getElementById('detention-btn')?.addEventListener('click', () => {
   try { sessionStorage.setItem('exorcist_auto_ok', '1'); } catch { /* no storage */ }
   window.location.search = DETENTION_MODE ? '' : '?case=detention&auto=1';
@@ -505,6 +531,7 @@ window.__game = {
   items,
   player,
   camera: cameraSys,
+  capture2k,
   events,
   scene: school,
   chain,
@@ -633,7 +660,10 @@ function tick() {
   if (OVERVIEW_SHOT || game.reviewMode) {
     const yaw = -0.82;
     const pitch = 0.5;
-    const dist = 120;
+    if (game.reviewMode && input.zoom !== 0) {
+      reviewDist = Math.min(220, Math.max(32, reviewDist - input.zoom * 0.04));
+    }
+    const dist = reviewDist;
     const room = school.L.classroom;
     const center = {
       x: (room.minX + room.maxX) / 2,

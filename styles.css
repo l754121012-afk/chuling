@@ -995,6 +995,48 @@ body.playing canvas {
   box-shadow: 0 0 12px rgba(142, 240, 200, 0.45);
 }
 
+#shot-tools {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(60px, env(safe-area-inset-right));
+  display: none;
+  flex-direction: row;
+  gap: 6px;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+body.playing #shot-tools {
+  display: flex;
+}
+
+#shot-tools #review-btn,
+#shot-tools #shot-2k-btn {
+  position: static;
+  top: auto;
+  right: auto;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #6a7480;
+  border-radius: 6px;
+  background: rgba(39, 45, 54, 0.9);
+  color: #f4efe4;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+#shot-tools #review-btn.active {
+  border-color: #8ef0c8;
+  color: #d9ffe9;
+  box-shadow: 0 0 12px rgba(142, 240, 200, 0.45);
+}
+
+#shot-tools #shot-2k-btn {
+  border-color: #ffb86b;
+}
+
 #whip-hint {
   position: absolute;
   right: max(14px, env(safe-area-inset-right));
@@ -1439,6 +1481,7 @@ body.playing canvas {
 }
 
 @media (max-width: 700px) {
+  #shot-tools,
   #review-btn {
     display: none;
   }

@@ -169,7 +169,9 @@ export class PlayerSystem {
     this._handleInteractions();
     this._updatePendingCrush();
     this._handleItemControls();
-    if (this.input.zoom !== 0) this._cycleItem(this.input.zoom > 0 ? 1 : -1);
+    if (!this.game.reviewMode && this.input.zoom !== 0) {
+      this._cycleItem(this.input.zoom > 0 ? 1 : -1);
+    }
     if (this.game.whipMode && this.input.isLeftDown()) {
       if (!this._tryParry()) this._doWhip();
     }
