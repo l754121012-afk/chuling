@@ -11,6 +11,9 @@ export class InputSystem {
     this._rightDown = false;
     this._rightPressed = false;
     this._rightReleased = false;
+    this._middleDown = false;
+    this._middleLastY = null;
+    this.middleDragY = 0;
     this._lastX = null;
     this._lastY = null;
     this._pointerX = window.innerWidth / 2;
@@ -68,6 +71,11 @@ export class InputSystem {
       this._rightPressed = true;
       return;
     }
+    if (e.button === 1) {
+      this._middleDown = true;
+      this._middleLastY = null;
+      return;
+    }
     if (e.button !== 0) return;
     if (this.allowLock && !this.locked) this._requestLock();
     this._down = true;
@@ -76,6 +84,11 @@ export class InputSystem {
   }
 
   _onMouseMove(e) {
+    if (this._middleDown && !this.locked) {
+      const dy = this._middleLastY === null ? 0 : e.clientY - this._middleLastY;
+      this._middleLastY = e.clientY;
+      this.middleDragY += dy;
+    }
     if (this.locked) return;
     const dx = this._lastX === null ? 0 : e.clientX - this._lastX;
     const dy = this._lastY === null ? 0 : e.clientY - this._lastY;
@@ -96,6 +109,7 @@ export class InputSystem {
   }
 
   _onLockedMouseMove(e) {
+    if (this._middleDown) this.middleDragY += e.movementY || 0;
     this.look.x += e.movementX || 0;
     this.look.y += e.movementY || 0;
   }
@@ -104,6 +118,11 @@ export class InputSystem {
     if (e.button === 2) {
       this._rightDown = false;
       this._rightReleased = true;
+      return;
+    }
+    if (e.button === 1) {
+      this._middleDown = false;
+      this._middleLastY = null;
       return;
     }
     if (e.button !== 0) return;
@@ -198,5 +217,6 @@ export class InputSystem {
       this.look.y = 0;
     }
     this.zoom = 0;
+    this.middleDragY = 0;
   }
 }

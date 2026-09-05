@@ -160,11 +160,12 @@ let firstScareAt = 0;
 let detentionBellStep = 0;
 let detentionBellAt = 0;
 let reviewDist = 120;
+let reviewPitch = 0.5;
 const itemGuidesShown = new Set();
 
-function capture2k() {
-  const width = 2560;
-  const height = 1440;
+function capture4k() {
+  const width = 3840;
+  const height = 2160;
   const oldPixelRatio = renderer.getPixelRatio();
   const oldAspect = camera.aspect;
   renderer.setPixelRatio(1);
@@ -175,7 +176,7 @@ function capture2k() {
   const dataUrl = canvas.toDataURL('image/png');
   const link = document.createElement('a');
   link.href = dataUrl;
-  link.download = 'exorcist-2k-shot.png';
+  link.download = 'exorcist-4k-shot.png';
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -183,7 +184,7 @@ function capture2k() {
   camera.updateProjectionMatrix();
   renderer.setPixelRatio(oldPixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight, false);
-  events.emit('toast', { text: '2K 截图已保存', ms: 2200 });
+  events.emit('toast', { text: '4K 截图已保存', ms: 2200 });
 }
 
 events.on('audio', p => audio.play(p.name));
@@ -453,7 +454,7 @@ ui.el.fullscreenBtn.addEventListener('click', () => {
 document.getElementById('review-btn')?.addEventListener('click', () => {
   events.emit('review.toggle');
 });
-document.getElementById('shot-2k-btn')?.addEventListener('click', () => capture2k());
+document.getElementById('shot-4k-btn')?.addEventListener('click', () => capture4k());
 document.getElementById('detention-btn')?.addEventListener('click', () => {
   try { sessionStorage.setItem('exorcist_auto_ok', '1'); } catch { /* no storage */ }
   window.location.search = DETENTION_MODE ? '' : '?case=detention&auto=1';
@@ -531,7 +532,7 @@ window.__game = {
   items,
   player,
   camera: cameraSys,
-  capture2k,
+  capture4k,
   events,
   scene: school,
   chain,
@@ -659,10 +660,13 @@ function tick() {
   ui.updateSealStatus(player, ghost);
   if (OVERVIEW_SHOT || game.reviewMode) {
     const yaw = -0.82;
-    const pitch = 0.5;
     if (game.reviewMode && input.zoom !== 0) {
       reviewDist = Math.min(220, Math.max(32, reviewDist - input.zoom * 0.04));
     }
+    if (game.reviewMode && input.middleDragY !== 0) {
+      reviewPitch = Math.min(1.15, Math.max(0.08, reviewPitch - input.middleDragY * 0.002));
+    }
+    const pitch = reviewPitch;
     const dist = reviewDist;
     const room = school.L.classroom;
     const center = {

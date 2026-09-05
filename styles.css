@@ -1011,7 +1011,7 @@ body.playing #shot-tools {
 }
 
 #shot-tools #review-btn,
-#shot-tools #shot-2k-btn {
+#shot-tools #shot-4k-btn {
   position: static;
   top: auto;
   right: auto;
@@ -1033,7 +1033,7 @@ body.playing #shot-tools {
   box-shadow: 0 0 12px rgba(142, 240, 200, 0.45);
 }
 
-#shot-tools #shot-2k-btn {
+#shot-tools #shot-4k-btn {
   border-color: #ffb86b;
 }
 
