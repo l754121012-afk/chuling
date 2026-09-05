@@ -606,10 +606,7 @@ export class UISystem {
     this.el.stageLabel.textContent = `恶灵：${stage.label}`;
     this.el.battery.style.width = `${(game.battery / game.batteryMax) * 100}%`;
     this.el.phone.classList.toggle('drained', game.battery <= 0);
-    if (this.el.darkOverlay) {
-      const dark = Math.max(0, (100 - game.battery) / 100);
-      this.el.darkOverlay.style.opacity = String(dark * 0.85);
-    }
+    if (this.el.darkOverlay) this.el.darkOverlay.style.opacity = '0';
     if (this.el.composureBar) {
       this.el.composureBar.style.width = `${game.composure}%`;
       this.el.composureBar.parentElement?.classList.toggle('broken', game.broken);

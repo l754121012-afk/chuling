@@ -293,9 +293,9 @@ export class PlayerSystem {
     }
     this._updatePose(dt);
     if (this.phoneLight) {
-      const f = Math.max(0, this.game.battery) / 100;
-      this.phoneLight.intensity = f * 1.9;
-      this.phoneLight.distance = 5 + f * 6;
+      const blackout = this.game.lightsOutUntil > nowSec();
+      this.phoneLight.intensity = blackout ? 0 : 0.7;
+      this.phoneLight.distance = 7.5;
     }
     if (!rolling && !tornadoing) this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
     if (this.game.hiding) {

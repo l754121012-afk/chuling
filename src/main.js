@@ -522,7 +522,7 @@ function tick() {
     if (!game.hiding && !game.charging) {
       game.battery = Math.min(game.batteryMax, Math.max(0, game.battery - drain * simDt));
     }
-    school.setDarkness(1 - game.battery / game.batteryMax);
+    school.setDarkness(0);
     if (game.battery <= 0 && game.notebookOpen) ui.toggleNotebook(false);
   }
   if (
