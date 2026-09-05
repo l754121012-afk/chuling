@@ -50,6 +50,8 @@ const DETENTION_MODE = URL_PARAMS.get('case') === 'detention';
 const DETENTION_AUTO = URL_PARAMS.get('auto') === '1';
 const RUN_MODE = URL_PARAMS.get('run') === 'two_pens';
 const RUN_STAGE = Number(URL_PARAMS.get('stage') || (DETENTION_MODE ? 2 : 1));
+const SHOT_MODE = URL_PARAMS.get('shot') === '1';
+const OVERVIEW_SHOT = URL_PARAMS.get('overview') === '1';
 const LEVEL_CONFIG_TO_USE = RUN_STAGE === 2 || DETENTION_MODE ? WEST_WING_CONFIG : LEVEL_CONFIG;
 const school = new SchoolScene(physics, events, scene, LEVEL_CONFIG_TO_USE);
 const refs = school.build();
@@ -619,7 +621,29 @@ function tick() {
   }
   ui.sync(game);
   ui.updateSealStatus(player, ghost);
-  cameraSys.update(input, player.getPos(), dt);
+  if (OVERVIEW_SHOT) {
+    const yaw = -0.82;
+    const pitch = 0.62;
+    const dist = 76;
+    const center = { x: 0, y: 0.8, z: 7.5 };
+    camera.far = 260;
+    camera.updateProjectionMatrix();
+    scene.background = new THREE.Color(0x9db2c4);
+    scene.fog = null;
+    if (SHOT_MODE) {
+      school.sunLight.intensity = 12;
+      school.ambientLight.intensity = 1.7;
+      for (const g of school.guideLights) g.light.intensity = 4.5;
+    }
+    camera.position.set(
+      center.x + Math.sin(yaw) * Math.cos(pitch) * dist,
+      center.y + 2 + Math.sin(pitch) * dist,
+      center.z + Math.cos(yaw) * Math.cos(pitch) * dist
+    );
+    camera.lookAt(center.x, center.y + 0.8, center.z);
+  } else {
+    cameraSys.update(input, player.getPos(), dt);
+  }
   physics.step(simDt);
   renderer.render(scene, camera);
   input.update();
