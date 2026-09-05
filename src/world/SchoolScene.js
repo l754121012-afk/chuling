@@ -59,8 +59,12 @@ export class SchoolScene {
       itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
 
-    this._addFloor();
-    this._addWalls();
+    if (this.L.mode === 'westwing') {
+      this._addWestWingShell(refs);
+    } else {
+      this._addFloor();
+      this._addWalls();
+    }
     this._addProps(refs);
     this._addClues(refs);
     this._addExit(refs);
@@ -70,6 +74,44 @@ export class SchoolScene {
 
     this.refs = refs;
     return refs;
+  }
+
+  _addWestWingShell(refs) {
+    const c = this.L.classroom;
+    const floorW = c.maxX - c.minX;
+    const floorD = c.maxZ - c.minZ;
+    this._box(
+      floorW,
+      0.4,
+      floorD,
+      { x: (c.minX + c.maxX) / 2, y: -0.2, z: (c.minZ + c.maxZ) / 2 },
+      PALETTE.floor
+    );
+
+    for (const wall of this.L.westWingWalls || []) {
+      this._box(wall.w, 5.2, wall.d, { x: wall.x, y: 2.6, z: wall.z }, PALETTE.wall);
+    }
+
+    for (const room of this.L.westWingLabels || []) {
+      const sign = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture(room.text, {
+            bg: '#24303c',
+            fg: '#ffe9b8',
+            font: 'bold 46px "Microsoft YaHei", sans-serif',
+            width: 512,
+            height: 112,
+            lineHeight: 52,
+            pad: 8
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sign.position.set(room.x, 1.55, room.z);
+      sign.scale.set(3.4, 0.72, 1);
+      this.group.add(sign);
+    }
   }
 
   _addFloor() {
@@ -967,6 +1009,16 @@ export class SchoolScene {
     sun.shadow.camera.bottom = -12;
     this.group.add(sun);
     this.sunLight = sun;
+
+    if (this.L.mode === 'westwing') {
+      for (const room of this.L.westWingLabels || []) {
+        const light = new THREE.PointLight('#ffe9c4', 0.42, 14, 1.8);
+        light.position.set(room.x, 3.0, room.z);
+        this.group.add(light);
+        this.flickerLights.push(light);
+      }
+      return;
+    }
 
     const flicker = [
       { x: -6, z: -4, color: '#ffe9c4' },

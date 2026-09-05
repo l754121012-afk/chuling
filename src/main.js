@@ -4,6 +4,7 @@ import { textTexture } from './core/PlaceholderAssets.js';
 import { GAME_CONFIG } from './config/game.js';
 import { LEVEL_CONFIG } from './config/level.js';
 import { DETENTION_SLICE_CONFIG } from './config/detentionSlice.js';
+import { WEST_WING_CONFIG } from './config/westWing.js';
 import { EventBus } from './core/EventBus.js';
 import { GameState } from './core/GameState.js';
 import { PhysicsWorld } from './core/Physics.js';
@@ -45,7 +46,7 @@ const DETENTION_MODE = URL_PARAMS.get('case') === 'detention';
 const DETENTION_AUTO = URL_PARAMS.get('auto') === '1';
 const RUN_MODE = URL_PARAMS.get('run') === 'two_pens';
 const RUN_STAGE = Number(URL_PARAMS.get('stage') || (DETENTION_MODE ? 2 : 1));
-const LEVEL_CONFIG_TO_USE = RUN_STAGE === 2 ? DETENTION_SLICE_CONFIG : LEVEL_CONFIG;
+const LEVEL_CONFIG_TO_USE = RUN_STAGE === 2 || DETENTION_MODE ? WEST_WING_CONFIG : LEVEL_CONFIG;
 const school = new SchoolScene(physics, events, scene, LEVEL_CONFIG_TO_USE);
 const refs = school.build();
 school.applyCosmetics(economy.unlocks);
@@ -338,7 +339,7 @@ document.getElementById('run-btn')?.addEventListener('click', () => {
 if (DETENTION_MODE) {
   const startBtn = document.getElementById('start-btn');
   const toggleBtn = document.getElementById('detention-btn');
-  if (startBtn) startBtn.textContent = '开始禁闭室切片';
+  if (startBtn) startBtn.textContent = '开始西翼禁闭室';
   if (toggleBtn) toggleBtn.textContent = '返回值日教室';
 }
 if (RUN_MODE) {
@@ -358,7 +359,7 @@ if (RUN_MODE) {
 }
 if (DETENTION_MODE && !RUN_MODE) {
   const startNote = document.querySelector('.start-note');
-  if (startNote) startNote.textContent = '禁闭室切片：读值日表和处分记录可开门；黑板粉笔盒负责引开程老师。';
+  if (startNote) startNote.textContent = '西翼骨架：穿过值班室、禁闭迷宫与档案阁，读值日表和处分记录可开门。';
 }
 window.addEventListener('keydown', e => {
   if (e.code === 'AltLeft' || e.code === 'AltRight') {
@@ -470,6 +471,7 @@ function tick() {
   }
   if (
     game.isPlaying() &&
+    !game.detentionMode &&
     !game.firstScareDone &&
     nowSec() >= firstScareAt
   ) {

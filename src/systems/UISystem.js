@@ -731,8 +731,8 @@ export class UISystem {
     if (game.detentionMode) {
       if (escape) return '程老师被压制了！跑向禁闭室出口';
       if (game.detentionComplete) return '处分记录已重写，出口亮了，去走廊尽头';
-      if (game.detentionScheduleRead) return '禁闭室切片：值日表已归档，去读办公桌上的处分记录；黑板粉笔可引开程老师';
-      return '禁闭室切片：去程老师办公桌读值日表，再找处分记录';
+      if (game.detentionScheduleRead) return '西翼禁闭室：值日表已归档，去档案阁读处分记录；黑板粉笔可引开程老师';
+      return '西翼禁闭室：穿过值班室、禁闭迷宫与档案阁，去程老师办公桌读值日表，再找处分记录';
     }
     if (game.artifactActive && game.phase !== 'escape') {
       if (game.artifactStage === 0) return '清仓守卫战幕 1：广播封锁，躲开红色警戒区！';
