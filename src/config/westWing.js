@@ -65,9 +65,8 @@ function westWingConfig() {
     // archive/office partition with a gap
     { x: -8, z: 10.5, w: 0.3, d: 5 },
     { x: -8, z: 21.5, w: 0.3, d: 4 },
-    // 程老师办公桌后方两侧竖向封墙
-    { x: -2.8, z: 7.6, w: 0.3, d: 0.8 },
-    { x: 2.8, z: 7.6, w: 0.3, d: 0.8 }
+    // 程老师办公桌右侧竖向长墙，从下层走廊一路封到上层墙
+    { x: 2.6, z: 5, w: 0.3, d: 6 }
   ];
   cfg.westWingWindows = [
     { x: -15, z: -12, axis: 'z', dir: 1 },

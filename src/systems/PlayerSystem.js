@@ -112,7 +112,7 @@ export class PlayerSystem {
 
     const marker = new THREE.Group();
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.44, 0.62, 28),
+      new THREE.RingGeometry(0.52, 0.76, 36),
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
@@ -123,17 +123,40 @@ export class PlayerSystem {
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.04;
+    const gradCanvas = document.createElement('canvas');
+    gradCanvas.width = 128;
+    gradCanvas.height = 128;
+    const gctx = gradCanvas.getContext('2d');
+    const grad = gctx.createRadialGradient(64, 64, 18, 64, 64, 62);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.58, 'rgba(255,255,255,0.12)');
+    grad.addColorStop(0.82, 'rgba(255,255,255,0.65)');
+    grad.addColorStop(1, 'rgba(255,255,255,0.05)');
+    gctx.fillStyle = grad;
+    gctx.fillRect(0, 0, 128, 128);
+    const glowTex = new THREE.CanvasTexture(gradCanvas);
+    const glow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.92, 36),
+      new THREE.MeshBasicMaterial({
+        map: glowTex,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false
+      })
+    );
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = 0.035;
     const arrow = new THREE.Mesh(
-      new THREE.ConeGeometry(0.12, 0.34, 10),
+      new THREE.ConeGeometry(0.16, 0.48, 12),
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.75
+        opacity: 0.85
       })
     );
     arrow.rotation.x = Math.PI / 2;
-    arrow.position.set(0, 0.04, 0.5);
-    marker.add(ring, arrow);
+    arrow.position.set(0, 0.04, 0.58);
+    marker.add(glow, ring, arrow);
     marker.position.set(start.x, 0.02, start.z);
     this.scene.group.add(marker);
     this.aimMarker = marker;
@@ -879,7 +902,6 @@ export class PlayerSystem {
 
     if (
       this.game.detentionMode &&
-      this.game.detentionComplete &&
       !this.game.autoDeviceSeen
     ) {
       for (const sw of this.refs.archiveSwitches || []) {
@@ -900,7 +922,6 @@ export class PlayerSystem {
 
     if (
       this.game.detentionMode &&
-      this.game.detentionComplete &&
       this.refs.autoDevice?.visible &&
       !this.game.detentionExitDeviceDone
     ) {
@@ -952,9 +973,11 @@ export class PlayerSystem {
           ? '出口锁着：先替小满把笔摆正'
           : this.game.detentionMode
             ? this.game.detentionScheduleRead
-              ? this.game.detentionComplete
-                ? '出口第一重已开：去档案区操作自动门控制台'
-                : '出口锁着：先去迷宫读程老师处分记录'
+              ? this.game.detentionExitDeviceDone
+                ? '出口设备已启动：先去迷宫改判处分记录'
+                : this.game.detentionComplete
+                  ? '出口绿灯已亮：去档案区操作自动门控制台'
+                  : '出口锁着：先去迷宫读程老师处分记录'
               : '出口锁着：先读程老师值日表'
             : '出口还没开';
         bestPriority = 0.8;
@@ -1156,6 +1179,7 @@ export class PlayerSystem {
         }
         continue;
       }
+      if (door.id === 'right_lower_door') continue;
       if (dd < 1.9 && verticalOk && 2.5 > bestPriority) {
         bestPriority = 2.5;
         best = {
@@ -1192,10 +1216,6 @@ export class PlayerSystem {
       this._toggleRightDoor();
     } else if (target.type === 'archiveSwitch') {
       const sw = target.switch;
-      if (!this.game.detentionComplete) {
-        this.events.emit('toast', { text: '控制台还没通电：先到迷宫改判处分记录。', ms: 2000 });
-        return;
-      }
       if (sw.on || this.game.autoDeviceSeen) return;
       sw.on = true;
       sw.lamp.material.color.set('#57cc99');
@@ -1231,12 +1251,12 @@ export class PlayerSystem {
       this.playPose('interact', 0.55);
       this.audio?.play('click');
       this.scene.spawnHitRing({ x: target.device.pos.x, y: target.device.pos.y - 0.2, z: target.device.pos.z }, '#57cc99');
-      this.scene.openExit();
       this.events.emit('act.card', {
-        title: '第二重解锁 · 自动门开了',
-        line: '“喀哒”一声，门锁弹出：处分记录改判是第一重，自动门控制台是第二重。'
+        title: '自动门设备已启动',
+        line: '设备“喀哒”一声启动；若处分记录已经改判，出口门禁就会真正打开。'
       });
-      this.events.emit('toast', { text: '喀哒一声，门锁解除了！出口真正打开！', ms: 2400 });
+      this.events.emit('detention.deviceDone');
+      this.events.emit('toast', { text: '自动门设备已启动！', ms: 2400 });
     } else if (target.type === 'item') {
       this.items.pickup(target.pickup);
     } else if (target.type === 'exit') {

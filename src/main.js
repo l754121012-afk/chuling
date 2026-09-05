@@ -162,7 +162,23 @@ let detentionBellStep = 0;
 let detentionBellAt = 0;
 let reviewDist = 120;
 let reviewPitch = 0.5;
+let exitCutscene = null;
 const itemGuidesShown = new Set();
+
+function beginExitCutscene(stage) {
+  const exit = school.refs?.exit;
+  if (!exit || !game.detentionMode) return;
+  const now = nowSec();
+  exitCutscene = {
+    stage,
+    startedAt: now,
+    unlockAt: now + 0.85,
+    duration: 2.0,
+    done: false,
+    pos: { x: exit.pos.x, z: exit.pos.z },
+    from: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
+  };
+}
 
 function capture4k() {
   const width = 3840;
@@ -285,13 +301,24 @@ events.on('detention.recordRead', () => {
     return;
   }
   game.detentionComplete = true;
-  school.setExitGreenLock();
+  if (game.detentionExitDeviceDone) {
+    beginExitCutscene(2);
+  } else {
+    beginExitCutscene(1);
+  }
   events.emit('act.card', {
     title: '第一重解锁 · 处分记录改判',
     line: '该受罚的人不是程老师。出口亮起绿灯，但门禁还锁着：从右侧档案区启动三道档案锁，找到控制台。'
   });
   events.emit('audio', { name: 'phone' });
-  events.emit('toast', { text: '你替程老师写正了最后一笔：出口第一重解锁，还差右侧档案区自动门。', ms: 2600 });
+  events.emit('toast', { text: '你替程老师写正了最后一笔：出口条件达成，镜头将转向出口。', ms: 2600 });
+});
+events.on('detention.deviceDone', () => {
+  if (!game.detentionMode || !game.detentionComplete) {
+    events.emit('toast', { text: '自动门设备已就绪：等处分记录改判后，出口会真正打开。', ms: 2400 });
+    return;
+  }
+  beginExitCutscene(2);
 });
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
 events.on('hitstop', p => {
@@ -698,6 +725,31 @@ function tick() {
       center.z + Math.cos(yaw) * Math.cos(pitch) * dist
     );
     camera.lookAt(center.x, center.y + 0.8, center.z);
+  } else if (exitCutscene) {
+    const cut = exitCutscene;
+    const elapsed = nowSec() - cut.startedAt;
+    const k = Math.min(1, Math.max(0, elapsed / cut.duration));
+    const ease = k * k * (3 - 2 * k);
+    const toX = cut.pos.x + 5.5;
+    const toY = 4.2;
+    const toZ = cut.pos.z - 8.5;
+    camera.position.set(
+      cut.from.x + (toX - cut.from.x) * ease,
+      cut.from.y + (toY - cut.from.y) * ease,
+      cut.from.z + (toZ - cut.from.z) * ease
+    );
+    camera.lookAt(cut.pos.x, 1.8, cut.pos.z);
+    if (nowSec() >= cut.unlockAt && !cut.done) {
+      cut.done = true;
+      if (cut.stage === 1) {
+        school.setExitGreenLock();
+        audio.play('gate');
+      } else {
+        school.openExit();
+        audio.play('win');
+      }
+    }
+    if (elapsed >= cut.duration) exitCutscene = null;
   } else {
     if (scene.fog === null) scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
     scene.background = new THREE.Color(PALETTE.bg);

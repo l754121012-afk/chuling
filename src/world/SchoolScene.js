@@ -1229,6 +1229,37 @@ export class SchoolScene {
   _addRegistrationNpc(refs) {
     const npcCfg = this.L.registrationNpc;
     if (!npcCfg) return;
+    const paperMat = material('#fff6e3', 0.85);
+    const skinMat = material('#f2c79b', 0.8);
+    const darkMat = material('#2b2118', 0.85);
+    const redMat = material('#d94f5c', 0.9);
+    const npcModel = new THREE.Group();
+    const legL = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.34, 0.14), darkMat);
+    legL.position.set(-0.11, 0.17, 0);
+    const legR = legL.clone();
+    legR.position.x = 0.11;
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.72, 10), paperMat);
+    body.position.y = 0.74;
+    const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.5, 8), paperMat);
+    armL.position.set(-0.31, 0.82, 0);
+    armL.rotation.z = 0.18;
+    const armR = armL.clone();
+    armR.position.x = 0.31;
+    armR.rotation.z = -0.18;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), skinMat);
+    head.position.y = 1.32;
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), darkMat);
+    hair.position.set(0, 1.47, -0.02);
+    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.28, 10), redMat);
+    hat.position.y = 1.68;
+    const chest = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.05), redMat);
+    chest.position.set(0, 0.78, 0.2);
+    const armBand = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.16, 0.09), redMat);
+    armBand.position.set(0.29, 0.96, 0);
+    npcModel.add(legL, legR, body, armL, armR, head, hair, hat, chest, armBand);
+    npcModel.position.set(npcCfg.x, 0, npcCfg.z);
+    this.group.add(npcModel);
+
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: textTexture('值日生小满 · 纸人', {
@@ -1244,18 +1275,19 @@ export class SchoolScene {
         depthWrite: false
       })
     );
-    sprite.position.set(npcCfg.x, (npcCfg.y ?? 1.1) + 0.55, npcCfg.z);
-    sprite.scale.set(1.6, 0.42, 1);
+    sprite.position.set(npcCfg.x, 2.05, npcCfg.z);
+    sprite.scale.set(1.8, 0.5, 1);
     this.group.add(sprite);
     const lantern = new THREE.Mesh(
-      new THREE.SphereGeometry(0.09, 10, 8),
+      new THREE.SphereGeometry(0.12, 12, 10),
       new THREE.MeshBasicMaterial({ color: '#ffd166' })
     );
-    lantern.position.set(npcCfg.x, (npcCfg.y ?? 1.1) + 0.95, npcCfg.z);
+    lantern.position.set(npcCfg.x + 0.4, 1.35, npcCfg.z);
     this.group.add(lantern);
     refs.npc = {
       pos: { x: npcCfg.x, z: npcCfg.z },
-      sprite
+      sprite,
+      model: npcModel
     };
   }
 
