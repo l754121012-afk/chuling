@@ -91,6 +91,17 @@ export class SchoolScene {
       PALETTE.floor
     );
 
+    const floor2 = this.L.secondFloor;
+    if (floor2) {
+      this._box(
+        floor2.w,
+        floor2.h,
+        floor2.d,
+        { x: floor2.x, y: floor2.topY - floor2.h / 2, z: floor2.z },
+        PALETTE.floorDark
+      );
+    }
+
     for (const wall of this.L.westWingWalls || []) {
       this._box(wall.w, 5.2, wall.d, { x: wall.x, y: 2.6, z: wall.z }, PALETTE.wall);
     }
@@ -111,7 +122,7 @@ export class SchoolScene {
           depthWrite: false
         })
       );
-      sign.position.set(room.x, 1.55, room.z);
+      sign.position.set(room.x, room.y ?? 1.55, room.z);
       sign.scale.set(3.4, 0.72, 1);
       this.group.add(sign);
     }
@@ -602,20 +613,23 @@ export class SchoolScene {
       this.physics.add(body);
     }
 
-    const landing = new THREE.Mesh(
-      new THREE.BoxGeometry(3, 0.25, 3),
-      material('#6b5b4a', 0.8)
-    );
-    const catEndZ = this.L.highCatwalk[1].to.z;
-    landing.position.set(0, 3.875, catEndZ);
-    this.group.add(landing);
-    const landingBody = makeBody({
-      shape: new CANNON.Box(v3(2, 0.8, 2)),
-      position: { x: 0, y: 3.2, z: catEndZ },
-      group: GROUPS.WORLD,
-      mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
-    });
-    this.physics.add(landingBody);
+    const landingSeg = this.L.highCatwalk?.[1];
+    if (landingSeg) {
+      const landing = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 0.25, 3),
+        material('#6b5b4a', 0.8)
+      );
+      const catEndZ = landingSeg.to.z;
+      landing.position.set(0, 3.875, catEndZ);
+      this.group.add(landing);
+      const landingBody = makeBody({
+        shape: new CANNON.Box(v3(2, 0.8, 2)),
+        position: { x: 0, y: 3.2, z: catEndZ },
+        group: GROUPS.WORLD,
+        mask: GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM
+      });
+      this.physics.add(landingBody);
+    }
 
     for (const seg of this.L.highCatwalk) {
       const minX = Math.min(seg.from.x, seg.to.x) - 0.5;
@@ -1081,9 +1095,9 @@ export class SchoolScene {
     this.sunLight = sun;
 
     const fallbackGuide = [
-      { x: -6, z: -4, color: '#ffe9c4', r: 9, y: 2.7 },
-      { x: 5, z: -3, color: '#ffd9a0', r: 9, y: 2.7 },
-      { x: 0, z: 8, color: '#ffe9c4', r: 10, y: 2.8 }
+      { x: -6, z: -4, color: '#ffe9c4', r: 20, y: 4.6, intensity: 4.5 },
+      { x: 5, z: -3, color: '#ffd9a0', r: 20, y: 4.6, intensity: 4.5 },
+      { x: 0, z: 8, color: '#ffe9c4', r: 24, y: 4.8, intensity: 6, important: true }
     ];
     const spots = this.L.guideLights?.length ? this.L.guideLights : fallbackGuide;
     for (const spot of spots) this._addGuideLight(spot);
@@ -1094,9 +1108,9 @@ export class SchoolScene {
         x: clue.pos.x,
         z: clue.pos.z,
         color: clue.id === 'record' ? '#ffb4a0' : '#ffe08a',
-        r: 12,
+        r: 22,
         y: clueY + 0.7,
-        intensity: 1.15,
+        intensity: 7,
         important: true
       });
     }
@@ -1105,17 +1119,17 @@ export class SchoolScene {
         x: refs.exit.pos.x,
         z: refs.exit.pos.z,
         color: '#8ef0c8',
-        r: 12,
+        r: 24,
         y: 3.8,
-        intensity: 1.25,
+        intensity: 8,
         important: true
       });
     }
     if (refs?.charger?.light) {
-      this.guideLights.push({ light: refs.charger.light, bulb: null, lamp: null, base: 1.2 });
+      this.guideLights.push({ light: refs.charger.light, bulb: null, lamp: null, base: 6 });
     }
     if (refs?.locker?.light) {
-      this.guideLights.push({ light: refs.locker.light, bulb: null, lamp: null, base: 1.0 });
+      this.guideLights.push({ light: refs.locker.light, bulb: null, lamp: null, base: 5 });
     }
   }
 
@@ -1139,8 +1153,18 @@ export class SchoolScene {
       new THREE.MeshBasicMaterial({ color })
     );
     bulb.position.y = -0.12;
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(spot.important ? 0.9 : 0.55, 12, 8),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: spot.important ? 0.17 : 0.1,
+        depthWrite: false
+      })
+    );
+    glow.position.y = -0.08;
     const lamp = new THREE.Group();
-    lamp.add(shade, bulb);
+    lamp.add(shade, bulb, glow);
     lamp.position.set(x, y, z);
     this.group.add(lamp);
     this.guideLights.push({ light, bulb, lamp, base: intensity });
@@ -1148,8 +1172,8 @@ export class SchoolScene {
 
   setDarkness(dark) {
     const d = Math.max(0, Math.min(1, dark));
-    if (this.ambientLight) this.ambientLight.intensity = 0.22 * (1 - d * 0.92);
-    if (this.sunLight) this.sunLight.intensity = 0.35 * (1 - d * 0.96);
+    if (this.ambientLight) this.ambientLight.intensity = 0.48 * (1 - d * 0.82);
+    if (this.sunLight) this.sunLight.intensity = 0.7 * (1 - d * 0.9);
     if (this.threeScene?.fog) {
       this.threeScene.fog.near = 7 - d * 5;
       this.threeScene.fog.far = 22 - d * 14;

@@ -338,7 +338,9 @@ export class UISystem {
 
   showItemGuide(def) {
     if (!this.el.itemGuideModal || !def) return;
-    if (this.el.guideTitle) this.el.guideTitle.textContent = `${def.name} 用法`;
+    if (this.el.guideTitle) {
+      this.el.guideTitle.textContent = def.taskGuide ? def.name : `${def.name} 用法`;
+    }
     if (this.el.guideIcon) this.el.guideIcon.textContent = def.icon || '?';
     if (this.el.guideSteps) {
       this.el.guideSteps.innerHTML = '';

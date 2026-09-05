@@ -159,7 +159,8 @@ events.on('audio', p => audio.play(p.name));
 events.on('item.picked', p => {
   const def = p?.def;
   const id = p?.id;
-  if (!def?.guide || itemGuidesShown.has(id) || !game.isPlaying() || game.guideOpen) return;
+  const classroomTask = !game.detentionMode && (id === 'stapler' || id === 'tape');
+  if (!classroomTask || itemGuidesShown.has(id) || !game.isPlaying() || game.guideOpen) return;
   itemGuidesShown.add(id);
   game.guideOpen = true;
   if (document.pointerLockElement) document.exitPointerLock();
@@ -179,7 +180,23 @@ events.on('guide.close', () => {
     }
   }
 });
-events.on('clue.found', p => school.markClueRead?.(p.id));
+events.on('clue.found', p => {
+  school.markClueRead?.(p.id);
+  if (game.detentionMode && (p.id === 'note' || p.id === 'record') && !game.guideOpen) {
+    itemGuidesShown.add(`task_${p.id}`);
+    game.guideOpen = true;
+    if (document.pointerLockElement) document.exitPointerLock();
+    input.allowLock = false;
+    ui.showItemGuide({
+      name: p.clue?.title || (p.id === 'note' ? '程老师值日表' : '程老师处分记录'),
+      icon: '🗒',
+      taskGuide: true,
+      guide: {
+        steps: [p.clue?.text || '先记录这条信息，再找下一个任务点。']
+      }
+    });
+  }
+});
 events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
   game.detentionScheduleRead = true;

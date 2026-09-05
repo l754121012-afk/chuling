@@ -10,9 +10,10 @@ function westWingConfig() {
   cfg.ghostSpawn = { x: 15, z: -8 };
   cfg.exit = { x: 0, z: 23.4 };
   cfg.teacherDesk = { x: 11, z: 15.5, rotY: 0.2 };
-  cfg.note = { x: 12.4, y: 1.95, z: 15.6 };
-  cfg.record = { x: 9.2, y: 1.95, z: 15.6 };
+  cfg.note = { x: -4, y: 4.7, z: 12.5 };
+  cfg.record = { x: 4, y: 4.7, z: 12.5 };
   cfg.platform = { x: 11, z: 15.5, w: 5, h: 1, d: 4 };
+  cfg.secondFloor = { x: 0, z: 12.5, w: 22, d: 11, topY: 4.25, h: 0.5 };
   cfg.platformLabel = '程老师办公桌';
   cfg.storyPen = false;
   cfg.missionLabels = {
@@ -26,16 +27,16 @@ function westWingConfig() {
     { x: 0, z: 5, text: '中央门禁过道' },
     { x: -16, z: 16, text: '禁闭隔间迷宫' },
     { x: 13, z: 16, text: '办公室/档案阁' },
-    { x: 0, z: 9.2, text: '档案阁高架 2F' }
+    { x: 0, z: 9.2, text: '档案阁高架 2F', y: 5.4 }
   ];
   cfg.guideLights = [
-    { x: -21, z: -2, color: '#ffe9c4', r: 10, y: 4.5, intensity: 0.95 },
-    { x: -17, z: 3, color: '#8ef0c8', r: 8, y: 4.6, intensity: 0.8 },
-    { x: 0, z: 5.5, color: '#ffe9c4', r: 13, y: 4.9, intensity: 1.2, important: true },
-    { x: 10, z: 4.5, color: '#d9f0ff', r: 9, y: 4.5, intensity: 0.8 },
-    { x: 13, z: 16.5, color: '#ffe9b8', r: 14, y: 4.9, intensity: 1.35, important: true },
-    { x: -16, z: 15.5, color: '#c9a7ff', r: 10, y: 4.7, intensity: 0.9 },
-    { x: 20, z: -6, color: '#ff9f45', r: 11, y: 4.6, intensity: 1.0 }
+    { x: -21, z: -2, color: '#ffe9c4', r: 20, y: 4.5, intensity: 4.5 },
+    { x: -17, z: 3, color: '#8ef0c8', r: 16, y: 4.6, intensity: 3.8 },
+    { x: 0, z: 5.5, color: '#ffe9c4', r: 28, y: 4.9, intensity: 8, important: true },
+    { x: 10, z: 4.5, color: '#d9f0ff', r: 18, y: 4.5, intensity: 4 },
+    { x: 0, z: 12.5, color: '#ffe9b8', r: 30, y: 6.1, intensity: 9, important: true },
+    { x: -16, z: 15.5, color: '#c9a7ff', r: 20, y: 4.7, intensity: 4.2 },
+    { x: 20, z: -6, color: '#ff9f45', r: 20, y: 4.6, intensity: 4.8 }
   ];
 
   cfg.westWingWalls = [
@@ -105,14 +106,8 @@ function westWingConfig() {
   cfg.wallLedges = [];
   cfg.slideRamp = { x: 0, z: 0, length: 0, tilt: 0 };
   cfg.rope = { enabled: false, from: { x: 0, z: 0 }, to: { x: 0, z: 0 }, y: 0 };
-  cfg.ladders = [
-    { x: -3, z: 5.5, topY: 3.2 },
-    { x: 3, z: 5.5, topY: 3.2 }
-  ];
-  cfg.highCatwalk = [
-    { from: { x: -9, z: 5.5 }, to: { x: 9, z: 5.5 }, y: 3.4 },
-    { from: { x: 9, z: 5.5 }, to: { x: 0, z: 9 }, y: 3.4 }
-  ];
+  cfg.ladders = [];
+  cfg.highCatwalk = [];
   cfg.bubbleRoutes = [
     {
       from: { x: -20, z: -6, y: 0.9 },
@@ -121,7 +116,7 @@ function westWingConfig() {
       label: '纸箱泡泡 · 上档案阁'
     },
     {
-      from: { x: 12.5, z: 16, y: 1.1 },
+      from: { x: 4, z: 13, y: 4.4 },
       to: { x: 18, z: -7, y: 0.9 },
       color: '#d9f0ff',
       label: '泡泡滑梯 · 回保健区'

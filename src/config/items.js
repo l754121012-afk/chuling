@@ -21,6 +21,7 @@ export const ITEM_DEFS = {
     count: 1, damage: 0, rage: 30, mass: 0.8,
     desc: '正确时机才能封印。', cost: 800,
     guide: {
+      important: true,
       steps: [
         '先读线索，确认鬼的封印条件。',
         '用数字键切到订书机。',
@@ -33,6 +34,7 @@ export const ITEM_DEFS = {
     count: 2, damage: 0, rage: 3, mass: 0.2,
     desc: '在地上画个黏黏的陷阱。', cost: 400,
     guide: {
+      important: true,
       steps: [
         '切到修正带后直接按左键。',
         '修正带会画在脚下，形成黏性陷阱。',

@@ -43,12 +43,12 @@ export const LEVEL_CONFIG = {
   charger: { x: 0, z: 12 },
   fishTank: { x: 2.5, z: 4.0 },
   guideLights: [
-    { x: -5.8, z: -4, color: '#ffe9c4', r: 10, y: 4.6, intensity: 0.9 },
-    { x: 5, z: -3, color: '#ffd9a0', r: 10, y: 4.6, intensity: 0.9 },
-    { x: -3, z: 2, color: '#d9f0ff', r: 10, y: 4.6, intensity: 0.85 },
-    { x: 0, z: 6.8, color: '#ffe9c4', r: 11, y: 4.9, intensity: 1.15, important: true },
-    { x: 0, z: 14, color: '#8ef0c8', r: 12, y: 4.9, intensity: 1.25, important: true },
-    { x: -5, z: 19.5, color: '#ff9f45', r: 10, y: 4.7, intensity: 0.9 }
+    { x: -5.8, z: -4, color: '#ffe9c4', r: 20, y: 4.6, intensity: 4.5 },
+    { x: 5, z: -3, color: '#ffd9a0', r: 20, y: 4.6, intensity: 4.5 },
+    { x: -3, z: 2, color: '#d9f0ff', r: 20, y: 4.6, intensity: 4.2 },
+    { x: 0, z: 6.8, color: '#ffe9c4', r: 26, y: 4.9, intensity: 7, important: true },
+    { x: 0, z: 14, color: '#8ef0c8', r: 28, y: 4.9, intensity: 8, important: true },
+    { x: -5, z: 19.5, color: '#ff9f45', r: 20, y: 4.7, intensity: 4.5 }
   ],
   highCatwalk: [
     { from: { x: 10.2, z: -1.5 }, to: { x: 10.2, z: 4.6 }, y: 4.0 },
