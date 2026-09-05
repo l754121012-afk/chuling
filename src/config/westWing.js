@@ -27,6 +27,15 @@ function westWingConfig() {
     { x: -16, z: 16, text: '禁闭隔间迷宫' },
     { x: 13, z: 16, text: '办公室/档案阁' }
   ];
+  cfg.guideLights = [
+    { x: -21, z: -2, color: '#ffe9c4', r: 9, y: 2.6 },
+    { x: -17, z: 3, color: '#8ef0c8', r: 7, y: 2.5 },
+    { x: 0, z: 5.5, color: '#ffe9c4', r: 11, y: 3.4 },
+    { x: 10, z: 4.5, color: '#d9f0ff', r: 8, y: 2.6 },
+    { x: 13, z: 16.5, color: '#ffe9b8', r: 12, y: 3.2 },
+    { x: -16, z: 15.5, color: '#c9a7ff', r: 9, y: 2.8 },
+    { x: 20, z: -6, color: '#ff9f45', r: 9, y: 2.6 }
+  ];
 
   cfg.westWingWalls = [
     // outer shell

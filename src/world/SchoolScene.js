@@ -34,6 +34,7 @@ export class SchoolScene {
     this.L = scaleLevelConfig(levelConfig);
     this.group = new THREE.Group();
     this.flickerLights = [];
+    this.guideLights = [];
     this.footprints = [];
     this.particles = [];
     this._deskShakeUntil = 0;
@@ -1010,28 +1011,39 @@ export class SchoolScene {
     this.group.add(sun);
     this.sunLight = sun;
 
-    if (this.L.mode === 'westwing') {
-      for (const room of this.L.westWingLabels || []) {
-        const light = new THREE.PointLight('#ffe9c4', 0.42, 14, 1.8);
-        light.position.set(room.x, 3.0, room.z);
-        this.group.add(light);
-        this.flickerLights.push(light);
-      }
-      return;
-    }
-
-    const flicker = [
-      { x: -6, z: -4, color: '#ffe9c4' },
-      { x: 5, z: -3, color: '#ffd9a0' },
-      { x: -3, z: 2, color: '#d9f0ff' },
-      { x: 0, z: 8, color: '#ffe9c4' }
+    const fallbackGuide = [
+      { x: -6, z: -4, color: '#ffe9c4', r: 9, y: 2.7 },
+      { x: 5, z: -3, color: '#ffd9a0', r: 9, y: 2.7 },
+      { x: 0, z: 8, color: '#ffe9c4', r: 10, y: 2.8 }
     ];
-    for (const f of flicker) {
-      const light = new THREE.PointLight(f.color, 0.3, 9, 1.8);
-      light.position.set(f.x, 2.7, f.z);
-      this.group.add(light);
-      this.flickerLights.push(light);
-    }
+    const spots = this.L.guideLights?.length ? this.L.guideLights : fallbackGuide;
+    for (const spot of spots) this._addGuideLight(spot);
+  }
+
+  _addGuideLight(spot) {
+    const x = spot.x;
+    const z = spot.z;
+    const y = spot.y ?? 2.6;
+    const color = spot.color || '#ffe9c4';
+    const light = new THREE.PointLight(color, 0.55, spot.r || 9, 1.8);
+    light.position.set(x, y, z);
+    this.group.add(light);
+
+    const shade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.12, 0.12, 8),
+      material('#5a6470', 0.35, 0.75)
+    );
+    shade.position.set(0, 0.02, 0);
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.05, 8, 6),
+      new THREE.MeshBasicMaterial({ color })
+    );
+    bulb.position.y = -0.12;
+    const lamp = new THREE.Group();
+    lamp.add(shade, bulb);
+    lamp.position.set(x, y, z);
+    this.group.add(lamp);
+    this.guideLights.push({ light, bulb, lamp });
   }
 
   setDarkness(dark) {
@@ -1354,6 +1366,17 @@ export class SchoolScene {
     const stage = game.currentStage();
     const insane = stage.id === 'furious' || stage.id === 'insane' || game.phase === 'escape';
     const lightsOut = game.lightsOutUntil > nowSec();
+    for (const g of this.guideLights) {
+      if (lightsOut) {
+        g.light.intensity = 0;
+        g.lamp.visible = false;
+        g.bulb.visible = false;
+      } else {
+        g.light.intensity = 0.55;
+        g.lamp.visible = true;
+        g.bulb.visible = true;
+      }
+    }
     for (const light of this.flickerLights) {
       if (lightsOut) {
         light.intensity = 0;

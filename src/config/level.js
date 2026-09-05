@@ -42,6 +42,14 @@ export const LEVEL_CONFIG = {
   crateTarget: { x: -5.7, z: -2.5, r: 1.1 },
   charger: { x: 0, z: 12 },
   fishTank: { x: 2.5, z: 4.0 },
+  guideLights: [
+    { x: -5.8, z: -4, color: '#ffe9c4', r: 8, y: 2.6 },
+    { x: 5, z: -3, color: '#ffd9a0', r: 8, y: 2.6 },
+    { x: -3, z: 2, color: '#d9f0ff', r: 8, y: 2.6 },
+    { x: 0, z: 6.8, color: '#ffe9c4', r: 9, y: 2.8 },
+    { x: 0, z: 14, color: '#8ef0c8', r: 10, y: 2.8 },
+    { x: -5, z: 19.5, color: '#ff9f45', r: 9, y: 2.6 }
+  ],
   highCatwalk: [
     { from: { x: 10.2, z: -1.5 }, to: { x: 10.2, z: 4.6 }, y: 4.0 },
     { from: { x: 10.2, z: 4.6 }, to: { x: 0, z: 4.6 }, y: 4.0 }
