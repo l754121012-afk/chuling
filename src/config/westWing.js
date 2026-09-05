@@ -25,16 +25,17 @@ function westWingConfig() {
     { x: 13, z: -7, text: '保健室改造禁闭区' },
     { x: 0, z: 5, text: '中央门禁过道' },
     { x: -16, z: 16, text: '禁闭隔间迷宫' },
-    { x: 13, z: 16, text: '办公室/档案阁' }
+    { x: 13, z: 16, text: '办公室/档案阁' },
+    { x: 0, z: 9.2, text: '档案阁高架 2F' }
   ];
   cfg.guideLights = [
-    { x: -21, z: -2, color: '#ffe9c4', r: 9, y: 2.6 },
-    { x: -17, z: 3, color: '#8ef0c8', r: 7, y: 2.5 },
-    { x: 0, z: 5.5, color: '#ffe9c4', r: 11, y: 3.4 },
-    { x: 10, z: 4.5, color: '#d9f0ff', r: 8, y: 2.6 },
-    { x: 13, z: 16.5, color: '#ffe9b8', r: 12, y: 3.2 },
-    { x: -16, z: 15.5, color: '#c9a7ff', r: 9, y: 2.8 },
-    { x: 20, z: -6, color: '#ff9f45', r: 9, y: 2.6 }
+    { x: -21, z: -2, color: '#ffe9c4', r: 10, y: 4.5, intensity: 0.95 },
+    { x: -17, z: 3, color: '#8ef0c8', r: 8, y: 4.6, intensity: 0.8 },
+    { x: 0, z: 5.5, color: '#ffe9c4', r: 13, y: 4.9, intensity: 1.2, important: true },
+    { x: 10, z: 4.5, color: '#d9f0ff', r: 9, y: 4.5, intensity: 0.8 },
+    { x: 13, z: 16.5, color: '#ffe9b8', r: 14, y: 4.9, intensity: 1.35, important: true },
+    { x: -16, z: 15.5, color: '#c9a7ff', r: 10, y: 4.7, intensity: 0.9 },
+    { x: 20, z: -6, color: '#ff9f45', r: 11, y: 4.6, intensity: 1.0 }
   ];
 
   cfg.westWingWalls = [
@@ -72,10 +73,33 @@ function westWingConfig() {
   cfg.fishTank = { x: 4, z: 5.5 };
   cfg.crateTarget = null;
   cfg.pillars = [];
-  cfg.desks = [];
+  cfg.desks = [
+    { x: -13, z: -9, rotY: 0 },
+    { x: -13, z: -4, rotY: 0.2 },
+    { x: -18, z: 0, rotY: 0.1 },
+    { x: 16, z: -9, rotY: 0 },
+    { x: 19, z: -4, rotY: -0.1 },
+    { x: 9, z: 12, rotY: 0 },
+    { x: 14, z: 12, rotY: 0.1 },
+    { x: 9, z: 20, rotY: 0 },
+    { x: 14, z: 20, rotY: -0.1 },
+    { x: -11, z: 14, rotY: 0.2 },
+    { x: -19, z: 18, rotY: 0 }
+  ];
   cfg.crates = [];
-  cfg.clutter = [];
-  cfg.routeClutter = [];
+  cfg.clutter = [
+    { x: -15, z: -2 },
+    { x: -10, z: 4.5 },
+    { x: 7, z: 3.5 },
+    { x: 12, z: 13.5 },
+    { x: -14, z: 21 }
+  ];
+  cfg.routeClutter = [
+    { x: -15, z: 3, rot: 0.2 },
+    { x: 13, z: 5, rot: -0.15 },
+    { x: 17, z: 15, rot: 0.12 },
+    { x: -18, z: 12, rot: -0.08 }
+  ];
 
   cfg.palletStack = { x: 0, z: 0, tiers: [] };
   cfg.wallLedges = [];
@@ -88,6 +112,20 @@ function westWingConfig() {
   cfg.highCatwalk = [
     { from: { x: -9, z: 5.5 }, to: { x: 9, z: 5.5 }, y: 3.4 },
     { from: { x: 9, z: 5.5 }, to: { x: 0, z: 9 }, y: 3.4 }
+  ];
+  cfg.bubbleRoutes = [
+    {
+      from: { x: -20, z: -6, y: 0.9 },
+      to: { x: 0, z: 8.5, y: 4.3 },
+      color: '#8ef0c8',
+      label: '纸箱泡泡 · 上档案阁'
+    },
+    {
+      from: { x: 12.5, z: 16, y: 1.1 },
+      to: { x: 18, z: -7, y: 0.9 },
+      color: '#d9f0ff',
+      label: '泡泡滑梯 · 回保健区'
+    }
   ];
 
   cfg.itemSpawns = [

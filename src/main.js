@@ -153,8 +153,32 @@ let phoneRang = false;
 let firstScareAt = 0;
 let detentionBellStep = 0;
 let detentionBellAt = 0;
+const itemGuidesShown = new Set();
 
 events.on('audio', p => audio.play(p.name));
+events.on('item.picked', p => {
+  const def = p?.def;
+  const id = p?.id;
+  if (!def?.guide || itemGuidesShown.has(id) || !game.isPlaying() || game.guideOpen) return;
+  itemGuidesShown.add(id);
+  game.guideOpen = true;
+  if (document.pointerLockElement) document.exitPointerLock();
+  input.allowLock = false;
+  ui.showItemGuide(def);
+});
+events.on('guide.close', () => {
+  if (!game.guideOpen) return;
+  game.guideOpen = false;
+  ui.hideItemGuide();
+  input.allowLock = game.isPlaying();
+  if (game.isPlaying() && renderer.domElement.requestPointerLock) {
+    try {
+      renderer.domElement.requestPointerLock();
+    } catch {
+      // keep cursor hidden via CSS; user can click again if re-lock is refused
+    }
+  }
+});
 events.on('clue.found', p => school.markClueRead?.(p.id));
 events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
@@ -219,6 +243,7 @@ events.on('ghost.stage', p => {
 });
 events.on('game.start', () => {
   game.reset();
+  itemGuidesShown.clear();
   game.detentionMode = DETENTION_MODE || RUN_STAGE === 2;
   game.runMode = RUN_MODE;
   game.runStage = RUN_STAGE;
@@ -432,6 +457,12 @@ function tick() {
   let simDt = dt;
   if (nowSec() < game.hitstopUntil) simDt = 0;
   else if (nowSec() < game.slowmoUntil) simDt *= 0.35;
+
+  if (game.guideOpen) {
+    renderer.render(scene, camera);
+    input.update();
+    return;
+  }
 
   if (game.isPlaying()) {
     const pp = player.getPos();

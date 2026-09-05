@@ -56,6 +56,7 @@ export class SchoolScene {
       clutter: [],
       desks: [],
       beacons: [],
+      bubbles: [],
       platform: null,
       itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
@@ -69,9 +70,10 @@ export class SchoolScene {
     this._addProps(refs);
     this._addClues(refs);
     this._addExit(refs);
-    this._addLights();
+    this._addLights(refs);
     this._addVerticalProps(refs);
     this._addRouteClutter(refs);
+    this._addBubbles(refs);
 
     this.refs = refs;
     return refs;
@@ -315,6 +317,7 @@ export class SchoolScene {
     const safeLight = new THREE.PointLight('#7CFC00', 0.8, 4.5, 1.8);
     safeLight.position.set(lockerPos.x, 1.6, lockerPos.z);
     this.group.add(safeLight);
+    if (refs.locker) refs.locker.light = safeLight;
 
     const step = this.L.lockerStep;
     const stepMesh = new THREE.Mesh(
@@ -739,6 +742,72 @@ export class SchoolScene {
     }
   }
 
+  _addBubbles(refs) {
+    for (const route of this.L.bubbleRoutes || []) {
+      const pairs = [
+        {
+          x: route.from.x,
+          z: route.from.z,
+          y: route.from.y ?? 0.9,
+          to: { x: route.to.x, z: route.to.z, y: route.to.y ?? 0.9 }
+        },
+        {
+          x: route.to.x,
+          z: route.to.z,
+          y: route.to.y ?? 0.9,
+          to: { x: route.from.x, z: route.from.z, y: route.from.y ?? 0.9 }
+        }
+      ];
+      for (const stop of pairs) {
+        const color = route.color || '#8ef0c8';
+        const group = new THREE.Group();
+        const sphere = new THREE.Mesh(
+          new THREE.SphereGeometry(0.62, 16, 12),
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false
+          })
+        );
+        sphere.position.y = stop.y + 0.62;
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.62, 0.82, 30),
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = stop.y - 0.05;
+        const label = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: textTexture(route.label || '泡泡 E', {
+              bg: '#0d332d',
+              fg: '#d8ffe8',
+              font: 'bold 34px "Microsoft YaHei", sans-serif',
+              width: 420,
+              height: 96,
+              lineHeight: 42,
+              pad: 6
+            }),
+            transparent: true,
+            depthWrite: false
+          })
+        );
+        label.position.set(0, stop.y + 1.55, 0);
+        label.scale.set(2.2, 0.55, 1);
+        group.add(sphere, ring, label);
+        group.position.set(stop.x, 0, stop.z);
+        this.group.add(group);
+        refs.bubbles.push({ x: stop.x, z: stop.z, y: stop.y, to: stop.to, group, sphere, ring });
+      }
+    }
+  }
+
   _addClues(refs) {
     const board = this.L.blackboard;
     const boardMesh = makePropMesh('blackboard');
@@ -997,7 +1066,7 @@ export class SchoolScene {
     };
   }
 
-  _addLights() {
+  _addLights(refs) {
     this.ambientLight = new THREE.HemisphereLight('#3d4a5c', '#10141c', 0.22);
     this.group.add(this.ambientLight);
     const sun = new THREE.DirectionalLight('#5f6a7a', 0.35);
@@ -1018,6 +1087,36 @@ export class SchoolScene {
     ];
     const spots = this.L.guideLights?.length ? this.L.guideLights : fallbackGuide;
     for (const spot of spots) this._addGuideLight(spot);
+
+    for (const clue of refs?.clues || []) {
+      const clueY = clue.mesh?.position?.y ?? 1.85;
+      this._addGuideLight({
+        x: clue.pos.x,
+        z: clue.pos.z,
+        color: clue.id === 'record' ? '#ffb4a0' : '#ffe08a',
+        r: 12,
+        y: clueY + 0.7,
+        intensity: 1.15,
+        important: true
+      });
+    }
+    if (refs?.exit) {
+      this._addGuideLight({
+        x: refs.exit.pos.x,
+        z: refs.exit.pos.z,
+        color: '#8ef0c8',
+        r: 12,
+        y: 3.8,
+        intensity: 1.25,
+        important: true
+      });
+    }
+    if (refs?.charger?.light) {
+      this.guideLights.push({ light: refs.charger.light, bulb: null, lamp: null, base: 1.2 });
+    }
+    if (refs?.locker?.light) {
+      this.guideLights.push({ light: refs.locker.light, bulb: null, lamp: null, base: 1.0 });
+    }
   }
 
   _addGuideLight(spot) {
@@ -1025,7 +1124,8 @@ export class SchoolScene {
     const z = spot.z;
     const y = spot.y ?? 2.6;
     const color = spot.color || '#ffe9c4';
-    const light = new THREE.PointLight(color, 0.55, spot.r || 9, 1.8);
+    const intensity = spot.intensity ?? 0.9;
+    const light = new THREE.PointLight(color, intensity, spot.r || 9, 1.8);
     light.position.set(x, y, z);
     this.group.add(light);
 
@@ -1043,7 +1143,7 @@ export class SchoolScene {
     lamp.add(shade, bulb);
     lamp.position.set(x, y, z);
     this.group.add(lamp);
-    this.guideLights.push({ light, bulb, lamp });
+    this.guideLights.push({ light, bulb, lamp, base: intensity });
   }
 
   setDarkness(dark) {
@@ -1369,12 +1469,12 @@ export class SchoolScene {
     for (const g of this.guideLights) {
       if (lightsOut) {
         g.light.intensity = 0;
-        g.lamp.visible = false;
-        g.bulb.visible = false;
+        if (g.lamp) g.lamp.visible = false;
+        if (g.bulb) g.bulb.visible = false;
       } else {
-        g.light.intensity = 0.55;
-        g.lamp.visible = true;
-        g.bulb.visible = true;
+        g.light.intensity = g.base ?? 0.9;
+        if (g.lamp) g.lamp.visible = true;
+        if (g.bulb) g.bulb.visible = true;
       }
     }
     for (const light of this.flickerLights) {
@@ -1394,6 +1494,12 @@ export class SchoolScene {
       b.ring.scale.setScalar(pulse);
       b.beam.material.opacity = 0.12 + (Math.sin(beaconT * 3.2) * 0.5 + 0.5) * 0.12;
       b.sprite.material.opacity = 0.82 + Math.sin(beaconT * 2.4) * 0.18;
+    }
+    for (const bubble of this.refs?.bubbles || []) {
+      const pulse = 1 + Math.sin(beaconT * 2.2) * 0.12;
+      bubble.sphere.scale.setScalar(pulse);
+      bubble.sphere.material.opacity = 0.2 + (Math.sin(beaconT * 2.2) * 0.5 + 0.5) * 0.2;
+      bubble.ring.scale.setScalar(pulse * 1.15);
     }
     const storyPen = this.refs?.wishPen;
     if (storyPen?.marker) {

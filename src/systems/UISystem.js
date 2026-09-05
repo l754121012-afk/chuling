@@ -88,6 +88,12 @@ export class UISystem {
       notebookList: document.getElementById('notebook-list'),
       phaseFlag: document.getElementById('phase-flag'),
       mute: document.getElementById('mute-btn'),
+      itemGuideModal: document.getElementById('item-guide-modal'),
+      guideArt: document.getElementById('guide-art'),
+      guideIcon: document.getElementById('guide-icon'),
+      guideTitle: document.getElementById('guide-title'),
+      guideSteps: document.getElementById('guide-steps'),
+      guideClose: document.getElementById('guide-close'),
       settlementRows: document.getElementById('settlement-rows'),
       settlementTotal: document.getElementById('settlement-total'),
       settlementLine: document.getElementById('settlement-line'),
@@ -136,6 +142,7 @@ export class UISystem {
     this.el.notebook.querySelector('.notebook-close').addEventListener('click', () => {
       this.toggleNotebook(false);
     });
+    this.el.guideClose?.addEventListener('click', () => this.events.emit('guide.close'));
     this.el.backpackBtn?.addEventListener('click', () => this.toggleBackpack());
     this.el.backpackClose?.addEventListener('click', () => this.toggleBackpack(false));
     this.el.shopBtn?.addEventListener('click', () => this.openShop('points'));
@@ -327,6 +334,26 @@ export class UISystem {
       this.events.emit('audio', { name: 'win' });
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(120);
     }, 1750);
+  }
+
+  showItemGuide(def) {
+    if (!this.el.itemGuideModal || !def) return;
+    if (this.el.guideTitle) this.el.guideTitle.textContent = `${def.name} 用法`;
+    if (this.el.guideIcon) this.el.guideIcon.textContent = def.icon || '?';
+    if (this.el.guideSteps) {
+      this.el.guideSteps.innerHTML = '';
+      const steps = def.guide?.steps || [def.desc || '拿到后先试一下。'];
+      steps.forEach(step => {
+        const li = document.createElement('li');
+        li.textContent = step;
+        this.el.guideSteps.appendChild(li);
+      });
+    }
+    this.el.itemGuideModal.classList.remove('hidden');
+  }
+
+  hideItemGuide() {
+    this.el.itemGuideModal?.classList.add('hidden');
   }
 
   openWheel() {

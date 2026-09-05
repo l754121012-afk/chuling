@@ -77,6 +77,11 @@ export class PlayerSystem {
     this._ropeT = 0;
     this._ropeDirSign = 1;
     this._ladder = null;
+    this._bubbleActive = false;
+    this._bubbleStart = 0;
+    this._bubbleDur = 0.52;
+    this._bubbleFrom = null;
+    this._bubbleTo = null;
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
@@ -127,6 +132,7 @@ export class PlayerSystem {
       this._hideRestoreMask = null;
     }
     this._hideRestorePos = null;
+    this._bubbleActive = false;
   }
 
   resetShortcuts() {
@@ -149,6 +155,10 @@ export class PlayerSystem {
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
 
     this._handleMovement(dt, body);
+    if (this._bubbleActive) {
+      this._syncPlayerMesh();
+      return;
+    }
     if (this.game.thrownUntil > nowSec() && this.pawn.body.velocity.y < 0) {
       this._checkThrowCollision();
     }
@@ -356,6 +366,10 @@ export class PlayerSystem {
   _handleMovement(dt, body) {
     if (this.game.hiding || this.game.notebookOpen) {
       body.velocity.set(0, body.velocity.y, 0);
+      return;
+    }
+    if (this._bubbleActive) {
+      this._updateBubbleTravel(dt, body);
       return;
     }
     if (nowSec() < this.game.playerStunUntil) {
@@ -670,6 +684,61 @@ export class PlayerSystem {
     return { x: pos.x, y: pos.y, z: pos.z };
   }
 
+  _startBubble(stop) {
+    if (this._bubbleActive || !this.pawn || !stop?.to) return;
+    const body = this.pawn.body;
+    this._bubbleActive = true;
+    this._bubbleStart = nowSec();
+    this._bubbleFrom = {
+      x: body.position.x,
+      y: Math.max(0.8, body.position.y),
+      z: body.position.z
+    };
+    this._bubbleTo = {
+      x: stop.to.x,
+      y: Math.max(0.8, stop.to.y ?? 0.9),
+      z: stop.to.z
+    };
+    body.type = CANNON.Body.KINEMATIC;
+    body.collisionFilterMask = 0;
+    body.velocity.set(0, 0, 0);
+    this.game.ropeClimbing = false;
+    this.game.ladderClimbing = false;
+    this._ladder = null;
+    this.playPose('roll', 0.6);
+    this.audio?.play('whoosh');
+    this.events.emit('camera.shake', { amount: 0.25 });
+    this.events.emit('slowmo', { ms: 180 });
+    this.events.emit('toast', { text: '泡泡加速！抓紧书包！', ms: 1400 });
+    this.scene.spawnParticles(
+      { x: body.position.x, y: body.position.y, z: body.position.z },
+      stop.to.y > body.position.y ? '#8ef0c8' : '#d9f0ff'
+    );
+  }
+
+  _updateBubbleTravel(dt, body) {
+    const t = Math.min(1, Math.max(0, (nowSec() - this._bubbleStart) / this._bubbleDur));
+    const ease = t * t * (3 - 2 * t);
+    const from = this._bubbleFrom;
+    const to = this._bubbleTo;
+    body.position.set(
+      from.x + (to.x - from.x) * ease,
+      from.y + (to.y - from.y) * ease,
+      from.z + (to.z - from.z) * ease
+    );
+    body.velocity.set(0, 0, 0);
+    body.aabbNeedsUpdate = true;
+    if (t >= 1) {
+      this._bubbleActive = false;
+      body.type = CANNON.Body.DYNAMIC;
+      body.collisionFilterMask = GROUPS.WORLD | GROUPS.PROP | GROUPS.ITEM;
+      this.audio?.play('win');
+      this.scene.spawnParticles({ x: to.x, y: to.y, z: to.z }, '#ffe9b8');
+      this.scene.spawnHitRing({ x: to.x, y: Math.max(0.5, to.y - 0.3), z: to.z }, '#ffe9b8');
+      this.events.emit('hitstop', { ms: 80 });
+    }
+  }
+
   findInteractable() {
     const pos = this.getPos();
     let best = null;
@@ -876,6 +945,20 @@ export class PlayerSystem {
       }
     }
 
+    for (const bubble of this.refs.bubbles || []) {
+      const db = distance2D(pos.x, pos.z, bubble.x, bubble.z);
+      const verticalOk = Math.abs(pos.y - bubble.y) < 1.5;
+      if (db < 1.7 && verticalOk && 2.6 > bestPriority) {
+        bestPriority = 2.6;
+        best = {
+          type: 'bubble',
+          bubble,
+          label: 'E 钻进泡泡',
+          pos: { x: bubble.x, y: bubble.y + 0.8, z: bubble.z }
+        };
+      }
+    }
+
     return best;
   }
 
@@ -899,6 +982,8 @@ export class PlayerSystem {
       this.events.emit('game.win');
     } else if (target.type === 'exitLocked') {
       this.events.emit('toast', { text: target.label.replace('出口锁着：', ''), ms: 1800 });
+    } else if (target.type === 'bubble') {
+      this._startBubble(target.bubble);
     } else if (target.type === 'clue') {
       if (this.game.detentionMode && target.clue.id === 'blackboard') {
         this._detentionChalk(target.clue.pos);

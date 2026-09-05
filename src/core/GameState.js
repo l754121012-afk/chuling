@@ -31,6 +31,7 @@ export class GameState {
     this.slowedUntil = 0;
     this.stunnedUntil = 0;
     this.notebookOpen = false;
+    this.guideOpen = false;
     this.noiseTimer = 0;
     this.sealed = false;
     this.staplerBroken = false;
