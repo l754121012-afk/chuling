@@ -596,7 +596,7 @@ export class UISystem {
     }
     this.el.win.classList.add('hidden');
     this.el.lose.classList.add('hidden');
-    this.el.hud.classList.remove('hidden');
+    this.el.hud.classList.toggle('hidden', !!game.reviewMode);
 
     const stage = game.currentStage();
     const stageIdx = Math.min(this.el.rageSegments.length - 1, Math.floor(game.rage / 20));

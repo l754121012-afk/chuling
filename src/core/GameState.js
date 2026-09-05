@@ -124,6 +124,7 @@ export class GameState {
     this.detentionComplete = false;
     this.runMode = false;
     this.runStage = 1;
+    this.reviewMode = false;
   }
 
   addItem(id, n = 1) {

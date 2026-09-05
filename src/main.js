@@ -162,6 +162,11 @@ let detentionBellAt = 0;
 const itemGuidesShown = new Set();
 
 events.on('audio', p => audio.play(p.name));
+events.on('review.toggle', () => {
+  game.reviewMode = !game.reviewMode;
+  document.getElementById('hud')?.classList.toggle('hidden', game.reviewMode);
+  document.getElementById('review-btn')?.classList.toggle('active', game.reviewMode);
+});
 events.on('wage.pickup', () => {
   economy.state.coins += 300;
   economy.save();
@@ -420,6 +425,9 @@ ui.el.fullscreenBtn.addEventListener('click', () => {
     document.exitFullscreen?.();
   }
 });
+document.getElementById('review-btn')?.addEventListener('click', () => {
+  events.emit('review.toggle');
+});
 document.getElementById('detention-btn')?.addEventListener('click', () => {
   try { sessionStorage.setItem('exorcist_auto_ok', '1'); } catch { /* no storage */ }
   window.location.search = DETENTION_MODE ? '' : '?case=detention&auto=1';
@@ -454,6 +462,7 @@ if (DETENTION_MODE && !RUN_MODE) {
   if (startNote) startNote.textContent = '西翼骨架：穿过值班室、禁闭迷宫与档案阁，读值日表和处分记录可开门。';
 }
 window.addEventListener('keydown', e => {
+  if (e.code === 'KeyP' && game.isPlaying()) events.emit('review.toggle');
   if (e.code === 'AltLeft' || e.code === 'AltRight') {
     document.body.classList.remove('playing');
     if (document.pointerLockElement) document.exitPointerLock();
@@ -621,19 +630,24 @@ function tick() {
   }
   ui.sync(game);
   ui.updateSealStatus(player, ghost);
-  if (OVERVIEW_SHOT) {
+  if (OVERVIEW_SHOT || game.reviewMode) {
     const yaw = -0.82;
-    const pitch = 0.62;
-    const dist = 76;
-    const center = { x: 0, y: 0.8, z: 7.5 };
+    const pitch = 0.5;
+    const dist = 120;
+    const room = school.L.classroom;
+    const center = {
+      x: (room.minX + room.maxX) / 2,
+      y: 0.8,
+      z: (room.minZ + room.maxZ) / 2
+    };
     camera.far = 260;
     camera.updateProjectionMatrix();
     scene.background = new THREE.Color(0x9db2c4);
     scene.fog = null;
-    if (SHOT_MODE) {
-      school.sunLight.intensity = 12;
-      school.ambientLight.intensity = 1.7;
-      for (const g of school.guideLights) g.light.intensity = 4.5;
+    if (SHOT_MODE || game.reviewMode) {
+      school.sunLight.intensity = 8;
+      school.ambientLight.intensity = 1.6;
+      for (const g of school.guideLights) g.light.intensity = 6;
     }
     camera.position.set(
       center.x + Math.sin(yaw) * Math.cos(pitch) * dist,
@@ -642,6 +656,8 @@ function tick() {
     );
     camera.lookAt(center.x, center.y + 0.8, center.z);
   } else {
+    if (scene.fog === null) scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
+    scene.background = new THREE.Color(PALETTE.bg);
     cameraSys.update(input, player.getPos(), dt);
   }
   physics.step(simDt);

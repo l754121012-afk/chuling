@@ -973,6 +973,28 @@ body.playing canvas {
   cursor: pointer;
 }
 
+#review-btn {
+  position: absolute;
+  top: max(106px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #6a7480;
+  border-radius: 6px;
+  background: rgba(39, 45, 54, 0.9);
+  color: #f4efe4;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+#review-btn.active {
+  border-color: #8ef0c8;
+  color: #d9ffe9;
+  box-shadow: 0 0 12px rgba(142, 240, 200, 0.45);
+}
+
 #whip-hint {
   position: absolute;
   right: max(14px, env(safe-area-inset-right));
@@ -1417,6 +1439,10 @@ body.playing canvas {
 }
 
 @media (max-width: 700px) {
+  #review-btn {
+    display: none;
+  }
+
   .phone {
     width: 216px;
     transform: scale(0.88);
