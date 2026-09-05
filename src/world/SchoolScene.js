@@ -110,6 +110,7 @@ export class SchoolScene {
     for (const wall of this.L.westWingWalls || []) {
       this._box(wall.w, 5.2, wall.d, { x: wall.x, y: 2.6, z: wall.z }, PALETTE.wall);
     }
+    this._addWestWingWindows();
 
     for (const room of this.L.westWingLabels || []) {
       const sign = new THREE.Sprite(
@@ -130,6 +131,45 @@ export class SchoolScene {
       sign.position.set(room.x, room.y ?? 1.55, room.z);
       sign.scale.set(3.4, 0.72, 1);
       this.group.add(sign);
+    }
+  }
+
+  _addWestWingWindows() {
+    for (const win of this.L.westWingWindows || []) {
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(win.axis === 'z' ? 2.8 : 0.12, 1.9, win.axis === 'x' ? 2.8 : 0.12),
+        material('#3b4651', 0.4, 0.5)
+      );
+      frame.position.set(win.x, 2.7, win.z);
+      const glass = new THREE.Mesh(
+        new THREE.BoxGeometry(win.axis === 'z' ? 2.2 : 0.06, 1.4, win.axis === 'x' ? 2.2 : 0.06),
+        new THREE.MeshBasicMaterial({
+          color: 0xdff7ff,
+          transparent: true,
+          opacity: 0.75
+        })
+      );
+      glass.position.set(win.x, 2.7, win.z);
+      this.group.add(frame, glass);
+
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 2.4, 8, 10),
+        new THREE.MeshBasicMaterial({
+          color: 0xfff2c4,
+          transparent: true,
+          opacity: 0.05,
+          depthWrite: false
+        })
+      );
+      beam.position.set(win.x, 2.75, win.z);
+      if (win.axis === 'z') {
+        beam.rotation.x = Math.PI / 2;
+        beam.position.z += win.dir * 4.2;
+      } else {
+        beam.rotation.z = -Math.PI / 2 * win.dir;
+        beam.position.x += win.dir * 4.2;
+      }
+      this.group.add(beam);
     }
   }
 
@@ -1237,9 +1277,9 @@ export class SchoolScene {
   }
 
   _addLights(refs) {
-    this.ambientLight = new THREE.HemisphereLight('#3d4a5c', '#10141c', 0.22);
+    this.ambientLight = new THREE.HemisphereLight('#3d4a5c', '#10141c', 0.26);
     this.group.add(this.ambientLight);
-    const sun = new THREE.DirectionalLight('#5f6a7a', 0.35);
+    const sun = new THREE.DirectionalLight('#fff1c8', 3.6);
     sun.position.set(6, 12, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
@@ -1328,8 +1368,8 @@ export class SchoolScene {
 
   setDarkness(dark) {
     const d = Math.max(0, Math.min(1, dark));
-    if (this.ambientLight) this.ambientLight.intensity = 0.48 * (1 - d * 0.82);
-    if (this.sunLight) this.sunLight.intensity = 0.7 * (1 - d * 0.9);
+    if (this.ambientLight) this.ambientLight.intensity = 0.26 * (1 - d * 0.55);
+    if (this.sunLight) this.sunLight.intensity = 3.6 * (1 - d * 0.15);
     if (this.threeScene?.fog) {
       this.threeScene.fog.near = 7 - d * 5;
       this.threeScene.fog.far = 22 - d * 14;

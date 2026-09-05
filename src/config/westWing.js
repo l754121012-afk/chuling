@@ -30,13 +30,13 @@ function westWingConfig() {
     { x: 0, z: 12.8, text: '档案阁高架 2F', y: 5.4 }
   ];
   cfg.guideLights = [
-    { x: -21, z: -2, color: '#ffe9c4', r: 20, y: 4.5, intensity: 4.5 },
-    { x: -17, z: 3, color: '#8ef0c8', r: 16, y: 4.6, intensity: 3.8 },
-    { x: 0, z: 5.5, color: '#ffe9c4', r: 28, y: 4.9, intensity: 8, important: true },
-    { x: 10, z: 4.5, color: '#d9f0ff', r: 18, y: 4.5, intensity: 4 },
-    { x: 0, z: 12.5, color: '#ffe9b8', r: 30, y: 6.1, intensity: 9, important: true },
-    { x: -16, z: 15.5, color: '#c9a7ff', r: 20, y: 4.7, intensity: 4.2 },
-    { x: 20, z: -6, color: '#ff9f45', r: 20, y: 4.6, intensity: 4.8 }
+    { x: -21, z: -2, color: '#ffe9c4', r: 20, y: 4.5, intensity: 2.2 },
+    { x: -17, z: 3, color: '#8ef0c8', r: 16, y: 4.6, intensity: 1.8 },
+    { x: 0, z: 5.5, color: '#ffe9c4', r: 28, y: 4.9, intensity: 3, important: true },
+    { x: 10, z: 4.5, color: '#d9f0ff', r: 18, y: 4.5, intensity: 1.9 },
+    { x: 0, z: 12.5, color: '#ffe9b8', r: 30, y: 6.1, intensity: 3.4, important: true },
+    { x: -16, z: 15.5, color: '#c9a7ff', r: 20, y: 4.7, intensity: 2 },
+    { x: 20, z: -6, color: '#ff9f45', r: 20, y: 4.6, intensity: 2.2 }
   ];
 
   cfg.westWingWalls = [
@@ -61,6 +61,16 @@ function westWingConfig() {
     // archive/office partition with a gap
     { x: -8, z: 10.5, w: 0.3, d: 5 },
     { x: -8, z: 21.5, w: 0.3, d: 4 }
+  ];
+  cfg.westWingWindows = [
+    { x: -15, z: -12, axis: 'z', dir: 1 },
+    { x: 8, z: -12, axis: 'z', dir: 1 },
+    { x: -24, z: -4, axis: 'x', dir: 1 },
+    { x: -24, z: 13, axis: 'x', dir: 1 },
+    { x: 24, z: -6, axis: 'x', dir: -1 },
+    { x: 24, z: 11, axis: 'x', dir: -1 },
+    { x: -12, z: 24, axis: 'z', dir: -1 },
+    { x: 12, z: 24, axis: 'z', dir: -1 }
   ];
   cfg.doors = [
     {
