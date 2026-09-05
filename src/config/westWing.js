@@ -12,9 +12,9 @@ function westWingConfig() {
   cfg.teacherDesk = { x: 0, z: 5.5, rotY: 0.1 };
   cfg.note = { x: 0.7, y: 1.95, z: 5.5 };
   cfg.record = { x: -13.8, y: 1.35, z: 14.6 };
-  cfg.ghostBell = { x: 16.6, y: 1.65, z: -7.6 };
-  cfg.archiveControl = { x: 6, y: 4.4, z: 14.5 };
-  cfg.autoDevice = { x: 9, y: 4.4, z: 15.2 };
+  cfg.ghostBell = { x: 16.2, y: 1.65, z: -7.9 };
+  cfg.archiveControl = { x: 14, y: 0, z: 13 };
+  cfg.autoDevice = { x: 17, y: 0, z: 16 };
   cfg.platform = { x: 0, z: 5.5, w: 5, h: 1, d: 4 };
   cfg.secondFloor = { x: 0, z: 12.5, w: 22, d: 7, topY: 4.25, h: 0.5 };
   cfg.platformLabel = '程老师办公桌';
@@ -165,9 +165,9 @@ function westWingConfig() {
   ];
 
   cfg.controlSwitches = [
-    { id: 'archive_a', x: -6, z: 13.5, label: '档案锁 A', color: '#e76f51' },
-    { id: 'archive_b', x: 10, z: 14.6, label: '档案锁 B', color: '#f4d35e' },
-    { id: 'archive_c', x: -1, z: 15.5, label: '档案锁 C', color: '#4cc9f0' }
+    { id: 'archive_a', x: 13, z: 12, label: '档案锁 A', color: '#e76f51' },
+    { id: 'archive_b', x: 18, z: 17, label: '档案锁 B', color: '#f4d35e' },
+    { id: 'archive_c', x: 12, z: 20, label: '档案锁 C', color: '#4cc9f0' }
   ];
   cfg.crates = [];
   cfg.clutter = [

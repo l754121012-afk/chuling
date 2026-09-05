@@ -757,7 +757,7 @@ export class UISystem {
       if (game.runStage === 2) {
         if (escape) return '鬼被压制了！出口已开，跑向禁闭室出口';
         if (game.detentionExitDeviceDone) return '第二幕完成：记录改判且自动门解除，去出口';
-        if (game.detentionComplete) return '第二幕：记录已改判；坐泡泡上高架档案区，启动三道档案锁找到自动门控制台';
+        if (game.detentionComplete) return '第二幕：记录已改判；从右侧档案区启动三道档案锁，找到自动门控制台';
         if (game.detentionScheduleRead) return '第二幕：迷宫/档案区开放；绕进迷宫旧记录台读处分记录';
         return '第二幕：先到中央过道读程老师值日表；读完迷宫与档案区才会开放';
       }
@@ -767,7 +767,7 @@ export class UISystem {
     if (game.detentionMode) {
       if (escape) return '程老师被压制了！跑向禁闭室出口';
       if (game.detentionExitDeviceDone) return '两次解锁完成：处分记录已改判，自动门也解除了，去出口逃出';
-      if (game.detentionComplete) return '处分记录已改判：出口亮起绿灯；坐泡泡上高架档案区，启动三道档案锁找到自动门控制台';
+      if (game.detentionComplete) return '处分记录已改判：出口亮起绿灯；从右侧档案区启动三道档案锁，找到自动门控制台';
       if (game.detentionScheduleRead) return '值日表已归档：迷宫/档案区开放；绕进迷宫旧记录台读处分记录，黑板旁响铃可引鬼';
       return '西翼：先到中央过道读值日表；读完迷宫、档案区和引鬼响铃才会开放';
     }

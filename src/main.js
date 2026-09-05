@@ -288,10 +288,10 @@ events.on('detention.recordRead', () => {
   school.setExitGreenLock();
   events.emit('act.card', {
     title: '第一重解锁 · 处分记录改判',
-    line: '该受罚的人不是程老师。出口亮起绿灯，但门禁还锁着：坐泡泡上高架档案区，启动三道档案锁找到控制台。'
+    line: '该受罚的人不是程老师。出口亮起绿灯，但门禁还锁着：从右侧档案区启动三道档案锁，找到控制台。'
   });
   events.emit('audio', { name: 'phone' });
-  events.emit('toast', { text: '你替程老师写正了最后一笔：出口第一重解锁，还差高架档案区自动门。', ms: 2600 });
+  events.emit('toast', { text: '你替程老师写正了最后一笔：出口第一重解锁，还差右侧档案区自动门。', ms: 2600 });
 });
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
 events.on('hitstop', p => {
