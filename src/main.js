@@ -102,7 +102,8 @@ const items = new ItemSystem({
   ghost,
   camera,
   audio,
-  playerPos: () => player.getPos()
+  playerPos: () => player.getPos(),
+  aimDir: () => player.getFacing()
 });
 
 player.items = items;

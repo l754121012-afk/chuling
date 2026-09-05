@@ -12,7 +12,7 @@ import {
 import { distance2D, nowSec, rand, choice } from '../core/Utils.js';
 
 export class ItemSystem {
-  constructor({ scene, physics, events, game, rage, ghost, camera, audio, playerPos }) {
+  constructor({ scene, physics, events, game, rage, ghost, camera, audio, playerPos, aimDir }) {
     this.scene = scene;
     this.physics = physics;
     this.events = events;
@@ -22,6 +22,7 @@ export class ItemSystem {
     this.camera = camera;
     this.audio = audio;
     this.playerPos = playerPos;
+    this.aimDir = aimDir || null;
     this.pickups = [];
     this.projectiles = [];
     this.pendingPickups = [];
@@ -42,6 +43,19 @@ export class ItemSystem {
       if (this._trajectory) this._trajectory.group.visible = p.aiming;
     });
     this._ensureTrajectory();
+  }
+
+  _aimVector() {
+    if (this.aimDir) {
+      const f = this.aimDir();
+      const dir = new THREE.Vector3(f.x || 0, 0, f.z || 0);
+      if (dir.lengthSq() > 0.001) return dir.normalize();
+    }
+    const dir = new THREE.Vector3();
+    this.camera.getWorldDirection(dir);
+    dir.y = Math.max(-0.1, dir.y);
+    dir.normalize();
+    return dir;
   }
 
   _ensureTrajectory() {
@@ -77,10 +91,7 @@ export class ItemSystem {
     if (!show) return;
 
     const speed = this._comboAim ? 30 : (def.speed || 15);
-    const dir = new THREE.Vector3();
-    this.camera.getWorldDirection(dir);
-    dir.y = Math.max(-0.1, dir.y);
-    dir.normalize();
+    const dir = this._aimVector();
     const p = this.playerPos();
     const start = new THREE.Vector3(
       p.x + dir.x * 0.8,
@@ -198,10 +209,7 @@ export class ItemSystem {
       this.events.emit('toast', { text: `${def.name} 飞出去了！`, ms: 900 });
     }
 
-    const dir = new THREE.Vector3();
-    this.camera.getWorldDirection(dir);
-    dir.y = Math.max(-0.1, dir.y);
-    dir.normalize();
+    const dir = this._aimVector();
     const origin = this.playerPos();
     const start = new THREE.Vector3(
       origin.x + dir.x * 1.1,

@@ -48,15 +48,13 @@ function westWingConfig() {
     { x: -24, z: 6, w: 0.3, d: 36 },
     { x: 24, z: 6, w: 0.3, d: 36 },
     { x: 0, z: 24, w: 48, d: 0.3 },
-    // lower floor wall z=2 with three door gaps
+    // lower floor wall z=2 with start + right-lower door gaps
     { x: -22, z: 2, w: 4, d: 0.3 },
-    { x: -8, z: 2, w: 16, d: 0.3 },
-    { x: 10, z: 2, w: 12, d: 0.3 },
+    { x: 0, z: 2, w: 32, d: 0.3 },
     { x: 22, z: 2, w: 4, d: 0.3 },
-    // upper floor wall z=8 with three door gaps
+    // upper floor wall z=8 with maze + right-upper door gaps
     { x: -22, z: 8, w: 4, d: 0.3 },
-    { x: -8, z: 8, w: 16, d: 0.3 },
-    { x: 10, z: 8, w: 12, d: 0.3 },
+    { x: 0, z: 8, w: 32, d: 0.3 },
     { x: 22, z: 8, w: 4, d: 0.3 },
     // ground-level detention partition with a gap
     { x: -8, z: -10, w: 0.3, d: 4 },
@@ -114,33 +112,12 @@ function westWingConfig() {
       requireClue: 'note'
     },
     {
-      id: 'record_door',
-      x: 2,
-      z: 12.5,
-      w: 3,
-      d: 0.3,
-      label: '档案门',
-      locked: true,
-      requireClue: 'note',
-      levelY: 4.4
-    },
-    {
       id: 'maze_door',
       x: -18,
       z: 8,
       w: 4,
       d: 0.3,
       label: '迷宫侧门',
-      locked: true,
-      requireClue: 'note'
-    },
-    {
-      id: 'upper_door',
-      x: 2,
-      z: 8,
-      w: 4,
-      d: 0.3,
-      label: '二楼楼梯门',
       locked: true,
       requireClue: 'note'
     },

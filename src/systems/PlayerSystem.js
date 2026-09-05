@@ -79,6 +79,8 @@ export class PlayerSystem {
     this._ropeDirSign = 1;
     this._ladder = null;
     this._bubbleActive = false;
+    this.aimYaw = Math.atan2(-Math.sin(camera.yaw || 0), -Math.cos(camera.yaw || 0));
+    this.aimMarker = null;
     this._bubbleStart = 0;
     this._bubbleDur = 0.52;
     this._bubbleFrom = null;
@@ -107,6 +109,31 @@ export class PlayerSystem {
     body.allowSleep = false;
     this.physics.add(body);
     this.pawn = { mesh, body };
+
+    const marker = new THREE.Group();
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.44, 0.62, 28),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd166,
+        transparent: true,
+        opacity: 0.5,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.04;
+    const arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.12, 0.34, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffe08a })
+    );
+    arrow.rotation.x = Math.PI / 2;
+    arrow.position.set(0, 0.04, 0.5);
+    marker.add(ring, arrow);
+    marker.position.set(start.x, 0.02, start.z);
+    this.scene.group.add(marker);
+    this.aimMarker = marker;
+
     const phoneLight = new THREE.PointLight('#ffe9b0', 1.8, 8, 1.8);
     phoneLight.position.set(0.45, 1.05, 0.55);
     mesh.add(phoneLight);
@@ -145,6 +172,10 @@ export class PlayerSystem {
     return { x: p.x, y: p.y, z: p.z };
   }
 
+  getFacing() {
+    return { x: Math.sin(this.aimYaw), z: Math.cos(this.aimYaw) };
+  }
+
   update(dt) {
     if (!this.pawn) return;
     if (!this.game.isPlaying()) {
@@ -154,6 +185,9 @@ export class PlayerSystem {
 
     const body = this.pawn.body;
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
+    if (Math.abs(this.input.look.x) > 0.1) {
+      this.aimYaw += this.input.look.x * 0.0032;
+    }
 
     this._handleMovement(dt, body);
     if (this._bubbleActive) {
@@ -287,14 +321,15 @@ export class PlayerSystem {
         );
       }
     } else if (hSpeed > 0.4) {
-      this.pawn.mesh.rotation.y = Math.atan2(body.velocity.x, body.velocity.z);
+      this.pawn.mesh.rotation.y = this.aimYaw;
       this.pawn.mesh.rotation.x = 0;
       this.pawn.mesh.rotation.z = 0;
       this.pawn.mesh.scale.set(1, 1, 1);
-    } else if (Math.abs(this.pawn.mesh.rotation.x) > 0.01 || this.pawn.mesh.scale.x !== 1) {
+    } else {
       this.pawn.mesh.rotation.x = 0;
       this.pawn.mesh.rotation.z = 0;
       this.pawn.mesh.scale.set(1, 1, 1);
+      this.pawn.mesh.rotation.y = this.aimYaw;
     }
     this._updatePose(dt);
     if (this.phoneLight) {
@@ -317,6 +352,11 @@ export class PlayerSystem {
     // Physics capsule center sits at 0.35 above the floor; the visual model's
     // feet are at local y=0, so shift the mesh down to stand on the ground.
     this.pawn.mesh.position.y = this.pawn.body.position.y - 0.35;
+    if (this.aimMarker) {
+      this.aimMarker.position.set(this.pawn.mesh.position.x, this.pawn.body.position.y - 0.33, this.pawn.mesh.position.z);
+      this.aimMarker.rotation.y = this.aimYaw;
+      this.aimMarker.visible = this.pawn.mesh.visible;
+    }
   }
 
   playPose(name, duration) {
@@ -1206,10 +1246,8 @@ export class PlayerSystem {
         this.events.emit('toast', {
           text: door.id === 'start_door'
             ? '值班室大门开了！去中央过道读值日表。'
-            : door.id === 'record_door'
-              ? '档案区开了！迷宫和档案柜都亮起了目标。'
-              : door.id === 'maze_door'
-                ? '迷宫侧门开了！从内侧返回时它会变成单向门。'
+            : door.id === 'maze_door'
+              ? '迷宫侧门开了！从内侧返回时它会变成单向门。'
               : '门开了！',
           ms: 2000
         });
@@ -1222,7 +1260,7 @@ export class PlayerSystem {
         }
       } else if (door?.requireClue) {
         this.events.emit('toast', {
-          text: '档案门锁着：先到中央过道读程老师值日表。',
+          text: '门禁锁着：先到中央过道读程老师值日表。',
           ms: 2200
         });
       } else {
@@ -1550,9 +1588,9 @@ export class PlayerSystem {
   }
 
   _pushCrateOnce(prop) {
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     if (!this._crateInFront(prop, fwdX, fwdZ)) {
       this.events.emit('toast', { text: '需要面向箱子才能推', ms: 1200 });
       return;
@@ -1570,9 +1608,9 @@ export class PlayerSystem {
   }
 
   _pushCrateContinuous(prop) {
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     if (!this._crateInFront(prop, fwdX, fwdZ)) {
       this._pushTarget = null;
       return;
@@ -1709,9 +1747,9 @@ export class PlayerSystem {
     const dx = gp.x - pp.x;
     const dz = gp.z - pp.z;
     const dist = Math.hypot(dx, dz);
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     const dot = (dx * fwdX + dz * fwdZ) / (dist || 1);
     if (dist < 9 && dot > 0.2) {
       this.game.stunnedUntil = nowSec() + 2;
@@ -1764,9 +1802,9 @@ export class PlayerSystem {
     const dx = gp.x - pp.x;
     const dz = gp.z - pp.z;
     const dist = Math.hypot(dx, dz);
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     const dot = (dx * fwdX + dz * fwdZ) / Math.max(0.01, dist);
     const pointBlank = dist < 0.8;
     if (dist > 5.5 || (!pointBlank && dot < 0.35)) {
@@ -1890,9 +1928,9 @@ export class PlayerSystem {
     const minions = this.ghost?._minions;
     if (!minions?.length) return null;
     const pp = this.getPos();
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     let best = null;
     let bestDist = Infinity;
     for (const m of minions) {
@@ -2012,9 +2050,9 @@ export class PlayerSystem {
     const dx = gp.x - pp.x;
     const dz = gp.z - pp.z;
     const dist = Math.hypot(dx, dz);
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     const dot = (dx * fwdX + dz * fwdZ) / Math.max(0.01, dist);
     const pointBlank = dist < 0.8;
     if (dist > GAME_CONFIG.whipRange || (!pointBlank && dot < GAME_CONFIG.whipCone)) {
@@ -2089,9 +2127,9 @@ export class PlayerSystem {
     this.audio?.play('whoosh');
     this.events.emit('camera.shake', { amount: 0.1 });
     const pp = this.getPos();
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     this.scene.spawnSlashTrail(
       { x: pp.x, y: 0, z: pp.z },
       { x: pp.x + fwdX * 2, y: 0, z: pp.z + fwdZ * 2 },
@@ -2121,9 +2159,9 @@ export class PlayerSystem {
     const dist = Math.hypot(gp.x - pp.x, gp.z - pp.z);
     const range = GAME_CONFIG.parryRange + (this.game.desperate ? 1.5 : 0);
     if (dist > range) return false;
-    const yaw = this.camera.yaw;
-    const fwdX = -Math.sin(yaw);
-    const fwdZ = -Math.cos(yaw);
+    const face = this.getFacing();
+    const fwdX = face.x;
+    const fwdZ = face.z;
     const dot = ((gp.x - pp.x) * fwdX + (gp.z - pp.z) * fwdZ) / Math.max(0.01, dist);
     if (dist >= 0.8 && dot < (this.game.desperate ? 0.1 : 0.3)) return false;
     this.playPose('use', 0.45);

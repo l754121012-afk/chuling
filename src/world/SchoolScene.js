@@ -107,6 +107,7 @@ export class SchoolScene {
         { x: floor2.x, y: floor2.topY - floor2.h / 2, z: floor2.z },
         PALETTE.floorDark
       );
+      this._addSecondFloorRails(floor2);
     }
 
     for (const wall of this.L.westWingWalls || []) {
@@ -135,6 +136,18 @@ export class SchoolScene {
       sign.scale.set(3.4, 0.72, 1);
       this.group.add(sign);
     }
+  }
+
+  _addSecondFloorRails(floor) {
+    const railH = 3.8;
+    const topY = floor.topY;
+    const y = topY + railH / 2;
+    const t = 0.28;
+    const color = '#596a76';
+    this._box(floor.w + t * 2, railH, t, { x: floor.x, y, z: floor.z - floor.d / 2 - t / 2 }, color);
+    this._box(floor.w + t * 2, railH, t, { x: floor.x, y, z: floor.z + floor.d / 2 + t / 2 }, color);
+    this._box(t, railH, floor.d + t * 2, { x: floor.x - floor.w / 2 - t / 2, y, z: floor.z }, color);
+    this._box(t, railH, floor.d + t * 2, { x: floor.x + floor.w / 2 + t / 2, y, z: floor.z }, color);
   }
 
   _addWestWingWindows() {
