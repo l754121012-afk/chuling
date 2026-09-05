@@ -79,6 +79,7 @@ export class SchoolScene {
     this._addRouteClutter(refs);
     this._addBubbles(refs);
     this._addDoors(refs);
+    this._addWestWingGadgets(refs);
     this._addRegistrationNpc(refs);
 
     this.refs = refs;
@@ -1003,6 +1004,142 @@ export class SchoolScene {
     }
   }
 
+  _addWestWingGadgets(refs) {
+    if (this.L.mode !== 'westwing') return;
+    const bellCfg = this.L.ghostBell;
+    if (bellCfg) {
+      const bell = new THREE.Group();
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(0.34, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62),
+        material('#ffe08a', 0.85)
+      );
+      dome.position.y = 0.36;
+      const clapper = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 10, 8),
+        material('#b83a4b', 0.9)
+      );
+      clapper.position.y = 0.1;
+      const handle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.75, 0.12),
+        material('#26303c', 0.9)
+      );
+      handle.position.y = 0.02;
+      handle.position.x = 0.42;
+      const bellSprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture('值日响铃 E', {
+            bg: '#3a2610',
+            fg: '#ffe9b8',
+            font: 'bold 30px "Microsoft YaHei", sans-serif',
+            width: 360,
+            height: 88,
+            lineHeight: 38,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      bellSprite.position.y = 1.15;
+      bellSprite.scale.set(1.7, 0.46, 1);
+      bell.add(dome, clapper, handle, bellSprite);
+      bell.position.set(bellCfg.x, bellCfg.y, bellCfg.z);
+      this.group.add(bell);
+      refs.ghostBell = {
+        group: bell,
+        pos: { x: bellCfg.x, z: bellCfg.z }
+      };
+    }
+
+    const controlCfg = this.L.archiveControl;
+    const deviceCfg = this.L.autoDevice;
+    if (!controlCfg) return;
+    refs.archiveSwitches = [];
+    for (const sw of this.L.controlSwitches || []) {
+      const group = new THREE.Group();
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.65, 0.42),
+        material('#2f3a44', 0.9)
+      );
+      base.position.y = 0.33;
+      const lamp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.16, 12, 10),
+        new THREE.MeshStandardMaterial({ color: sw.color, emissive: sw.color, emissiveIntensity: 0.35 })
+      );
+      lamp.position.set(0, 0.78, 0);
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture(sw.label, {
+            bg: '#201a12',
+            fg: '#ffe9b8',
+            font: 'bold 30px "Microsoft YaHei", sans-serif',
+            width: 360,
+            height: 88,
+            lineHeight: 38,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sprite.position.y = 1.5;
+      sprite.scale.set(1.7, 0.46, 1);
+      group.add(base, lamp, sprite);
+      group.position.set(sw.x, sw.y ?? controlCfg.y, sw.z);
+      this.group.add(group);
+      refs.archiveSwitches.push({
+        id: sw.id,
+        index: refs.archiveSwitches.length,
+        group,
+        lamp,
+        label: sw.label,
+        color: sw.color,
+        pos: { x: sw.x, y: sw.y ?? controlCfg.y, z: sw.z },
+        on: false
+      });
+    }
+
+    if (deviceCfg) {
+      const device = new THREE.Group();
+      const cabinet = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 1.5, 0.7),
+        material('#20303c', 0.9)
+      );
+      cabinet.position.y = 0.75;
+      const door = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.2, 1.1),
+        new THREE.MeshStandardMaterial({ color: '#57cc99', emissive: '#57cc99', emissiveIntensity: 0.12 })
+      );
+      door.position.set(0, 0.82, 0.36);
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture('自动门控制台', {
+            bg: '#10251f',
+            fg: '#b8ffe0',
+            font: 'bold 32px "Microsoft YaHei", sans-serif',
+            width: 420,
+            height: 88,
+            lineHeight: 38,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sprite.position.y = 2.0;
+      sprite.scale.set(1.9, 0.5, 1);
+      device.add(cabinet, door, sprite);
+      device.position.set(deviceCfg.x, deviceCfg.y, deviceCfg.z);
+      device.visible = false;
+      this.group.add(device);
+      refs.autoDevice = {
+        group: device,
+        pos: { x: deviceCfg.x, y: deviceCfg.y, z: deviceCfg.z },
+        visible: false
+      };
+    }
+  }
+
   _applyDoorLock(door, locked) {
     if (!door?.body) return;
     door.locked = locked;
@@ -1319,7 +1456,8 @@ export class SchoolScene {
       lockMesh,
       beacon,
       pos: { x: exit.x, z: exit.z },
-      locked: true
+      locked: true,
+      stage: 0
     };
   }
 
@@ -1494,11 +1632,23 @@ export class SchoolScene {
     return { mesh, body };
   }
 
+  setExitGreenLock() {
+    const exit = this.refs?.exit;
+    if (!exit || exit.stage >= 1) return;
+    exit.stage = 1;
+    exit.lockMesh.material.color.set(PALETTE.exit);
+    exit.lockMesh.material.opacity = 0.42;
+    this.spawnHitRing({ x: exit.pos.x, y: 0.5, z: exit.pos.z }, '#57cc99');
+    this.spawnParticles({ x: exit.pos.x, y: 1.5, z: exit.pos.z }, '#57cc99');
+  }
+
   openExit() {
-    if (!this.refs?.exit || !this.refs.exit.locked) return;
-    this.refs.exit.locked = false;
-    this.refs.exit.lockMesh.visible = false;
-    this.refs.exit.beacon.visible = true;
+    const exit = this.refs?.exit;
+    if (!exit || !exit.locked) return;
+    exit.locked = false;
+    exit.stage = 2;
+    exit.lockMesh.visible = false;
+    exit.beacon.visible = true;
     this.events.emit('toast', { text: '出口开了！快跑！', ms: 2400 });
     this.events.emit('audio', { name: 'gate' });
   }

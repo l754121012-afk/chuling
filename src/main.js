@@ -224,14 +224,22 @@ events.on('guide.close', () => {
 });
 events.on('npc.talk', () => {
   if (game.detentionComplete) {
-    events.emit('speech', {
-      text: '纸人点点头：记录改完了，程老师终于能下课了。',
-      ms: 2200,
-      name: '小满纸人'
-    });
+    if (game.detentionExitDeviceDone) {
+      events.emit('speech', {
+        text: '纸人点点头：记录改完，自动门也解除了，程老师终于能下课了。',
+        ms: 2200,
+        name: '小满纸人'
+      });
+    } else {
+      events.emit('speech', {
+        text: '纸人指向档案区：处分记录改判了，出口第一重已亮绿灯；去档案区找到自动门控制台，门禁才会真正打开。',
+        ms: 2600,
+        name: '小满纸人'
+      });
+    }
   } else if (game.detentionScheduleRead) {
     events.emit('speech', {
-      text: '纸人指了指泡泡：泡泡启动了。上 2F 后，档案门会亮起，按 E 开门。',
+      text: '纸人指了指档案区：迷宫和档案区都开了。黑板旁还有响铃，能把程老师引开，再绕去迷宫读处分记录。',
       ms: 2200,
       name: '小满纸人'
     });
@@ -264,10 +272,10 @@ events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
   game.detentionScheduleRead = true;
   events.emit('act.card', {
-    title: '值日表归档 · 泡泡启动',
-    line: '回到入口坐纸箱泡泡上 2F，档案门会亮起；按 E 开门读处分记录。'
+    title: '值日表归档 · 迷宫与档案区开放',
+    line: '从右侧上层门进档案区，沿北侧绕进迷宫旧记录台；黑板旁响铃可以把程老师引开。'
   });
-  events.emit('toast', { text: '值日表已归档：泡泡启动了，档案门也解锁了。', ms: 2400 });
+  events.emit('toast', { text: '值日表已归档：档案区北侧通向迷宫，黑板旁多了引鬼响铃。', ms: 2400 });
 });
 events.on('detention.recordRead', () => {
   if (!game.detentionMode || game.detentionComplete) return;
@@ -276,13 +284,13 @@ events.on('detention.recordRead', () => {
     return;
   }
   game.detentionComplete = true;
-  school.openExit();
+  school.setExitGreenLock();
   events.emit('act.card', {
-    title: '第二幕完成 · 下课铃响了',
-    line: '处分记录被重写：该受罚的人不是程老师。出口门禁亮了。'
+    title: '第一重解锁 · 处分记录改判',
+    line: '该受罚的人不是程老师。出口亮起绿灯，但门禁还锁着：坐泡泡上高架档案区，启动三道档案锁找到控制台。'
   });
   events.emit('audio', { name: 'phone' });
-  events.emit('toast', { text: '你替程老师写正了最后一笔，出口开了！', ms: 2600 });
+  events.emit('toast', { text: '你替程老师写正了最后一笔：出口第一重解锁，还差高架档案区自动门。', ms: 2600 });
 });
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
 events.on('hitstop', p => {
@@ -361,7 +369,7 @@ events.on('game.start', () => {
   const startToast = RUN_MODE && RUN_STAGE === 1
     ? '第一幕：值日台有支金色任务笔，先站远看小满碰倒它。按 G 开启鞭子攻击，关掉 G 后左键照常使用道具。'
     : RUN_MODE && RUN_STAGE === 2
-      ? '第二幕：先读值日表，再趁程老师被引开去读处分记录。'
+      ? '第二幕：读值日表开迷宫与档案区，去迷宫读处分记录，再到档案区解除自动门锁。'
       : RUN_MODE && RUN_STAGE === 3
         ? '第三幕：去旧仓库找失火那晚的真相。'
         : '按 G 切换鞭子攻击模式；关闭 G 后左键照常使用道具。先找线索，别惊动它。';
@@ -370,7 +378,7 @@ events.on('game.start', () => {
     const intro = RUN_STAGE === 1
       ? { title: '第一幕 · 两支笔', line: '值日鬼小满总想把桌上那支笔摆正。留意金色任务笔，等它碰倒后帮它摆好。' }
       : RUN_STAGE === 2
-        ? { title: '第二幕 · 禁闭室', line: '读程老师值日表和处分记录；08:10 粉笔声、08:40 电话响会改变它的位置。' }
+        ? { title: '第二幕 · 禁闭室', line: '读值日表开迷宫与档案区；迷宫旧记录台读处分记录，档案区自动门控制台解除出口。' }
         : { title: '第三幕 · 旧仓库', line: '找失火那晚的真相，让两支笔重新并排。' };
     events.emit('act.card', intro);
   }
@@ -480,13 +488,13 @@ if (RUN_MODE) {
     startNote.textContent = RUN_STAGE === 1
       ? '第一幕：找到金色任务笔，观察值日鬼的心愿，帮它摆正后再离开。'
       : RUN_STAGE === 2
-        ? '第二幕：读程老师值日表和处分记录，趁 08:10/08:40 的空档行动。'
+        ? '第二幕：读值日表开迷宫与档案区；迷宫读记录，档案区自动门控制台解除出口。'
         : '第三幕：去旧仓库找失火那晚的真相。';
   }
 }
 if (DETENTION_MODE && !RUN_MODE) {
   const startNote = document.querySelector('.start-note');
-  if (startNote) startNote.textContent = '西翼骨架：穿过值班室、禁闭迷宫与档案阁，读值日表和处分记录可开门。';
+  if (startNote) startNote.textContent = '西翼骨架：读值日表开迷宫与档案区，迷宫读记录，档案区自动门控制台开出口。';
 }
 window.addEventListener('keydown', e => {
   if (e.code === 'KeyP' && game.isPlaying()) events.emit('review.toggle');
@@ -577,7 +585,7 @@ function tick() {
         events.emit('audio', { name: 'chalk' });
         events.emit('act.card', {
           title: '08:10 · 粉笔声',
-          line: '程老师被引向禁闭区黑板。办公桌方向现在空了，去读处分记录！'
+          line: '程老师被引向禁闭区黑板。趁它离开，绕进迷宫旧记录台！'
         });
       } else if (detentionBellStep === 1 && elapsed >= 40 && record) {
         detentionBellStep = 2;
@@ -587,7 +595,7 @@ function tick() {
         events.emit('audio', { name: 'phone' });
         events.emit('act.card', {
           title: '08:40 · 电话响',
-          line: '程老师冲向办公室！想读记录的话，先用黑板粉笔把它引开。'
+          line: '程老师冲向迷宫记录台！想读记录的话，先到黑板旁拉响铃把它引走。'
         });
       }
     }

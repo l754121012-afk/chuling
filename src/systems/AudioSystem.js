@@ -66,6 +66,8 @@ export class AudioSystem {
       this._tone(t, 780, 0.16, 'square', 0.12);
       this._tone(t + 0.22, 980, 0.16, 'square', 0.12);
       this._tone(t + 0.44, 780, 0.16, 'square', 0.12);
+    } else if (name === 'bell') {
+      [1180, 1480, 1760].forEach((f, i) => this._tone(t + i * 0.1, f, 0.22, 'sine', 0.16, f * 0.92));
     } else if (name === 'flash') {
       this._noise(t, 0.18, 0.22, 'highpass', 2400, 0.8, 6000);
       this._tone(t, 1200, 0.12, 'sine', 0.12, 300);

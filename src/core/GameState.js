@@ -122,6 +122,10 @@ export class GameState {
     this.detentionMode = false;
     this.detentionScheduleRead = false;
     this.detentionComplete = false;
+    this.detentionExitDeviceDone = false;
+    this.archiveSwitches = [false, false, false];
+    this.archiveSwitchCount = 0;
+    this.autoDeviceSeen = false;
     this.runMode = false;
     this.runStage = 1;
     this.reviewMode = false;

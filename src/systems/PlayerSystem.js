@@ -804,6 +804,61 @@ export class PlayerSystem {
       }
     }
 
+    if (this.game.detentionMode && this.refs.ghostBell) {
+      const bell = this.refs.ghostBell;
+      const d = distance2D(pos.x, pos.z, bell.pos.x, bell.pos.z);
+      if (d < GAME_CONFIG.interactRadius + 0.4 && 2.35 > bestPriority) {
+        bestPriority = 2.35;
+        best = {
+          type: 'ghostBell',
+          bell,
+          label: '拉响值日铃（引开程老师）',
+          pos: { x: bell.pos.x, y: 1.8, z: bell.pos.z }
+        };
+      }
+    }
+
+    if (
+      this.game.detentionMode &&
+      this.game.detentionComplete &&
+      !this.game.autoDeviceSeen
+    ) {
+      for (const sw of this.refs.archiveSwitches || []) {
+        if (sw.on) continue;
+        const d = distance2D(pos.x, pos.z, sw.pos.x, sw.pos.z);
+        const verticalOk = Math.abs(pos.y - sw.pos.y) < 1.3;
+        if (d < 2.1 && verticalOk && 1.9 > bestPriority) {
+          bestPriority = 1.9;
+          best = {
+            type: 'archiveSwitch',
+            switch: sw,
+            label: `启动${sw.label}`,
+            pos: { x: sw.pos.x, y: sw.pos.y + 1.1, z: sw.pos.z }
+          };
+        }
+      }
+    }
+
+    if (
+      this.game.detentionMode &&
+      this.game.detentionComplete &&
+      this.refs.autoDevice?.visible &&
+      !this.game.detentionExitDeviceDone
+    ) {
+      const dev = this.refs.autoDevice;
+      const d = distance2D(pos.x, pos.z, dev.pos.x, dev.pos.z);
+      const verticalOk = Math.abs(pos.y - dev.pos.y) < 1.3;
+      if (d < 2.3 && verticalOk && 2.7 > bestPriority) {
+        bestPriority = 2.7;
+        best = {
+          type: 'autoDevice',
+          device: dev,
+          label: '操作自动门控制台',
+          pos: { x: dev.pos.x, y: dev.pos.y + 1.2, z: dev.pos.z }
+        };
+      }
+    }
+
     for (const pickup of this.items.pickups) {
       if (pickup.picked) continue;
       const d = distance2D(pos.x, pos.z, pickup.pos.x, pickup.pos.z);
@@ -823,7 +878,7 @@ export class PlayerSystem {
       const d = distance2D(pos.x, pos.z, exit.pos.x, exit.pos.z);
       const exitUsable =
         this.game.phase === 'escape' ||
-        this.game.detentionComplete ||
+        this.game.detentionExitDeviceDone ||
         (this.game.runMode && this.game.runStage === 1 && this.game.ghostWishHelped);
       if (d < GAME_CONFIG.interactRadius && exitUsable && !exit.locked && 3 > bestPriority) {
         const runLabel = this.game.runMode && this.game.runStage === 1
@@ -838,7 +893,9 @@ export class PlayerSystem {
           ? '出口锁着：先替小满把笔摆正'
           : this.game.detentionMode
             ? this.game.detentionScheduleRead
-              ? '出口锁着：先读程老师处分记录'
+              ? this.game.detentionComplete
+                ? '出口第一重已开：去档案区操作自动门控制台'
+                : '出口锁着：先去迷宫读程老师处分记录'
               : '出口锁着：先读程老师值日表'
             : '出口还没开';
         bestPriority = 0.8;
@@ -1028,6 +1085,18 @@ export class PlayerSystem {
       if (!door.locked) continue;
       const dd = distance2D(pos.x, pos.z, door.pos.x, door.pos.z);
       const verticalOk = Math.abs(pos.y - (door.levelY ?? 0.8)) < 1.3;
+      if (door.id === 'maze_door' && pos.z <= door.pos.z + 0.1) {
+        if (dd < 1.9 && verticalOk && 1.2 > bestPriority) {
+          bestPriority = 1.2;
+          best = {
+            type: 'mazeDoorOutside',
+            door,
+            label: '迷宫侧门只能从里面打开',
+            pos: { x: door.pos.x, y: 2.1, z: door.pos.z }
+          };
+        }
+        continue;
+      }
       if (dd < 1.9 && verticalOk && 2.5 > bestPriority) {
         bestPriority = 2.5;
         best = {
@@ -1058,12 +1127,63 @@ export class PlayerSystem {
       this.game.chargingUntil = nowSec() + 3;
       this.audio?.play('click');
       this.events.emit('toast', { text: '开始充电，3秒后充满！小心鬼！', ms: 2200 });
+    } else if (target.type === 'ghostBell') {
+      this._ringGhostBell(target.bell.pos);
+    } else if (target.type === 'archiveSwitch') {
+      const sw = target.switch;
+      if (!this.game.detentionComplete) {
+        this.events.emit('toast', { text: '控制台还没通电：先到迷宫改判处分记录。', ms: 2000 });
+        return;
+      }
+      if (sw.on || this.game.autoDeviceSeen) return;
+      sw.on = true;
+      sw.lamp.material.color.set('#57cc99');
+      sw.lamp.material.emissive.set('#57cc99');
+      this.game.archiveSwitches[sw.index] = true;
+      this.game.archiveSwitchCount = this.game.archiveSwitches.filter(Boolean).length;
+      this.audio?.play('click');
+      this.playPose('interact', 0.5);
+      this.scene.spawnParticles({ x: sw.pos.x, y: sw.pos.y + 0.4, z: sw.pos.z }, '#57cc99');
+      this.events.emit('toast', {
+        text: `${sw.label} 已启动（${this.game.archiveSwitchCount}/3）`,
+        ms: 1800
+      });
+      if (this.game.archiveSwitchCount >= 3) {
+        this.game.autoDeviceSeen = true;
+        if (this.refs.autoDevice) {
+          this.refs.autoDevice.visible = true;
+          this.refs.autoDevice.group.visible = true;
+        }
+        this.scene.spawnHitRing(
+          { x: this.refs.autoDevice.pos.x, y: this.refs.autoDevice.pos.y - 0.2, z: this.refs.autoDevice.pos.z },
+          '#57cc99'
+        );
+        this.events.emit('act.card', {
+          title: '自动门控制台出现了',
+          line: '三道档案锁全部解除：控制台从柜中弹出，去操作它解除出口门禁。'
+        });
+        this.events.emit('toast', { text: '三道档案锁解除，自动门控制台出现了！', ms: 2400 });
+      }
+    } else if (target.type === 'autoDevice') {
+      if (this.game.detentionExitDeviceDone) return;
+      this.game.detentionExitDeviceDone = true;
+      this.playPose('interact', 0.55);
+      this.audio?.play('click');
+      this.scene.spawnHitRing({ x: target.device.pos.x, y: target.device.pos.y - 0.2, z: target.device.pos.z }, '#57cc99');
+      this.scene.openExit();
+      this.events.emit('act.card', {
+        title: '第二重解锁 · 自动门开了',
+        line: '“喀哒”一声，门锁弹出：处分记录改判是第一重，自动门控制台是第二重。'
+      });
+      this.events.emit('toast', { text: '喀哒一声，门锁解除了！出口真正打开！', ms: 2400 });
     } else if (target.type === 'item') {
       this.items.pickup(target.pickup);
     } else if (target.type === 'exit') {
       this.events.emit('game.win');
     } else if (target.type === 'exitLocked') {
       this.events.emit('toast', { text: target.label.replace('出口锁着：', ''), ms: 1800 });
+    } else if (target.type === 'mazeDoorOutside') {
+      this.events.emit('toast', { text: '迷宫侧门只能从里面打开：从档案区北侧绕进迷宫。', ms: 2200 });
     } else if (target.type === 'bubble') {
       this._startBubble(target.bubble);
     } else if (target.type === 'bubbleLocked') {
@@ -1087,7 +1207,9 @@ export class PlayerSystem {
           text: door.id === 'start_door'
             ? '值班室大门开了！去中央过道读值日表。'
             : door.id === 'record_door'
-              ? '档案门开了！进去读处分记录。'
+              ? '档案区开了！迷宫和档案柜都亮起了目标。'
+              : door.id === 'maze_door'
+                ? '迷宫侧门开了！从内侧返回时它会变成单向门。'
               : '门开了！',
           ms: 2000
         });
@@ -1113,7 +1235,7 @@ export class PlayerSystem {
         this.clues.readClue(target.clue.id);
         if (this.game.detentionMode && target.clue.id === 'note') {
           this.events.emit('toast', {
-            text: '值日表已归档：泡泡启动，回入口坐泡泡上 2F 开档案门。',
+            text: '值日表已归档：迷宫与档案区开放，绕进去读处分记录。',
             ms: 2600
           });
         } else if (this.game.detentionMode && target.clue.id === 'record') {
@@ -1298,6 +1420,24 @@ export class PlayerSystem {
       text: '粉笔盒发出刺耳声音！程老师被引过去了！',
       ms: 1800
     });
+  }
+
+  _ringGhostBell(pos) {
+    this.playPose('interact', 0.55);
+    this.scene.spawnParticles({ x: pos.x, y: pos.y + 0.7, z: pos.z }, '#ffe08a');
+    this.scene.spawnHitRing({ x: pos.x, y: 0.3, z: pos.z }, '#ffe08a');
+    this.audio?.play('bell');
+    this.events.emit('noise', { pos: { x: pos.x, z: pos.z }, radius: 80, rage: 0 });
+    if (this.ghost) {
+      this.ghost._lastNoise = { x: pos.x, z: pos.z };
+    }
+    this.game.addNote(
+      'detention_bell',
+      '方法',
+      '值日响铃',
+      '黑板旁 E 拉响值日铃，程老师会被引向声音位置；趁它离开再绕进迷宫。'
+    );
+    this.events.emit('toast', { text: '值日铃响了！程老师被引过去了！', ms: 1800 });
   }
 
   _kickProp(prop) {

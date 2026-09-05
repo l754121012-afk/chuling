@@ -11,7 +11,10 @@ function westWingConfig() {
   cfg.exit = { x: 0, z: 23.4 };
   cfg.teacherDesk = { x: 0, z: 5.5, rotY: 0.1 };
   cfg.note = { x: 0.7, y: 1.95, z: 5.5 };
-  cfg.record = { x: 4, y: 4.7, z: 12.5 };
+  cfg.record = { x: -13.8, y: 1.35, z: 14.6 };
+  cfg.ghostBell = { x: 16.6, y: 1.65, z: -7.6 };
+  cfg.archiveControl = { x: 6, y: 4.4, z: 14.5 };
+  cfg.autoDevice = { x: 9, y: 4.4, z: 15.2 };
   cfg.platform = { x: 0, z: 5.5, w: 5, h: 1, d: 4 };
   cfg.secondFloor = { x: 0, z: 12.5, w: 22, d: 7, topY: 4.25, h: 0.5 };
   cfg.platformLabel = '程老师办公桌';
@@ -60,7 +63,9 @@ function westWingConfig() {
     { x: -8, z: -2, w: 0.3, d: 4 },
     // archive/office partition with a gap
     { x: -8, z: 10.5, w: 0.3, d: 5 },
-    { x: -8, z: 21.5, w: 0.3, d: 4 }
+    { x: -8, z: 21.5, w: 0.3, d: 4 },
+    // 程老师办公桌后方封墙
+    { x: 0, z: 7.05, w: 8.2, d: 0.3 }
   ];
   cfg.westWingWindows = [
     { x: -15, z: -12, axis: 'z', dir: 1 },
@@ -92,8 +97,8 @@ function westWingConfig() {
       id: 'health_door',
       x: -8,
       z: -6,
-      w: 0.3,
-      d: 4,
+      w: 0.5,
+      d: 4.35,
       label: '保健室隔断门',
       locked: true,
       requireClue: 'note'
@@ -178,7 +183,14 @@ function westWingConfig() {
     { x: 9, z: 20, rotY: 0 },
     { x: 14, z: 20, rotY: -0.1 },
     { x: -11, z: 14, rotY: 0.2 },
-    { x: -19, z: 18, rotY: 0 }
+    { x: -19, z: 18, rotY: 0 },
+    { x: -13.8, z: 14.6, rotY: 0.1 }
+  ];
+
+  cfg.controlSwitches = [
+    { id: 'archive_a', x: -6, z: 13.5, label: '档案锁 A', color: '#e76f51' },
+    { id: 'archive_b', x: 10, z: 14.6, label: '档案锁 B', color: '#f4d35e' },
+    { id: 'archive_c', x: -1, z: 15.5, label: '档案锁 C', color: '#4cc9f0' }
   ];
   cfg.crates = [];
   cfg.clutter = [
