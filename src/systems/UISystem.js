@@ -34,6 +34,7 @@ export class UISystem {
       rageSegments: [...document.querySelectorAll('.rage-seg')],
       stageLabel: document.getElementById('stage-label'),
       battery: document.getElementById('battery-bar'),
+      phoneLightState: document.getElementById('phone-light-state'),
       composureBar: document.getElementById('composure-bar'),
       dramaBar: document.getElementById('drama-bar'),
       stamina: document.getElementById('stamina-bar'),
@@ -606,6 +607,10 @@ export class UISystem {
     this.el.stageLabel.textContent = `恶灵：${stage.label}`;
     this.el.battery.style.width = `${(game.battery / game.batteryMax) * 100}%`;
     this.el.phone.classList.toggle('drained', game.battery <= 0);
+    if (this.el.phoneLightState) {
+      this.el.phoneLightState.textContent = game.phoneLightOn && game.battery > 0 ? '开' : '关';
+      this.el.phoneLightState.classList.toggle('on', game.phoneLightOn && game.battery > 0);
+    }
     if (this.el.darkOverlay) this.el.darkOverlay.style.opacity = '0';
     if (this.el.composureBar) {
       this.el.composureBar.style.width = `${game.composure}%`;

@@ -188,6 +188,7 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '电充满了！手机满血复活！', ms: 2000 });
     }
     if (this.input.justPressed('KeyV')) this._usePhoneFlash();
+    if (this.input.justPressed('KeyL')) this._togglePhoneLight();
     if (this.input.justPressed('KeyG')) this._toggleWhipMode();
     if (this.input.justPressed('KeyH')) this._doUltimate();
     const shiftDown = this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight');
@@ -293,9 +294,9 @@ export class PlayerSystem {
     }
     this._updatePose(dt);
     if (this.phoneLight) {
-      const blackout = this.game.lightsOutUntil > nowSec();
-      this.phoneLight.intensity = blackout ? 0 : 0.7;
-      this.phoneLight.distance = 7.5;
+      const on = this.game.phoneLightOn && this.game.battery > 0;
+      this.phoneLight.intensity = on ? 2.6 : 0;
+      this.phoneLight.distance = 13;
     }
     if (!rolling && !tornadoing) this.pawn.mesh.scale.y = this.crouching ? 0.68 : 1;
     if (this.game.hiding) {
@@ -1409,6 +1410,21 @@ export class PlayerSystem {
         }
       }
     }
+  }
+
+  _togglePhoneLight() {
+    if (!this.game.isPlaying() || this.game.notebookOpen || this.game.hiding) return;
+    if (!this.game.phoneLightOn && this.game.battery <= 0) {
+      this.events.emit('toast', { text: '手机没电了，先去充电桩。', ms: 1600 });
+      this.audio?.play('click');
+      return;
+    }
+    this.game.phoneLightOn = !this.game.phoneLightOn;
+    this.audio?.play('click');
+    this.events.emit('toast', {
+      text: this.game.phoneLightOn ? '手机灯开了（L 关闭）' : '手机灯关了（L 开启）',
+      ms: 1400
+    });
   }
 
   _usePhoneFlash() {

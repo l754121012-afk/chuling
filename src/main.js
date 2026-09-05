@@ -518,12 +518,18 @@ function tick() {
 
     const drain = game.notebookOpen
       ? GAME_CONFIG.phoneOpenDrainPerSecond
-      : GAME_CONFIG.batteryDrainPerSecond;
+      : game.phoneLightOn
+        ? GAME_CONFIG.phoneLightDrainPerSecond
+        : GAME_CONFIG.batteryDrainPerSecond;
     if (!game.hiding && !game.charging) {
       game.battery = Math.min(game.batteryMax, Math.max(0, game.battery - drain * simDt));
     }
     school.setDarkness(0);
     if (game.battery <= 0 && game.notebookOpen) ui.toggleNotebook(false);
+    if (game.battery <= 0 && game.phoneLightOn) {
+      game.phoneLightOn = false;
+      events.emit('toast', { text: '手机没电了，灯灭了！去找充电桩。', ms: 2000 });
+    }
   }
   if (
     game.isPlaying() &&

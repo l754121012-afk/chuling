@@ -18,6 +18,7 @@ export class GameState {
     this.staminaRegenBonus = 0;
     this.battery = 100;
     this.batteryMax = 100;
+    this.phoneLightOn = false;
     this.clues = new Set();
     this.notebookEntries = [];
     this.inventory = new Map();

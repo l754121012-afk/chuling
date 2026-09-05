@@ -124,5 +124,6 @@ export const GAME_CONFIG = {
   slapCooldown: 6,
   batteryDrainPerSecond: 0.6,
   batteryDrainPerClue: 8,
+  phoneLightDrainPerSecond: 3.2,
   phoneOpenDrainPerSecond: 4.5
 };

@@ -353,6 +353,24 @@ body.playing canvas {
   margin-top: 8px;
 }
 
+.phone-light-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #d6d0c2;
+}
+
+#phone-light-state {
+  color: #ffd166;
+  font-weight: 700;
+}
+
+#phone-light-state.on {
+  color: #8ef0c8;
+}
+
 .lives-row {
   display: flex;
   align-items: center;
