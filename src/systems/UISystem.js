@@ -18,6 +18,8 @@ export class UISystem {
     this._wheelAngle = -30;
     this._wheelSpinTimer = null;
     this._wheelSpinning = false;
+    this._gachaBusy = false;
+    this._gachaTimer = null;
     this._registerEvents();
   }
 
@@ -58,6 +60,10 @@ export class UISystem {
       gachaModal: document.getElementById('gacha-modal'),
       gachaClose: document.querySelector('.gacha-close'),
       gachaBalance: document.getElementById('gacha-balance'),
+      gachaMachine: document.getElementById('gacha-machine'),
+      gachaDome: document.getElementById('gacha-dome'),
+      gachaEggs: document.getElementById('gacha-eggs'),
+      gachaCapsule: document.getElementById('gacha-capsule'),
       gachaPullBtn: document.getElementById('gacha-pull-btn'),
       gachaResult: document.getElementById('gacha-result'),
       wheelModal: document.getElementById('wheel-modal'),
@@ -244,18 +250,83 @@ export class UISystem {
   renderGacha() {
     if (!this.el.gachaBalance) return;
     this.el.gachaBalance.textContent = `👻 灵异纪念品：${this.economy.relics}`;
-    this.el.gachaResult.textContent = '';
+    if (this.el.gachaResult) this.el.gachaResult.textContent = '';
+    if (this.el.gachaMachine) {
+      this.el.gachaMachine.classList.remove('pulling');
+      this.el.gachaMachine.classList.remove('finished');
+    }
+    if (this.el.gachaCapsule) {
+      this.el.gachaCapsule.classList.remove('dropped', 'open');
+    }
+    if (this.el.gachaPullBtn) {
+      this.el.gachaPullBtn.disabled = this.economy.relics < 1 || this._gachaBusy;
+    }
+    this._buildGachaEggs();
+  }
+
+  _buildGachaEggs() {
+    const eggs = this.el.gachaEggs;
+    if (!eggs) return;
+    eggs.innerHTML = '';
+    const colors = ['#ffd166', '#ff8f8f', '#8ef0c8', '#b48cff', '#ff9f45', '#5ad1ff', '#f9a8d4', '#ffe08a'];
+    for (let i = 0; i < 8; i++) {
+      const egg = document.createElement('div');
+      egg.className = 'gacha-egg';
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      egg.style.left = `${8 + col * 49}px`;
+      egg.style.top = `${row ? 44 : 8}px`;
+      egg.style.setProperty('--egg', colors[i]);
+      egg.style.setProperty('--spin', `${(i % 2 ? -1 : 1) * (8 + i * 7)}deg`);
+      egg.style.setProperty('--dx', `${(i % 3 - 1) * (5 + i % 4)}px`);
+      egg.style.setProperty('--dy', `${-5 - (i % 3) * 3}px`);
+      egg.style.setProperty('--dur', `${0.16 + (i % 4) * 0.03}s`);
+      egg.style.setProperty('--delay', `${(i % 5) * 0.028}s`);
+      eggs.appendChild(egg);
+    }
   }
 
   pullGacha() {
-    const result = this.economy.gachaRelic();
-    if (!result) {
-      this.el.gachaResult.textContent = '纪念品不够：先去多坑几只鬼。';
+    if (this._gachaBusy) return;
+    if (this.economy.relics < 1) {
+      if (this.el.gachaResult) this.el.gachaResult.textContent = '纪念品不够：先去多坑几只鬼。';
       return;
     }
-    this.renderGacha();
-    this.el.gachaResult.textContent = `扭蛋机吐出：${result.name}`;
-    this.renderEconomyBalance();
+    const result = this.economy.gachaRelic();
+    if (!result) return;
+    this._gachaBusy = true;
+    if (this.el.gachaPullBtn) this.el.gachaPullBtn.disabled = true;
+    if (this.el.gachaMachine) this.el.gachaMachine.classList.add('pulling');
+    if (this.el.gachaCapsule) {
+      this.el.gachaCapsule.classList.remove('dropped', 'open');
+      const capColors = {
+        points: '#5ad1ff',
+        coins: '#ffd166',
+        unlock: '#8ef0c8',
+        relic: '#b48cff'
+      };
+      this.el.gachaCapsule.style.setProperty('--cap', capColors[result.type] || '#ffd166');
+    }
+    if (this.el.gachaResult) this.el.gachaResult.textContent = '纪念品掉进机芯……蛋开始撞了！';
+    this.events.emit('audio', { name: 'click' });
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([35, 30, 50, 30, 35, 30, 80]);
+    }
+    clearTimeout(this._gachaTimer);
+    this._gachaTimer = setTimeout(() => {
+      if (this.el.gachaMachine) this.el.gachaMachine.classList.remove('pulling');
+      if (this.el.gachaCapsule) this.el.gachaCapsule.classList.add('dropped');
+      this.events.emit('audio', { name: 'paper' });
+    }, 1350);
+    this._gachaTimer = setTimeout(() => {
+      if (this.el.gachaCapsule) this.el.gachaCapsule.classList.add('open');
+      if (this.el.gachaResult) this.el.gachaResult.textContent = `蛋开了：${result.name}`;
+      this._gachaBusy = false;
+      if (this.el.gachaPullBtn) this.el.gachaPullBtn.disabled = this.economy.relics < 1;
+      this.renderEconomyBalance();
+      this.events.emit('audio', { name: 'win' });
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(120);
+    }, 1750);
   }
 
   openWheel() {
