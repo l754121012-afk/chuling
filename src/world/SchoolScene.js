@@ -59,6 +59,7 @@ export class SchoolScene {
       bubbles: [],
       doors: [],
       npc: null,
+      wageSlips: [],
       platform: null,
       itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
@@ -1378,6 +1379,49 @@ export class SchoolScene {
     this.refs.exit.beacon.visible = true;
     this.events.emit('toast', { text: '出口开了！快跑！', ms: 2400 });
     this.events.emit('audio', { name: 'gate' });
+  }
+
+  dropWageSlip(x, z) {
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('工资单 · E 捡回', {
+          bg: '#fff0c0',
+          fg: '#5a4310',
+          font: 'bold 36px "Microsoft YaHei", sans-serif',
+          width: 380,
+          height: 88,
+          lineHeight: 40,
+          pad: 6
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    sprite.position.set(x, 1.35, z);
+    sprite.scale.set(1.5, 0.42, 1);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.55, 0.72, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd166,
+        transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.05, z);
+    this.group.add(sprite, ring);
+    this.refs.wageSlips.push({ mesh: sprite, ring, x, z });
+    this.spawnParticles({ x, y: 0.8, z }, '#ffe08a');
+  }
+
+  clearWageSlips() {
+    for (const slip of this.refs?.wageSlips || []) {
+      this.group.remove(slip.mesh);
+      this.group.remove(slip.ring);
+    }
+    if (this.refs) this.refs.wageSlips = [];
   }
 
   addFootprint(x, z) {

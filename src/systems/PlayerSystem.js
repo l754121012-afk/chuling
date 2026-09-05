@@ -972,6 +972,21 @@ export class PlayerSystem {
       }
     }
 
+    for (let i = this.refs.wageSlips?.length - 1; i >= 0; i--) {
+      const slip = this.refs.wageSlips[i];
+      const ds = distance2D(pos.x, pos.z, slip.x, slip.z);
+      if (ds < 1.5 && 3.5 > bestPriority) {
+        bestPriority = 3.5;
+        best = {
+          type: 'wageSlip',
+          slip,
+          label: '捡回工资单',
+          pos: { x: slip.x, y: 1.3, z: slip.z }
+        };
+        break;
+      }
+    }
+
     for (const door of this.refs.doors || []) {
       if (!door.locked) continue;
       const dd = distance2D(pos.x, pos.z, door.pos.x, door.pos.z);
@@ -1013,6 +1028,15 @@ export class PlayerSystem {
       this._startBubble(target.bubble);
     } else if (target.type === 'npc') {
       this.events.emit('npc.talk');
+    } else if (target.type === 'wageSlip') {
+      const slip = target.slip;
+      this.scene.group.remove(slip.mesh);
+      this.scene.group.remove(slip.ring);
+      const idx = this.refs.wageSlips.indexOf(slip);
+      if (idx >= 0) this.refs.wageSlips.splice(idx, 1);
+      this.scene.spawnParticles({ x: slip.x, y: 0.8, z: slip.z }, '#ffe08a');
+      this.audio?.play('paper');
+      this.events.emit('wage.pickup');
     } else if (target.type === 'doorLocked') {
       const label = target.door?.id === 'archive_door'
         ? '档案阁门禁锁着：读完值日表和处分记录后会自动打开。'

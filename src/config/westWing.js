@@ -84,6 +84,10 @@ function westWingConfig() {
     }
   ];
   cfg.registrationNpc = { x: -22.5, z: -6, y: 1.1 };
+  cfg.minionWaveFirstAt = 18;
+  cfg.minionWaveIntervalMin = 26;
+  cfg.minionWaveIntervalMax = 36;
+  cfg.minionCount = 2;
 
   cfg.blackboard = { x: 15, z: -8.2, y: 1.85, w: 4.4, h: 1.25 };
   cfg.bookshelf = { x: -19, z: -9.5, rotY: 0.3 };

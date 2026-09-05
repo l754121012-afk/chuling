@@ -347,17 +347,17 @@ export class GhostSystem {
 
   _maybeSpawnMinionWave() {
     if (this.game.phase !== 'investigate' || !this.game.isPlaying()) return;
+    const firstAt = this.scene.L.minionWaveFirstAt ?? GAME_CONFIG.minionWaveFirstAt;
+    const intervalMin = this.scene.L.minionWaveIntervalMin ?? GAME_CONFIG.minionWaveIntervalMin;
+    const intervalMax = this.scene.L.minionWaveIntervalMax ?? GAME_CONFIG.minionWaveIntervalMax;
     if (this._minionNextAt <= 0) {
-      this._minionNextAt = nowSec() + GAME_CONFIG.minionWaveFirstAt;
+      this._minionNextAt = nowSec() + firstAt;
       return;
     }
     if (nowSec() < this._minionNextAt) return;
     if (this.game.artifactActive || this.game.bellPhaseActive || this.game.huntActive) return;
-    this._minionNextAt = nowSec() + rand(
-      GAME_CONFIG.minionWaveIntervalMin,
-      GAME_CONFIG.minionWaveIntervalMax
-    );
-    const count = GAME_CONFIG.minionCount || 3;
+    this._minionNextAt = nowSec() + rand(intervalMin, intervalMax);
+    const count = this.scene.L.minionCount ?? (GAME_CONFIG.minionCount || 3);
     for (let i = 0; i < count; i++) this._spawnMinion();
     this.audio?.play('ghost');
     this.events.emit('toast', {
@@ -477,6 +477,15 @@ export class GhostSystem {
         m.webUsed = true;
         this._minionAlert(m, playerPos);
       }
+      if (
+        m.state === 'chase' &&
+        dist < 1.2 &&
+        sameFloor &&
+        nowSec() - m.born > 2
+      ) {
+        this._minionGrabPlayer(m, playerPos);
+        continue;
+      }
       const arrived = this._minionSteer(m, target.x, target.z, speed, dt);
       if (arrived && m.state !== 'chase') {
         m.waypoint = this._randomPlayablePoint(2);
@@ -553,6 +562,32 @@ export class GhostSystem {
     m.x = nx;
     m.z = nz;
     return false;
+  }
+
+  _minionGrabPlayer(m, playerPos) {
+    const safe = this.scene.refs?.npc?.pos || this.scene.refs?.playerStart || { x: 0, z: 0 };
+    this.scene.dropWageSlip?.(playerPos.x, playerPos.z);
+    if (this.playerBody) {
+      this.playerBody.position.set(safe.x, 1.0, safe.z);
+      this.playerBody.velocity.set(0, 0, 0);
+      this.playerBody.aabbNeedsUpdate = true;
+    }
+    this.game.stamina = Math.max(0, this.game.stamina - 18);
+    this.game.playerStunUntil = Math.max(this.game.playerStunUntil, nowSec() + 1.0);
+    this.game.invincibleUntil = nowSec() + 2;
+    this.scene.group.remove(m.group);
+    this._minions = this._minions.filter(x => x !== m);
+    this.audio?.play('slap');
+    this.events.emit('camera.shake', { amount: 0.45 });
+    this.events.emit('hitstop', { ms: 90 });
+    this.events.emit('toast', {
+      text: '巡查影把你拖回登记台！工资单掉在原地了！',
+      ms: 2400
+    });
+    this.events.emit('danmaku', {
+      text: choice(['被拖回去了哈哈哈', '工资单掉了！快回去捡！', '巡查影：上班别乱跑！'])
+    });
+    this.scene.spawnParticles({ x: playerPos.x, y: 1, z: playerPos.z }, '#ffd166');
   }
 
   _minionAlert(m, playerPos) {

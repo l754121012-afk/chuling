@@ -156,6 +156,11 @@ let detentionBellAt = 0;
 const itemGuidesShown = new Set();
 
 events.on('audio', p => audio.play(p.name));
+events.on('wage.pickup', () => {
+  economy.state.coins += 300;
+  economy.save();
+  events.emit('toast', { text: '工资单捡回来了！+300 円', ms: 1800 });
+});
 events.on('item.picked', p => {
   const def = p?.def;
   const id = p?.id;
@@ -283,6 +288,7 @@ events.on('ghost.stage', p => {
 events.on('game.start', () => {
   game.reset();
   itemGuidesShown.clear();
+  school.clearWageSlips();
   game.detentionMode = DETENTION_MODE || RUN_STAGE === 2;
   game.runMode = RUN_MODE;
   game.runStage = RUN_STAGE;
