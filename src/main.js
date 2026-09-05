@@ -172,8 +172,8 @@ function beginExitCutscene(stage) {
   exitCutscene = {
     stage,
     startedAt: now,
-    unlockAt: now + 0.85,
-    duration: 2.0,
+    unlockAt: now + 1.0,
+    duration: 6.2,
     done: false,
     pos: { x: exit.pos.x, z: exit.pos.z },
     from: { x: camera.position.x, y: camera.position.y, z: camera.position.z }

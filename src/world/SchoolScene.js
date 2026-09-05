@@ -1523,6 +1523,33 @@ export class SchoolScene {
     lockMesh.position.set(exit.x, 1.5, exit.z + 0.1);
     this.group.add(lockMesh);
 
+    const railMat = new THREE.MeshStandardMaterial({
+      color: '#9aa7b3',
+      metalness: 0.72,
+      roughness: 0.25
+    });
+    const railGroup = new THREE.Group();
+    const railMeshes = [];
+    for (let i = 0; i < 5; i++) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.09, 0.09), railMat);
+      bar.position.set(0, 0.5 + i * 0.56, 0);
+      railGroup.add(bar);
+      railMeshes.push({ mesh: bar, baseY: bar.position.y });
+    }
+    railGroup.position.set(exit.x, 0, exit.z + 0.03);
+    this.group.add(railGroup);
+
+    const redLight = new THREE.Mesh(
+      new THREE.SphereGeometry(0.16, 14, 12),
+      new THREE.MeshStandardMaterial({
+        color: PALETTE.exitLocked,
+        emissive: PALETTE.exitLocked,
+        emissiveIntensity: 1.6
+      })
+    );
+    redLight.position.set(exit.x, 3.15, exit.z + 0.12);
+    this.group.add(redLight);
+
     const beacon = new THREE.Group();
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.08, 0.08, 1.6, 8),
@@ -1543,10 +1570,15 @@ export class SchoolScene {
       mesh,
       body,
       lockMesh,
+      railGroup,
+      railMeshes,
+      redLight,
       beacon,
       pos: { x: exit.x, z: exit.z },
       locked: true,
-      stage: 0
+      stage: 0,
+      railsOpen: false,
+      railOpenAt: 0
     };
   }
 
@@ -1727,6 +1759,8 @@ export class SchoolScene {
     exit.stage = 1;
     exit.lockMesh.material.color.set(PALETTE.exit);
     exit.lockMesh.material.opacity = 0.42;
+    exit.redLight.material.color.set(PALETTE.exit);
+    exit.redLight.material.emissive.set(PALETTE.exit);
     this.spawnHitRing({ x: exit.pos.x, y: 0.5, z: exit.pos.z }, '#57cc99');
     this.spawnParticles({ x: exit.pos.x, y: 1.5, z: exit.pos.z }, '#57cc99');
   }
@@ -1737,9 +1771,29 @@ export class SchoolScene {
     exit.locked = false;
     exit.stage = 2;
     exit.lockMesh.visible = false;
+    exit.redLight.visible = false;
     exit.beacon.visible = true;
+    exit.railsOpen = true;
+    exit.railOpenAt = nowSec();
     this.events.emit('toast', { text: '出口开了！快跑！', ms: 2400 });
     this.events.emit('audio', { name: 'gate' });
+  }
+
+  _updateExitRails() {
+    const exit = this.refs?.exit;
+    if (!exit?.railsOpen) return;
+    const elapsed = nowSec() - exit.railOpenAt;
+    const t = Math.min(1, Math.max(0, elapsed / 1.15));
+    const ease = t * t * (3 - 2 * t);
+    for (const item of exit.railMeshes || []) {
+      item.mesh.position.y = item.baseY + ease * 5.2;
+      item.mesh.material.opacity = 1 - ease * 0.9;
+      item.mesh.material.transparent = true;
+    }
+    if (t >= 1) {
+      exit.railsOpen = false;
+      exit.railGroup.visible = false;
+    }
   }
 
   dropWageSlip(x, z) {
@@ -1944,6 +1998,7 @@ export class SchoolScene {
   }
 
   update(dt, game) {
+    this._updateExitRails();
     const currentStage = game.currentStage();
     const rampage = game.deskRampageUntil > nowSec();
     if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {

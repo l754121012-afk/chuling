@@ -112,7 +112,7 @@ export class PlayerSystem {
 
     const marker = new THREE.Group();
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.52, 0.76, 36),
+      new THREE.RingGeometry(0.70, 0.78, 48),
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
@@ -136,18 +136,18 @@ export class PlayerSystem {
     gctx.fillRect(0, 0, 128, 128);
     const glowTex = new THREE.CanvasTexture(gradCanvas);
     const glow = new THREE.Mesh(
-      new THREE.CircleGeometry(0.92, 36),
+      new THREE.CircleGeometry(0.96, 48),
       new THREE.MeshBasicMaterial({
         map: glowTex,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.4,
         depthWrite: false
       })
     );
     glow.rotation.x = -Math.PI / 2;
     glow.position.y = 0.035;
     const arrow = new THREE.Mesh(
-      new THREE.ConeGeometry(0.16, 0.48, 12),
+      new THREE.ConeGeometry(0.17, 0.56, 12),
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
@@ -155,7 +155,7 @@ export class PlayerSystem {
       })
     );
     arrow.rotation.x = Math.PI / 2;
-    arrow.position.set(0, 0.04, 0.58);
+    arrow.position.set(0, 0.04, 0.62);
     marker.add(glow, ring, arrow);
     marker.position.set(start.x, 0.02, start.z);
     this.scene.group.add(marker);

@@ -123,6 +123,7 @@ export class GameState {
     this.detentionScheduleRead = false;
     this.detentionComplete = false;
     this.detentionExitDeviceDone = false;
+    this.minionStrikes = 0;
     this.archiveSwitches = [false, false, false];
     this.archiveSwitchCount = 0;
     this.autoDeviceSeen = false;

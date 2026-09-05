@@ -565,7 +565,32 @@ export class GhostSystem {
   }
 
   _minionGrabPlayer(m, playerPos) {
+    if (nowSec() < this.game.invincibleUntil) return;
     const safe = this.scene.refs?.npc?.pos || this.scene.refs?.playerStart || { x: 0, z: 0 };
+    this.game.minionStrikes = Math.min(3, (this.game.minionStrikes || 0) + 1);
+    const lethal = this.game.minionStrikes >= 3;
+    if (!lethal) {
+      const dx = playerPos.x - m.x;
+      const dz = playerPos.z - m.z;
+      const len = Math.hypot(dx, dz) || 1;
+      if (this.playerBody) {
+        this.playerBody.velocity.set((dx / len) * 9, 5, (dz / len) * 9);
+      }
+      this.game.stamina = Math.max(0, this.game.stamina - 10);
+      this.game.playerStunUntil = Math.max(this.game.playerStunUntil, nowSec() + 0.55);
+      this.game.invincibleUntil = nowSec() + 1.6;
+      this.audio?.play('hit');
+      this.events.emit('player.hurt');
+      this.events.emit('camera.shake', { amount: 0.28 });
+      this.events.emit('hitstop', { ms: 70 });
+      this.scene.spawnParticles({ x: playerPos.x, y: 1, z: playerPos.z }, '#ffd166');
+      this.events.emit('toast', {
+        text: `巡逻幽灵扑到你了！还有 ${3 - this.game.minionStrikes} 次容错。`,
+        ms: 1800
+      });
+      return;
+    }
+    this.game.minionStrikes = 0;
     this.scene.dropWageSlip?.(playerPos.x, playerPos.z);
     if (this.playerBody) {
       this.playerBody.position.set(safe.x, 1.0, safe.z);
