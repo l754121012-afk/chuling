@@ -180,6 +180,27 @@ events.on('guide.close', () => {
     }
   }
 });
+events.on('npc.talk', () => {
+  if (game.detentionComplete) {
+    events.emit('speech', {
+      text: '纸人点点头：记录改完了，程老师终于能下课了。',
+      ms: 2200,
+      name: '小满纸人'
+    });
+  } else if (game.detentionScheduleRead) {
+    events.emit('speech', {
+      text: '纸人指了指二楼：值日表读完了，处分记录在档案阁的楼面上。',
+      ms: 2200,
+      name: '小满纸人'
+    });
+  } else {
+    events.emit('speech', {
+      text: '纸人指着天花板：程老师的日程在二楼。别硬闯中间那扇门，先找泡泡或绕迷宫。',
+      ms: 2600,
+      name: '小满纸人'
+    });
+  }
+});
 events.on('clue.found', p => {
   school.markClueRead?.(p.id);
   if (game.detentionMode && (p.id === 'note' || p.id === 'record') && !game.guideOpen) {
@@ -214,6 +235,7 @@ events.on('detention.recordRead', () => {
   }
   game.detentionComplete = true;
   school.openExit();
+  school.setDoor('archive_door', false);
   events.emit('act.card', {
     title: '第二幕完成 · 下课铃响了',
     line: '处分记录被重写：该受罚的人不是程老师。出口门禁亮了。'
@@ -309,6 +331,15 @@ events.on('game.start', () => {
         ? { title: '第二幕 · 禁闭室', line: '读程老师值日表和处分记录；08:10 粉笔声、08:40 电话响会改变它的位置。' }
         : { title: '第三幕 · 旧仓库', line: '找失火那晚的真相，让两支笔重新并排。' };
     events.emit('act.card', intro);
+  }
+  if (game.detentionMode) {
+    setTimeout(() => {
+      events.emit('speech', {
+        text: '小满纸人指着天花板：程老师的日程在二楼。别硬闯门禁，先找泡泡或绕迷宫。',
+        ms: 2800,
+        name: '小满纸人'
+      });
+    }, 2600);
   }
   audio.play('click');
 });
@@ -494,6 +525,7 @@ function tick() {
         detentionBellStep = 1;
         ghost._lastSeen = null;
         ghost._lastNoise = { x: board.x, z: board.z };
+        school.setDoor('maze_door', true, { silent: true });
         events.emit('audio', { name: 'chalk' });
         events.emit('act.card', {
           title: '08:10 · 粉笔声',
@@ -503,6 +535,7 @@ function tick() {
         detentionBellStep = 2;
         ghost._lastSeen = null;
         ghost._lastNoise = { x: record.x, z: record.z };
+        school.setDoor('maze_door', false, { silent: true });
         events.emit('audio', { name: 'phone' });
         events.emit('act.card', {
           title: '08:40 · 电话响',

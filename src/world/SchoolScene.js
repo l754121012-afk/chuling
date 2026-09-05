@@ -57,6 +57,8 @@ export class SchoolScene {
       desks: [],
       beacons: [],
       bubbles: [],
+      doors: [],
+      npc: null,
       platform: null,
       itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
@@ -74,6 +76,8 @@ export class SchoolScene {
     this._addVerticalProps(refs);
     this._addRouteClutter(refs);
     this._addBubbles(refs);
+    this._addDoors(refs);
+    this._addRegistrationNpc(refs);
 
     this.refs = refs;
     return refs;
@@ -820,6 +824,122 @@ export class SchoolScene {
         refs.bubbles.push({ x: stop.x, z: stop.z, y: stop.y, to: stop.to, group, sphere, ring });
       }
     }
+  }
+
+  _addDoors(refs) {
+    for (const doorCfg of this.L.doors || []) {
+      const box = this._box(doorCfg.w, 5.2, doorCfg.d, { x: doorCfg.x, y: 2.6, z: doorCfg.z }, '#5d6f7a');
+      const sign = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture(doorCfg.label || '门禁', {
+            bg: '#2b2118',
+            fg: '#ffe9b8',
+            font: 'bold 34px "Microsoft YaHei", sans-serif',
+            width: 360,
+            height: 88,
+            lineHeight: 40,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sign.position.set(0, 3.5, 0);
+      sign.scale.set(2.0, 0.55, 1);
+      box.mesh.add(sign);
+      const lockSign = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture('LOCKED', {
+            bg: '#7a1515',
+            fg: '#fff2d8',
+            font: 'bold 40px "Microsoft YaHei", sans-serif',
+            width: 320,
+            height: 88,
+            lineHeight: 40,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      lockSign.position.set(0, 1.8, 0.08);
+      lockSign.scale.set(1.5, 0.45, 1);
+      box.mesh.add(lockSign);
+      const doorRef = {
+        id: doorCfg.id,
+        mesh: box.mesh,
+        body: box.body,
+        sign,
+        lockSign,
+        pos: { x: doorCfg.x, z: doorCfg.z },
+        locked: !!doorCfg.locked,
+        unlockEvent: doorCfg.unlockEvent || null
+      };
+      this._applyDoorLock(doorRef, doorRef.locked);
+      refs.doors.push(doorRef);
+    }
+  }
+
+  _applyDoorLock(door, locked) {
+    if (!door?.body) return;
+    door.locked = locked;
+    if (locked) {
+      door.body.collisionFilterGroup = GROUPS.WORLD;
+      door.body.collisionFilterMask = GROUPS.WORLD | GROUPS.PLAYER | GROUPS.GHOST | GROUPS.PROP | GROUPS.ITEM;
+      door.mesh.visible = true;
+      door.lockSign.visible = true;
+    } else {
+      door.body.collisionFilterGroup = 0;
+      door.body.collisionFilterMask = 0;
+      door.mesh.visible = false;
+      door.lockSign.visible = false;
+    }
+    door.body.aabbNeedsUpdate = true;
+  }
+
+  setDoor(id, locked, opts = {}) {
+    const door = this.refs?.doors?.find(d => d.id === id);
+    if (!door) return false;
+    this._applyDoorLock(door, locked);
+    if (opts.silent !== true) {
+      this.spawnParticles({ x: door.pos.x, y: 1.5, z: door.pos.z }, locked ? '#c94f3d' : '#8ef0c8');
+      this.spawnHitRing({ x: door.pos.x, y: 0.5, z: door.pos.z }, locked ? '#c94f3d' : '#8ef0c8');
+      this.events.emit('audio', { name: 'gate' });
+    }
+    return true;
+  }
+
+  _addRegistrationNpc(refs) {
+    const npcCfg = this.L.registrationNpc;
+    if (!npcCfg) return;
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('值日生小满 · 纸人', {
+          bg: '#fff3cf',
+          fg: '#2b2118',
+          font: 'bold 44px "Microsoft YaHei", sans-serif',
+          width: 512,
+          height: 120,
+          lineHeight: 54,
+          pad: 8
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    sprite.position.set(npcCfg.x, (npcCfg.y ?? 1.1) + 0.55, npcCfg.z);
+    sprite.scale.set(1.6, 0.42, 1);
+    this.group.add(sprite);
+    const lantern = new THREE.Mesh(
+      new THREE.SphereGeometry(0.09, 10, 8),
+      new THREE.MeshBasicMaterial({ color: '#ffd166' })
+    );
+    lantern.position.set(npcCfg.x, (npcCfg.y ?? 1.1) + 0.95, npcCfg.z);
+    this.group.add(lantern);
+    refs.npc = {
+      pos: { x: npcCfg.x, z: npcCfg.z },
+      sprite
+    };
   }
 
   _addClues(refs) {

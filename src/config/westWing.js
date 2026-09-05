@@ -13,7 +13,7 @@ function westWingConfig() {
   cfg.note = { x: -4, y: 4.7, z: 12.5 };
   cfg.record = { x: 4, y: 4.7, z: 12.5 };
   cfg.platform = { x: 11, z: 15.5, w: 5, h: 1, d: 4 };
-  cfg.secondFloor = { x: 0, z: 12.5, w: 22, d: 11, topY: 4.25, h: 0.5 };
+  cfg.secondFloor = { x: 0, z: 12.5, w: 22, d: 7, topY: 4.25, h: 0.5 };
   cfg.platformLabel = '程老师办公桌';
   cfg.storyPen = false;
   cfg.missionLabels = {
@@ -27,7 +27,7 @@ function westWingConfig() {
     { x: 0, z: 5, text: '中央门禁过道' },
     { x: -16, z: 16, text: '禁闭隔间迷宫' },
     { x: 13, z: 16, text: '办公室/档案阁' },
-    { x: 0, z: 9.2, text: '档案阁高架 2F', y: 5.4 }
+    { x: 0, z: 12.8, text: '档案阁高架 2F', y: 5.4 }
   ];
   cfg.guideLights = [
     { x: -21, z: -2, color: '#ffe9c4', r: 20, y: 4.5, intensity: 4.5 },
@@ -62,6 +62,28 @@ function westWingConfig() {
     { x: -8, z: 10.5, w: 0.3, d: 5 },
     { x: -8, z: 21.5, w: 0.3, d: 4 }
   ];
+  cfg.doors = [
+    {
+      id: 'archive_door',
+      x: 2,
+      z: 8,
+      w: 4,
+      d: 0.3,
+      label: '档案阁门禁',
+      locked: true,
+      unlockEvent: 'detentionComplete'
+    },
+    {
+      id: 'maze_door',
+      x: -18,
+      z: 8,
+      w: 4,
+      d: 0.3,
+      label: '迷宫侧门',
+      locked: false
+    }
+  ];
+  cfg.registrationNpc = { x: -22.5, z: -6, y: 1.1 };
 
   cfg.blackboard = { x: 15, z: -8.2, y: 1.85, w: 4.4, h: 1.25 };
   cfg.bookshelf = { x: -19, z: -9.5, rotY: 0.3 };
@@ -111,7 +133,7 @@ function westWingConfig() {
   cfg.bubbleRoutes = [
     {
       from: { x: -20, z: -6, y: 0.9 },
-      to: { x: 0, z: 8.5, y: 4.3 },
+      to: { x: 0, z: 11.8, y: 4.3 },
       color: '#8ef0c8',
       label: '纸箱泡泡 · 上档案阁'
     },

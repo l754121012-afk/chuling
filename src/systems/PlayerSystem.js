@@ -960,6 +960,32 @@ export class PlayerSystem {
       }
     }
 
+    if (this.refs.npc) {
+      const dn = distance2D(pos.x, pos.z, this.refs.npc.pos.x, this.refs.npc.pos.z);
+      if (dn < 1.8 && 3 > bestPriority) {
+        bestPriority = 3;
+        best = {
+          type: 'npc',
+          label: '和小满纸人说话',
+          pos: { x: this.refs.npc.pos.x, y: 1.4, z: this.refs.npc.pos.z }
+        };
+      }
+    }
+
+    for (const door of this.refs.doors || []) {
+      if (!door.locked) continue;
+      const dd = distance2D(pos.x, pos.z, door.pos.x, door.pos.z);
+      if (dd < 1.9 && 2.5 > bestPriority) {
+        bestPriority = 2.5;
+        best = {
+          type: 'doorLocked',
+          door,
+          label: '门禁锁着',
+          pos: { x: door.pos.x, y: 2.1, z: door.pos.z }
+        };
+      }
+    }
+
     return best;
   }
 
@@ -985,6 +1011,13 @@ export class PlayerSystem {
       this.events.emit('toast', { text: target.label.replace('出口锁着：', ''), ms: 1800 });
     } else if (target.type === 'bubble') {
       this._startBubble(target.bubble);
+    } else if (target.type === 'npc') {
+      this.events.emit('npc.talk');
+    } else if (target.type === 'doorLocked') {
+      const label = target.door?.id === 'archive_door'
+        ? '档案阁门禁锁着：读完值日表和处分记录后会自动打开。'
+        : '这扇门暂时被校务铃锁住了。';
+      this.events.emit('toast', { text: label, ms: 2200 });
     } else if (target.type === 'clue') {
       if (this.game.detentionMode && target.clue.id === 'blackboard') {
         this._detentionChalk(target.clue.pos);
