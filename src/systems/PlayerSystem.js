@@ -52,6 +52,7 @@ export class PlayerSystem {
     this._shiftTapHandled = false;
     this._throwJumpUsed = false;
     this._noiseTimer = 0;
+    this._hazardToastUntil = 0;
     this._itemCycle = this.game.quickSlots;
     this.pose = 'idle';
     this.poseTimer = 0;
@@ -159,6 +160,7 @@ export class PlayerSystem {
       this._syncPlayerMesh();
       return;
     }
+    if (!this._bubbleActive) this._updateHazardZones(dt);
     if (this.game.thrownUntil > nowSec() && this.pawn.body.velocity.y < 0) {
       this._checkThrowCollision();
     }
@@ -619,6 +621,32 @@ export class PlayerSystem {
     }
   }
 
+  _updateHazardZones(dt) {
+    const pos = this.getPos();
+    let hitAny = false;
+    for (const hazard of this.refs.hazards || []) {
+      const inside =
+        Math.abs(pos.x - hazard.x) <= hazard.w / 2 &&
+        Math.abs(pos.z - hazard.z) <= hazard.d / 2 &&
+        pos.y < 1.7;
+      if (!inside) continue;
+      hitAny = true;
+      this.game.stamina = Math.max(0, this.game.stamina - hazard.rate * dt);
+      if (nowSec() >= this._hazardToastUntil) {
+        this._hazardToastUntil = nowSec() + 2.2;
+        this.events.emit('toast', {
+          text: '踩进危险区了！体力流失！',
+          ms: 1500
+        });
+        this.audio?.play('slap');
+      }
+    }
+    if (hitAny && Math.random() < dt * 5) {
+      this.events.emit('camera.shake', { amount: 0.12 });
+      this.scene.spawnParticles({ x: pos.x, y: 0.5, z: pos.z }, '#ff8f8f');
+    }
+  }
+
   _checkFootprints(dt) {
     this._footprintCooldown = Math.max(0, this._footprintCooldown - dt);
     if (this._footprintCooldown > 0 || this.game.hiding) return;
@@ -1003,8 +1031,8 @@ export class PlayerSystem {
         best = {
           type: 'doorLocked',
           door,
-          label: door.requireClue && this.game.hasClue(door.requireClue)
-            ? 'E 打开档案门'
+          label: (door.requireClue && this.game.hasClue(door.requireClue)) || door.openable
+            ? 'E 开门'
             : '门禁锁着',
           pos: { x: door.pos.x, y: 2.1, z: door.pos.z }
         };
@@ -1051,9 +1079,23 @@ export class PlayerSystem {
       this.events.emit('wage.pickup');
     } else if (target.type === 'doorLocked') {
       const door = target.door;
-      if (door?.requireClue && this.game.hasClue(door.requireClue)) {
+      if (door?.openable || (door?.requireClue && this.game.hasClue(door.requireClue))) {
         this.scene.setDoor(door.id, false);
-        this.events.emit('toast', { text: '档案门开了！进去读处分记录。', ms: 2000 });
+        this.events.emit('toast', {
+          text: door.id === 'start_door'
+            ? '值班室大门开了！去中央过道读值日表。'
+            : door.id === 'record_door'
+              ? '档案门开了！进去读处分记录。'
+              : '门开了！',
+          ms: 2000
+        });
+        if (door.id === 'start_door' && this.game.detentionMode && !this.game.detentionScheduleRead) {
+          this.events.emit('speech', {
+            text: '纸人跟过来：出门左转就是中央过道，值日表在桌上。',
+            ms: 2200,
+            name: '小满纸人'
+          });
+        }
       } else if (door?.requireClue) {
         this.events.emit('toast', {
           text: '档案门锁着：先到中央过道读程老师值日表。',

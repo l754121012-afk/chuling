@@ -72,7 +72,42 @@ function westWingConfig() {
     { x: -12, z: 24, axis: 'z', dir: -1 },
     { x: 12, z: 24, axis: 'z', dir: -1 }
   ];
+  cfg.hazardZones = [
+    { x: -22, z: -11, w: 3.5, d: 2.4, label: '漏电积水', rate: 16 },
+    { x: 0, z: 6.5, w: 2.4, d: 1.6, label: '洒落的修正带', rate: 12 },
+    { x: -5, z: 15, w: 3, d: 2.2, label: '碎粉笔灰', rate: 12 }
+  ];
   cfg.doors = [
+    {
+      id: 'start_door',
+      x: -18,
+      z: 2,
+      w: 4,
+      d: 0.3,
+      label: '值班室大门',
+      locked: true,
+      openable: true
+    },
+    {
+      id: 'health_door',
+      x: -8,
+      z: -6,
+      w: 0.3,
+      d: 4,
+      label: '保健室隔断门',
+      locked: true,
+      requireClue: 'note'
+    },
+    {
+      id: 'right_lower_door',
+      x: 18,
+      z: 2,
+      w: 4,
+      d: 0.3,
+      label: '右侧下层门',
+      locked: true,
+      requireClue: 'note'
+    },
     {
       id: 'record_door',
       x: 2,
@@ -91,7 +126,28 @@ function westWingConfig() {
       w: 4,
       d: 0.3,
       label: '迷宫侧门',
-      locked: false
+      locked: true,
+      requireClue: 'note'
+    },
+    {
+      id: 'upper_door',
+      x: 2,
+      z: 8,
+      w: 4,
+      d: 0.3,
+      label: '二楼楼梯门',
+      locked: true,
+      requireClue: 'note'
+    },
+    {
+      id: 'right_upper_door',
+      x: 18,
+      z: 8,
+      w: 4,
+      d: 0.3,
+      label: '档案阁东门',
+      locked: true,
+      requireClue: 'note'
     }
   ];
   cfg.registrationNpc = { x: -22.5, z: -6, y: 1.1 };

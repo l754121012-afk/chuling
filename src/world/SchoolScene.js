@@ -60,6 +60,7 @@ export class SchoolScene {
       doors: [],
       npc: null,
       wageSlips: [],
+      hazards: [],
       platform: null,
       itemSpawns: this.L.itemSpawns.map(s => ({ ...s }))
     };
@@ -111,6 +112,7 @@ export class SchoolScene {
       this._box(wall.w, 5.2, wall.d, { x: wall.x, y: 2.6, z: wall.z }, PALETTE.wall);
     }
     this._addWestWingWindows();
+    this._addWestWingHazards(refs);
 
     for (const room of this.L.westWingLabels || []) {
       const sign = new THREE.Sprite(
@@ -170,6 +172,50 @@ export class SchoolScene {
         beam.position.x += win.dir * 4.2;
       }
       this.group.add(beam);
+    }
+  }
+
+  _addWestWingHazards(refs) {
+    for (const hazard of this.L.hazardZones || []) {
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(hazard.w, hazard.d),
+        new THREE.MeshBasicMaterial({
+          color: 0xff6b6b,
+          transparent: true,
+          opacity: 0.24,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(hazard.x, 0.06, hazard.z);
+      const sign = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture(hazard.label || '危险区', {
+            bg: '#5a1212',
+            fg: '#ffe8d0',
+            font: 'bold 32px "Microsoft YaHei", sans-serif',
+            width: 320,
+            height: 80,
+            lineHeight: 36,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sign.position.set(hazard.x, hazard.y ?? 0.75, hazard.z);
+      sign.scale.set(1.6, 0.45, 1);
+      this.group.add(floor, sign);
+      refs.hazards.push({
+        x: hazard.x,
+        z: hazard.z,
+        w: hazard.w,
+        d: hazard.d,
+        rate: hazard.rate || 6,
+        mesh: floor,
+        sign
+      });
     }
   }
 
@@ -949,7 +995,8 @@ export class SchoolScene {
         levelY: doorCfg.levelY || 0.8,
         locked: !!doorCfg.locked,
         unlockEvent: doorCfg.unlockEvent || null,
-        requireClue: doorCfg.requireClue || null
+        requireClue: doorCfg.requireClue || null,
+        openable: !!doorCfg.openable
       };
       this._applyDoorLock(doorRef, doorRef.locked);
       refs.doors.push(doorRef);

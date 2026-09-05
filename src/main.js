@@ -200,7 +200,7 @@ events.on('npc.talk', () => {
     });
   } else {
     events.emit('speech', {
-      text: '纸人指着中央过道：值日表在一楼的过道桌上。读完它，泡泡才会启动。',
+      text: '纸人指着值班室大门：先按 E 推开大门，值日表就在中央过道桌上。',
       ms: 2400,
       name: '小满纸人'
     });
@@ -340,7 +340,7 @@ events.on('game.start', () => {
   if (game.detentionMode) {
     setTimeout(() => {
       events.emit('speech', {
-        text: '小满纸人指着中央过道：值日表在一楼过道桌上，读完泡泡才会启动。',
+        text: '小满纸人指着值班室大门：先推开大门去中央过道，读完值日表泡泡才会启动。',
         ms: 2600,
         name: '小满纸人'
       });
@@ -530,7 +530,7 @@ function tick() {
         detentionBellStep = 1;
         ghost._lastSeen = null;
         ghost._lastNoise = { x: board.x, z: board.z };
-        school.setDoor('maze_door', true, { silent: true });
+        if (game.detentionScheduleRead) school.setDoor('maze_door', true, { silent: true });
         events.emit('audio', { name: 'chalk' });
         events.emit('act.card', {
           title: '08:10 · 粉笔声',
@@ -540,7 +540,7 @@ function tick() {
         detentionBellStep = 2;
         ghost._lastSeen = null;
         ghost._lastNoise = { x: record.x, z: record.z };
-        school.setDoor('maze_door', false, { silent: true });
+        if (game.detentionScheduleRead) school.setDoor('maze_door', false, { silent: true });
         events.emit('audio', { name: 'phone' });
         events.emit('act.card', {
           title: '08:40 · 电话响',
