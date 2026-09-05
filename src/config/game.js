@@ -8,7 +8,7 @@ export const GAME_CONFIG = {
   staminaMinToSprint: 8,
   jumpStaminaCost: 8,
   walkSpeed: 3.38,
-  sprintSpeed: 13.5,
+  sprintSpeed: 9.0,
   sprintActivateDelay: 0.32,
   throwCooldown: 0.35,
   interactRadius: 2.2,

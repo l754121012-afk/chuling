@@ -13,6 +13,7 @@ function westWingConfig() {
   cfg.note = { x: 0.7, y: 1.95, z: 5.5 };
   cfg.record = { x: -13.8, y: 1.35, z: 14.6 };
   cfg.ghostBell = { x: 16.2, y: 1.65, z: -7.9 };
+  cfg.rightDoorControl = { x: -6, y: 4.4, z: 13.5 };
   cfg.archiveControl = { x: 14, y: 0, z: 13 };
   cfg.autoDevice = { x: 17, y: 0, z: 16 };
   cfg.platform = { x: 0, z: 5.5, w: 5, h: 1, d: 4 };
@@ -59,11 +60,14 @@ function westWingConfig() {
     // ground-level detention partition with a gap
     { x: -8, z: -10, w: 0.3, d: 4 },
     { x: -8, z: -2, w: 0.3, d: 4 },
+    // 保健室隔断门右侧补墙，接住下方隔断与中央过道墙
+    { x: -8, z: 1, w: 0.3, d: 2 },
     // archive/office partition with a gap
     { x: -8, z: 10.5, w: 0.3, d: 5 },
     { x: -8, z: 21.5, w: 0.3, d: 4 },
-    // 程老师办公桌后方封墙
-    { x: 0, z: 7.05, w: 8.2, d: 0.3 }
+    // 程老师办公桌后方两侧竖向封墙
+    { x: -2.8, z: 7.6, w: 0.3, d: 0.8 },
+    { x: 2.8, z: 7.6, w: 0.3, d: 0.8 }
   ];
   cfg.westWingWindows = [
     { x: -15, z: -12, axis: 'z', dir: 1 },

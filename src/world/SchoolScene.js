@@ -1064,6 +1064,50 @@ export class SchoolScene {
       };
     }
 
+    const doorControlCfg = this.L.rightDoorControl;
+    if (doorControlCfg) {
+      const ctrl = new THREE.Group();
+      const cabinet = new THREE.Mesh(
+        new THREE.BoxGeometry(1.3, 1.3, 0.55),
+        material('#27323c', 0.9)
+      );
+      cabinet.position.y = 0.65;
+      const screen = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.95, 0.7),
+        new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          emissive: '#ffffff',
+          emissiveIntensity: 0.2
+        })
+      );
+      screen.position.set(0, 0.78, 0.29);
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture('右侧下层门控制台', {
+            bg: '#101c24',
+            fg: '#e7f4ff',
+            font: 'bold 30px "Microsoft YaHei", sans-serif',
+            width: 420,
+            height: 88,
+            lineHeight: 38,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sprite.position.y = 1.9;
+      sprite.scale.set(1.9, 0.5, 1);
+      ctrl.add(cabinet, screen, sprite);
+      ctrl.position.set(doorControlCfg.x, doorControlCfg.y, doorControlCfg.z);
+      this.group.add(ctrl);
+      refs.rightDoorControl = {
+        group: ctrl,
+        screen,
+        pos: { x: doorControlCfg.x, y: doorControlCfg.y, z: doorControlCfg.z }
+      };
+    }
+
     const controlCfg = this.L.archiveControl;
     const deviceCfg = this.L.autoDevice;
     if (!controlCfg) return;

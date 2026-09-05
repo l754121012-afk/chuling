@@ -114,9 +114,9 @@ export class PlayerSystem {
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.44, 0.62, 28),
       new THREE.MeshBasicMaterial({
-        color: 0xffd166,
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.75,
         side: THREE.DoubleSide,
         depthWrite: false
       })
@@ -125,7 +125,11 @@ export class PlayerSystem {
     ring.position.y = 0.04;
     const arrow = new THREE.Mesh(
       new THREE.ConeGeometry(0.12, 0.34, 10),
-      new THREE.MeshBasicMaterial({ color: 0xffe08a })
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.75
+      })
     );
     arrow.rotation.x = Math.PI / 2;
     arrow.position.set(0, 0.04, 0.5);
@@ -185,9 +189,6 @@ export class PlayerSystem {
 
     const body = this.pawn.body;
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
-    if (Math.abs(this.input.look.x) > 0.1) {
-      this.aimYaw += this.input.look.x * 0.0032;
-    }
 
     this._handleMovement(dt, body);
     if (this._bubbleActive) {
@@ -321,7 +322,9 @@ export class PlayerSystem {
         );
       }
     } else if (hSpeed > 0.4) {
+      this.aimYaw = Math.atan2(body.velocity.x, body.velocity.z);
       this.pawn.mesh.rotation.y = this.aimYaw;
+      if (this.aimMarker) this.aimMarker.rotation.y = this.aimYaw;
       this.pawn.mesh.rotation.x = 0;
       this.pawn.mesh.rotation.z = 0;
       this.pawn.mesh.scale.set(1, 1, 1);
@@ -858,6 +861,22 @@ export class PlayerSystem {
       }
     }
 
+    if (this.game.detentionMode && this.refs.rightDoorControl) {
+      const ctrl = this.refs.rightDoorControl;
+      const d = distance2D(pos.x, pos.z, ctrl.pos.x, ctrl.pos.z);
+      const verticalOk = Math.abs(pos.y - ctrl.pos.y) < 1.3;
+      if (d < 2.2 && verticalOk && 2.1 > bestPriority) {
+        const door = this.refs.doors.find(door => door.id === 'right_lower_door');
+        bestPriority = 2.1;
+        best = {
+          type: 'rightDoorControl',
+          control: ctrl,
+          label: door?.locked ? 'E 打开右侧下层门' : 'E 关闭右侧下层门',
+          pos: { x: ctrl.pos.x, y: ctrl.pos.y + 1.2, z: ctrl.pos.z }
+        };
+      }
+    }
+
     if (
       this.game.detentionMode &&
       this.game.detentionComplete &&
@@ -1169,6 +1188,8 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '开始充电，3秒后充满！小心鬼！', ms: 2200 });
     } else if (target.type === 'ghostBell') {
       this._ringGhostBell(target.bell.pos);
+    } else if (target.type === 'rightDoorControl') {
+      this._toggleRightDoor();
     } else if (target.type === 'archiveSwitch') {
       const sw = target.switch;
       if (!this.game.detentionComplete) {
@@ -1476,6 +1497,23 @@ export class PlayerSystem {
       '黑板旁 E 拉响值日铃，程老师会被引向声音位置；趁它离开再绕进迷宫。'
     );
     this.events.emit('toast', { text: '值日铃响了！程老师被引过去了！', ms: 1800 });
+  }
+
+  _toggleRightDoor() {
+    const door = this.refs.doors?.find(d => d.id === 'right_lower_door');
+    if (!door) return;
+    const willClose = !door.locked;
+    this.scene.setDoor('right_lower_door', willClose);
+    this.playPose('interact', 0.55);
+    this.audio?.play('click');
+    this.scene.spawnParticles(
+      { x: door.pos.x, y: 1.2, z: door.pos.z },
+      willClose ? '#ffb4a0' : '#8ef0c8'
+    );
+    this.events.emit('toast', {
+      text: willClose ? '右侧下层门已关闭！' : '右侧下层门已打开！',
+      ms: 2000
+    });
   }
 
   _kickProp(prop) {
