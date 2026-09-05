@@ -288,6 +288,7 @@ events.on('clue.found', p => {
 events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
   game.detentionScheduleRead = true;
+  school.unlockBubbles();
   events.emit('act.card', {
     title: '值日表归档 · 迷宫与档案区开放',
     line: '从右侧上层门进档案区，沿北侧绕进迷宫旧记录台；黑板旁响铃可以把程老师引开。'

@@ -205,7 +205,8 @@ function westWingConfig() {
       from: { x: 4, z: 13, y: 4.4 },
       to: { x: 18, z: -7, y: 0.9 },
       color: '#d9f0ff',
-      label: '泡泡滑梯 · 回保健区'
+      label: '泡泡滑梯 · 回保健区',
+      requireClue: 'note'
     }
   ];
 

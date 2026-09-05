@@ -116,7 +116,7 @@ export class PlayerSystem {
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.75,
+        opacity: 0.95,
         side: THREE.DoubleSide,
         depthWrite: false
       })
@@ -140,7 +140,7 @@ export class PlayerSystem {
       new THREE.MeshBasicMaterial({
         map: glowTex,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.6,
         depthWrite: false
       })
     );
@@ -151,15 +151,65 @@ export class PlayerSystem {
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.85
+        opacity: 1
       })
     );
     arrow.rotation.x = Math.PI / 2;
     arrow.position.set(0, 0.04, 0.62);
-    marker.add(glow, ring, arrow);
+    const shadowDisc = new THREE.Mesh(
+      new THREE.CircleGeometry(1.02, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0x0d1217,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false
+      })
+    );
+    shadowDisc.rotation.x = -Math.PI / 2;
+    shadowDisc.position.y = 0.03;
+    marker.add(shadowDisc, glow, ring, arrow);
     marker.position.set(start.x, 0.02, start.z);
     this.scene.group.add(marker);
     this.aimMarker = marker;
+
+    const companion = new THREE.Group();
+    const ghostBodyMat = new THREE.MeshStandardMaterial({
+      color: 0xfff9ef,
+      transparent: true,
+      opacity: 0.88,
+      roughness: 0.55
+    });
+    const softMat = new THREE.MeshStandardMaterial({ color: 0xffd7e0, roughness: 0.6 });
+    const inkMat = new THREE.MeshStandardMaterial({ color: 0x232830, roughness: 0.4 });
+    const hatMat = new THREE.MeshStandardMaterial({ color: 0xe63946, roughness: 0.5 });
+    const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 14), ghostBodyMat);
+    bodyMesh.scale.set(1, 1.12, 0.86);
+    bodyMesh.position.y = 0.72;
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 14), ghostBodyMat);
+    headMesh.position.y = 1.16;
+    const earL = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.18, 10), softMat);
+    earL.position.set(-0.17, 1.52, 0);
+    earL.rotation.z = -0.18;
+    const earR = earL.clone();
+    earR.position.x = 0.17;
+    earR.rotation.z = 0.18;
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), inkMat);
+    eyeL.position.set(-0.1, 1.2, 0.24);
+    const eyeR = eyeL.clone();
+    eyeR.position.x = 0.1;
+    const cheekL = new THREE.Mesh(new THREE.CircleGeometry(0.06, 10), softMat);
+    cheekL.position.set(-0.2, 1.05, 0.22);
+    const cheekR = cheekL.clone();
+    cheekR.position.x = 0.2;
+    const hatMesh = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.24, 10), hatMat);
+    hatMesh.position.set(0.03, 1.5, 0);
+    hatMesh.rotation.z = -0.12;
+    const hatBall = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), hatMat);
+    hatBall.position.set(0.16, 1.56, 0);
+    companion.add(bodyMesh, headMesh, earL, earR, eyeL, eyeR, cheekL, cheekR, hatMesh, hatBall);
+    companion.position.set(start.x + 0.95, 1.25, start.z + 0.45);
+    this.scene.group.add(companion);
+    this.companion = companion;
 
     const phoneLight = new THREE.PointLight('#ffe9b0', 1.8, 8, 1.8);
     phoneLight.position.set(0.45, 1.05, 0.55);
@@ -382,6 +432,15 @@ export class PlayerSystem {
       this.aimMarker.position.set(this.pawn.mesh.position.x, this.pawn.body.position.y - 0.33, this.pawn.mesh.position.z);
       this.aimMarker.rotation.y = this.aimYaw;
       this.aimMarker.visible = this.pawn.mesh.visible;
+    }
+    if (this.companion) {
+      this.companion.position.set(
+        this.pawn.mesh.position.x + 0.98,
+        this.pawn.mesh.position.y + 1.08 + Math.sin(nowSec() * 2.8) * 0.16,
+        this.pawn.mesh.position.z + 0.46
+      );
+      this.companion.rotation.y = Math.sin(nowSec() * 0.7) * 0.45;
+      this.companion.visible = !this.game.hiding && this.pawn.mesh.visible;
     }
   }
 
@@ -969,17 +1028,7 @@ export class PlayerSystem {
         bestPriority = 3;
         best = { type: 'exit', label: runLabel, pos: { x: exit.pos.x, y: 2.6, z: exit.pos.z } };
       } else if (d < 3.2 && exit.locked && !exitUsable && 0.8 > bestPriority) {
-        const missing = this.game.runMode && this.game.runStage === 1
-          ? '出口锁着：先替小满把笔摆正'
-          : this.game.detentionMode
-            ? this.game.detentionScheduleRead
-              ? this.game.detentionExitDeviceDone
-                ? '出口设备已启动：先去迷宫改判处分记录'
-                : this.game.detentionComplete
-                  ? '出口绿灯已亮：去档案区操作自动门控制台'
-                  : '出口锁着：先去迷宫读程老师处分记录'
-              : '出口锁着：先读程老师值日表'
-            : '出口还没开';
+        const missing = '出口锁着';
         bestPriority = 0.8;
         best = { type: 'exitLocked', label: missing, pos: { x: exit.pos.x, y: 2.6, z: exit.pos.z } };
       }
@@ -1116,6 +1165,7 @@ export class PlayerSystem {
     }
 
     for (const bubble of this.refs.bubbles || []) {
+      if (!bubble.group.visible) continue;
       const db = distance2D(pos.x, pos.z, bubble.x, bubble.z);
       const verticalOk = Math.abs(pos.y - bubble.y) < 1.5;
       if (db < 1.7 && verticalOk && 2.6 > bestPriority) {
@@ -1130,7 +1180,7 @@ export class PlayerSystem {
             }
           : {
               type: 'bubbleLocked',
-              label: '泡泡待机：先去中央过道读值日表',
+              label: '泡泡还没启动',
               pos: { x: bubble.x, y: bubble.y + 0.8, z: bubble.z }
             };
       }
@@ -1264,11 +1314,11 @@ export class PlayerSystem {
     } else if (target.type === 'exitLocked') {
       this.events.emit('toast', { text: target.label.replace('出口锁着：', ''), ms: 1800 });
     } else if (target.type === 'mazeDoorOutside') {
-      this.events.emit('toast', { text: '迷宫侧门只能从里面打开：从档案区北侧绕进迷宫。', ms: 2200 });
+      this.events.emit('toast', { text: '这扇门只能从里面打开。', ms: 1800 });
     } else if (target.type === 'bubble') {
       this._startBubble(target.bubble);
     } else if (target.type === 'bubbleLocked') {
-      this.events.emit('toast', { text: '泡泡还没启动：先去中央过道读程老师值日表。', ms: 2000 });
+      this.events.emit('toast', { text: '泡泡还没启动。', ms: 1600 });
     } else if (target.type === 'npc') {
       this.events.emit('npc.talk');
     } else if (target.type === 'wageSlip') {
@@ -1301,8 +1351,8 @@ export class PlayerSystem {
         }
       } else if (door?.requireClue) {
         this.events.emit('toast', {
-          text: '门禁锁着：先到中央过道读程老师值日表。',
-          ms: 2200
+          text: '门禁锁着。',
+          ms: 1400
         });
       } else {
         this.events.emit('toast', { text: '这扇门暂时被校务铃锁住了。', ms: 1800 });

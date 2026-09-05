@@ -954,7 +954,18 @@ export class SchoolScene {
           requireClue: route.requireClue || null,
           lockLabel
         });
+        if (route.requireClue) group.visible = false;
       }
+    }
+  }
+
+  unlockBubbles() {
+    for (const bubble of this.refs?.bubbles || []) {
+      if (!bubble.requireClue) continue;
+      bubble.group.visible = true;
+      if (bubble.lockLabel) bubble.lockLabel.visible = false;
+      this.spawnHitRing({ x: bubble.x, y: Math.max(0.2, bubble.y - 0.2), z: bubble.z }, '#8ef0c8');
+      this.spawnParticles({ x: bubble.x, y: bubble.y + 0.8, z: bubble.z }, '#8ef0c8');
     }
   }
 
@@ -1550,6 +1561,42 @@ export class SchoolScene {
     redLight.position.set(exit.x, 3.15, exit.z + 0.12);
     this.group.add(redLight);
 
+    const lockLight = new THREE.PointLight(PALETTE.exitLocked, 2.2, 14, 1.8);
+    lockLight.position.set(exit.x, 3.0, exit.z + 0.2);
+    this.group.add(lockLight);
+
+    const beam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.26, 0.45, 5.6, 10, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: PALETTE.exitLocked,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      })
+    );
+    beam.position.set(exit.x, 3.0, exit.z + 0.05);
+    this.group.add(beam);
+
+    const lockText = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('出口 LOCKED', {
+          bg: '#5c1111',
+          fg: '#ffd9d9',
+          font: 'bold 44px "Microsoft YaHei", sans-serif',
+          width: 420,
+          height: 96,
+          lineHeight: 48,
+          pad: 8
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    lockText.position.set(exit.x, 3.55, exit.z + 0.25);
+    lockText.scale.set(1.8, 0.46, 1);
+    this.group.add(lockText);
+
     const beacon = new THREE.Group();
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.08, 0.08, 1.6, 8),
@@ -1573,6 +1620,9 @@ export class SchoolScene {
       railGroup,
       railMeshes,
       redLight,
+      lockLight,
+      beam,
+      lockText,
       beacon,
       pos: { x: exit.x, z: exit.z },
       locked: true,
@@ -1761,6 +1811,18 @@ export class SchoolScene {
     exit.lockMesh.material.opacity = 0.42;
     exit.redLight.material.color.set(PALETTE.exit);
     exit.redLight.material.emissive.set(PALETTE.exit);
+    exit.lockLight.color.set(PALETTE.exit);
+    exit.beam.material.color.set(PALETTE.exit);
+    exit.lockText.material.map = textTexture('出口 1/2 已解锁', {
+      bg: '#134a33',
+      fg: '#e6ffe8',
+      font: 'bold 44px "Microsoft YaHei", sans-serif',
+      width: 480,
+      height: 96,
+      lineHeight: 48,
+      pad: 8
+    });
+    exit.lockText.material.needsUpdate = true;
     this.spawnHitRing({ x: exit.pos.x, y: 0.5, z: exit.pos.z }, '#57cc99');
     this.spawnParticles({ x: exit.pos.x, y: 1.5, z: exit.pos.z }, '#57cc99');
   }
@@ -1772,6 +1834,9 @@ export class SchoolScene {
     exit.stage = 2;
     exit.lockMesh.visible = false;
     exit.redLight.visible = false;
+    exit.lockLight.intensity = 0;
+    exit.beam.visible = false;
+    exit.lockText.visible = false;
     exit.beacon.visible = true;
     exit.railsOpen = true;
     exit.railOpenAt = nowSec();
