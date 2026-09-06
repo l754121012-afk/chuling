@@ -6,7 +6,7 @@ export class CameraSystem {
     this.camera = camera;
     this.world = world;
     this.yaw = 0;
-    this.pitch = 1.42;
+    this.pitch = 1.18;
     this.dist = 15;
     this.raycaster = new THREE.Raycaster();
     this.raycaster.camera = camera;

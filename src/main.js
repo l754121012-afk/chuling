@@ -981,7 +981,23 @@ function tick() {
     if (!game.skillMode) syncOrthoSize(camera, window.innerWidth, window.innerHeight, 8);
     if (scene.fog === null) scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
     scene.background = new THREE.Color(PALETTE.bg);
-    cameraSys.update(input, player.getPos(), dt);
+    const zone = game.detentionMode
+      ? (school.refs?.roomZones || []).find(z => z.id === game.currentRoom)
+      : null;
+    if (zone) {
+      const zx = (zone.minX + zone.maxX) / 2;
+      const zz = (zone.minZ + zone.maxZ) / 2;
+      syncOrthoSize(camera, window.innerWidth, window.innerHeight, 12);
+      const pitch = cameraSys.pitch;
+      const halfDepth = Math.min(zone.maxZ - zz, zz - zone.minZ);
+      const horiz = Math.max(1.5, Math.min(5.5, halfDepth * 0.45));
+      const dist = horiz / Math.cos(pitch);
+      camera.position.set(zx, 2 + Math.sin(pitch) * dist, zz + horiz);
+      camera.lookAt(zx, 0.8, zz);
+      cameraSys._updateOcclusion(player.getPos());
+    } else {
+      cameraSys.update(input, player.getPos(), dt);
+    }
   }
   physics.step(simDt);
   renderer.render(scene, camera);

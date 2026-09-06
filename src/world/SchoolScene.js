@@ -1333,9 +1333,12 @@ export class SchoolScene {
     refs.roomRoofs = [];
     refs.roomZones = [];
     for (const zone of zones) {
-      const roof = this._box(zone.w + 0.4, 0.4, zone.d + 0.4, {
+      // Each non-active room is enclosed by an opaque volume from below the
+      // floor up past every prop and mezzanine, so an adjacent room cannot
+      // leak into the current room's frame through walls, doors or windows.
+      const roof = this._box(zone.w, 14.2, zone.d, {
         x: zone.x,
-        y: 6.4,
+        y: 6.8,
         z: zone.z
       }, '#05070b', { body: false }).mesh;
       roof.visible = false;

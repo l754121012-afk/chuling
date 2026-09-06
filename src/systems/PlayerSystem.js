@@ -715,8 +715,8 @@ export class PlayerSystem {
       }
       let moveX = 0;
       let moveZ = 0;
-      if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
-      if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
+      if (this.input.isDown('KeyW')) moveZ += 1;
+      if (this.input.isDown('KeyS')) moveZ -= 1;
       if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
       if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
       const yaw = this.camera.yaw;
@@ -747,8 +747,8 @@ export class PlayerSystem {
     if (nowSec() < this._tornadoUntil) {
       let moveX = 0;
       let moveZ = 0;
-      if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
-      if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
+      if (this.input.isDown('KeyW')) moveZ += 1;
+      if (this.input.isDown('KeyS')) moveZ -= 1;
       if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
       if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
       const yaw = this.camera.yaw;
@@ -801,10 +801,10 @@ export class PlayerSystem {
       const facingX = -Math.sin(yaw);
       const facingZ = -Math.cos(yaw);
       const dirSign = (ropeDx * facingX + ropeDz * facingZ) / ropeLen >= 0 ? 1 : -1;
-      if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) {
+      if (this.input.isDown('KeyW')) {
         this._ropeT = Math.min(1, this._ropeT + speed * dt * dirSign);
       }
-      if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) {
+      if (this.input.isDown('KeyS')) {
         this._ropeT = Math.max(0, this._ropeT - speed * dt * dirSign);
       }
       body.position.set(
@@ -818,10 +818,10 @@ export class PlayerSystem {
       body.velocity.set(0, 0, 0);
       const ladder = this._ladder;
       const speed = 2.5;
-      if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) {
+      if (this.input.isDown('KeyW')) {
         body.position.y = Math.min(ladder.topY - 0.2, body.position.y + speed * dt);
       }
-      if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) {
+      if (this.input.isDown('KeyS')) {
         body.position.y = Math.max(0.35, body.position.y - speed * dt);
       }
       return;
@@ -834,8 +834,8 @@ export class PlayerSystem {
 
     let moveX = 0;
     let moveZ = 0;
-    if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
-    if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
+    if (this.input.isDown('KeyW')) moveZ += 1;
+    if (this.input.isDown('KeyS')) moveZ -= 1;
     if (this.input.isDown('KeyD') || (this.input.isDown('ArrowRight') && !this.game.whipMode)) moveX += 1;
     if (this.input.isDown('KeyA') || (this.input.isDown('ArrowLeft') && !this.game.whipMode)) moveX -= 1;
 
@@ -2669,8 +2669,8 @@ export class PlayerSystem {
     const yaw = this.camera.yaw;
     let moveX = 0;
     let moveZ = 0;
-    if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
-    if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
+    if (this.input.isDown('KeyW')) moveZ += 1;
+    if (this.input.isDown('KeyS')) moveZ -= 1;
     if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
     if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
     const fwdX = -Math.sin(yaw);
