@@ -81,6 +81,10 @@ export class PlayerSystem {
     this._bubbleActive = false;
     this.aimYaw = Math.atan2(-Math.sin(camera.yaw || 0), -Math.cos(camera.yaw || 0));
     this.aimMarker = null;
+    this.companion = null;
+    this._companionReactUntil = 0;
+    this._companionReactType = null;
+    this._companionNextIdleAt = 0;
     this._bubbleStart = 0;
     this._bubbleDur = 0.52;
     this._bubbleFrom = null;
@@ -88,6 +92,7 @@ export class PlayerSystem {
     events.on('player.hurt', () => {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
+      this.react?.('hurt');
     });
     events.on('vote.choose', i => this._resolveVote(i));
   }
@@ -210,6 +215,7 @@ export class PlayerSystem {
     companion.position.set(start.x + 0.95, 1.25, start.z + 0.45);
     this.scene.group.add(companion);
     this.companion = companion;
+    this._companionNextIdleAt = nowSec() + 6 + Math.random() * 4;
 
     const phoneLight = new THREE.PointLight('#ffe9b0', 1.8, 8, 1.8);
     phoneLight.position.set(0.45, 1.05, 0.55);
@@ -253,6 +259,27 @@ export class PlayerSystem {
     return { x: Math.sin(this.aimYaw), z: Math.cos(this.aimYaw) };
   }
 
+  react(type) {
+    this._companionReactType = type;
+    this._companionReactUntil = nowSec() + 0.9;
+    this.events?.emit('companion.react', { type });
+  }
+
+  _maybeCompanionIdle() {
+    if (!this.companion || !this.game.isPlaying() || this.game.hiding) return;
+    if (nowSec() < this._companionNextIdleAt) return;
+    this._companionNextIdleAt = nowSec() + 9 + Math.random() * 7;
+    let type = 'idle';
+    if (this.game.detentionMode && !this.game.detentionScheduleRead) {
+      type = 'task';
+    } else if (this.game.detentionMode && !this.game.detentionComplete) {
+      type = 'record';
+    } else if (this.game.detentionMode && !this.game.detentionExitDeviceDone) {
+      type = 'device';
+    }
+    this.react(type);
+  }
+
   update(dt) {
     if (!this.pawn) return;
     if (!this.game.isPlaying()) {
@@ -264,6 +291,7 @@ export class PlayerSystem {
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
 
     this._handleMovement(dt, body);
+    this._maybeCompanionIdle();
     if (this._bubbleActive) {
       this._syncPlayerMesh();
       return;
@@ -439,7 +467,19 @@ export class PlayerSystem {
         this.pawn.mesh.position.y + 1.08 + Math.sin(nowSec() * 2.8) * 0.16,
         this.pawn.mesh.position.z + 0.46
       );
-      this.companion.rotation.y = Math.sin(nowSec() * 0.7) * 0.45;
+      const reactLeft = this._companionReactUntil - nowSec();
+      if (reactLeft > 0) {
+        const reactT = 1 - reactLeft / 0.9;
+        const type = this._companionReactType || 'idle';
+        const attack = type === 'whip' || type === 'heavy' || type === 'combo';
+        this.companion.scale.setScalar(attack ? 1.28 : 1.12 + Math.sin(reactT * Math.PI * 3) * 0.08);
+        this.companion.rotation.y = attack ? this.aimYaw + 0.15 : Math.sin(nowSec() * 10) * 0.55;
+        this.companion.rotation.z = attack ? Math.sin(reactT * Math.PI) * -0.35 : 0;
+      } else {
+        this.companion.scale.setScalar(1);
+        this.companion.rotation.y = Math.sin(nowSec() * 0.7) * 0.55;
+        this.companion.rotation.z = 0;
+      }
       this.companion.visible = !this.game.hiding && this.pawn.mesh.visible;
     }
   }
@@ -1301,12 +1341,7 @@ export class PlayerSystem {
       this.playPose('interact', 0.55);
       this.audio?.play('click');
       this.scene.spawnHitRing({ x: target.device.pos.x, y: target.device.pos.y - 0.2, z: target.device.pos.z }, '#57cc99');
-      this.events.emit('act.card', {
-        title: '自动门设备已启动',
-        line: '设备“喀哒”一声启动；若处分记录已经改判，出口门禁就会真正打开。'
-      });
       this.events.emit('detention.deviceDone');
-      this.events.emit('toast', { text: '自动门设备已启动！', ms: 2400 });
     } else if (target.type === 'item') {
       this.items.pickup(target.pickup);
     } else if (target.type === 'exit') {
@@ -1926,6 +1961,7 @@ export class PlayerSystem {
     this.ghost._spinTimer = 1.2;
     this.ghost._dashFlash = 0.4;
     this.ghost.damage(3, { rage: 0 });
+    this.react('heavy');
     this.rage.add(10, 'heavy');
     this.events.emit('hitstop', { ms: 90 });
     this.events.emit('camera.shake', { amount: 0.4 });
@@ -2108,6 +2144,7 @@ export class PlayerSystem {
       this.ghost._dashFlash = 0.6;
       this.game.stunnedUntil = nowSec() + 3;
       this.ghost.damage(5, { rage: 0 });
+      this.react('combo');
       this.pawn.body.velocity.set((dx / len) * 16, 4, (dz / len) * 16);
       this._dodgeVX = (dx / len) * 16;
       this._dodgeVZ = (dz / len) * 16;
@@ -2187,6 +2224,7 @@ export class PlayerSystem {
     this.ghost._spinDir = dx >= 0 ? 1 : -1;
     this.ghost._dashFlash = 0.25;
     this.ghost.damage(1, { rage: 0 });
+    this.react('whip');
     this.audio?.play('whip');
     this.scene.spawnSlashTrail(
       { x: pp.x, y: 0, z: pp.z },
@@ -2223,6 +2261,7 @@ export class PlayerSystem {
   }
 
   _whipMiss() {
+    this.react('miss');
     this.game.whipCombo = 0;
     this.game.whipMisses += 1;
     this.game.stickyUntil = nowSec() + 0.6;

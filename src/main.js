@@ -163,15 +163,19 @@ let detentionBellAt = 0;
 let reviewDist = 120;
 let reviewPitch = 0.5;
 let exitCutscene = null;
+let companionCommentAt = 0;
 const itemGuidesShown = new Set();
 
-function beginExitCutscene(stage) {
+function beginExitCutscene(stage, autoOpen = false, afterText = null) {
   const exit = school.refs?.exit;
   if (!exit || !game.detentionMode) return;
   const now = nowSec();
   exitCutscene = {
     stage,
+    autoOpen,
+    afterText,
     startedAt: now,
+    pending: true,
     unlockAt: now + 1.0,
     duration: 6.2,
     done: false,
@@ -205,6 +209,29 @@ function capture4k() {
 }
 
 events.on('audio', p => audio.play(p.name));
+events.on('companion.react', p => {
+  if (nowSec() - companionCommentAt < 4) return;
+  const idleQuotes = [
+    '这些鬼怎么这么烦人呀？',
+    '喵？那边好像有动静。',
+    '往那边看看？',
+    '这个方向真的对吗？'
+  ];
+  const quotes = {
+    miss: '你攻击又落空了！',
+    whip: '这波打得好！我也来！',
+    heavy: '哇，重击好帅！一起上！',
+    combo: '连携成功！冲呀！',
+    hurt: '小心背后啊！',
+    task: '任务还没完成呢！',
+    record: '先去找处分记录啦！',
+    device: '档案区的控制台还没碰哦！',
+    idle: idleQuotes[Math.floor(Math.random() * idleQuotes.length)]
+  };
+  const text = quotes[p?.type] || idleQuotes[0];
+  companionCommentAt = nowSec();
+  events.emit('speech', { text, ms: 1800, name: '小幽灵' });
+});
 events.on('review.toggle', () => {
   game.reviewMode = !game.reviewMode;
   document.getElementById('hud')?.classList.toggle('hidden', game.reviewMode);
@@ -302,24 +329,48 @@ events.on('detention.recordRead', () => {
     return;
   }
   game.detentionComplete = true;
-  if (game.detentionExitDeviceDone) {
-    beginExitCutscene(2);
-  } else {
-    beginExitCutscene(1);
-  }
-  events.emit('act.card', {
-    title: '第一重解锁 · 处分记录改判',
-    line: '该受罚的人不是程老师。出口亮起绿灯，但门禁还锁着：从右侧档案区启动三道档案锁，找到控制台。'
-  });
-  events.emit('audio', { name: 'phone' });
-  events.emit('toast', { text: '你替程老师写正了最后一笔：出口条件达成，镜头将转向出口。', ms: 2600 });
+  const autoOpen = game.detentionExitDeviceDone;
+  beginExitCutscene(
+    1,
+    autoOpen,
+    autoOpen
+      ? {
+          card: {
+            title: '全部解锁 · 可以走了',
+            line: '处分记录改判完成，铁栏已经由设备升起，出口真正打开。'
+          },
+          toast: '两次条件都完成了，跑吧！'
+        }
+      : {
+          card: {
+            title: '第一重解锁 · 处分记录改判',
+            line: '该受罚的人不是程老师。出口亮起绿灯，但门禁还锁着：从右侧档案区启动三道档案锁，找到控制台。'
+          },
+          toast: '你替程老师写正了最后一笔：出口条件达成。'
+        }
+  );
 });
 events.on('detention.deviceDone', () => {
-  if (!game.detentionMode || !game.detentionComplete) {
-    events.emit('toast', { text: '自动门设备已就绪：等处分记录改判后，出口会真正打开。', ms: 2400 });
-    return;
-  }
-  beginExitCutscene(2);
+  if (!game.detentionMode) return;
+  beginExitCutscene(
+    2,
+    game.detentionComplete,
+    game.detentionComplete
+      ? {
+          card: {
+            title: '第二重解锁 · 自动门开了',
+            line: '喀哒一声，铁栏升离，出口真正打开。'
+          },
+          toast: '出口已经打开，跑吧！'
+        }
+      : {
+          card: {
+            title: '自动门已启动',
+            line: '铁栏已经升离，但电子锁还等处分记录改判。'
+          },
+          toast: '铁栏升离了，出口还差一次改判。'
+        }
+  );
 });
 events.on('camera.shake', p => cameraSys.addShake(p?.amount ?? 0.3));
 events.on('hitstop', p => {
@@ -728,6 +779,12 @@ function tick() {
     camera.lookAt(center.x, center.y + 0.8, center.z);
   } else if (exitCutscene) {
     const cut = exitCutscene;
+    if (cut.pending) {
+      cut.pending = false;
+      cut.startedAt = nowSec();
+      cut.unlockAt = cut.startedAt + 1.0;
+      cut.from = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+    }
     const elapsed = nowSec() - cut.startedAt;
     const k = Math.min(1, Math.max(0, elapsed / cut.duration));
     const ease = k * k * (3 - 2 * k);
@@ -744,13 +801,20 @@ function tick() {
       cut.done = true;
       if (cut.stage === 1) {
         school.setExitGreenLock();
-        audio.play('gate');
+        audio.play('phone');
+        if (cut.autoOpen) school.openExit();
       } else {
-        school.openExit();
-        audio.play('win');
+        school.liftExitRails();
+        if (cut.autoOpen) school.openExit();
       }
     }
-    if (elapsed >= cut.duration) exitCutscene = null;
+    if (elapsed >= cut.duration) {
+      if (cut.afterText) {
+        events.emit('act.card', cut.afterText.card);
+        events.emit('toast', { text: cut.afterText.toast, ms: 2600 });
+      }
+      exitCutscene = null;
+    }
   } else {
     if (scene.fog === null) scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
     scene.background = new THREE.Color(PALETTE.bg);

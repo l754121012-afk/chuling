@@ -963,9 +963,12 @@ export class SchoolScene {
     for (const bubble of this.refs?.bubbles || []) {
       if (!bubble.requireClue) continue;
       bubble.group.visible = true;
+      bubble.unlockedAt = nowSec();
+      bubble.group.scale.setScalar(0.2);
       if (bubble.lockLabel) bubble.lockLabel.visible = false;
       this.spawnHitRing({ x: bubble.x, y: Math.max(0.2, bubble.y - 0.2), z: bubble.z }, '#8ef0c8');
       this.spawnParticles({ x: bubble.x, y: bubble.y + 0.8, z: bubble.z }, '#8ef0c8');
+      this.spawnParticles({ x: bubble.x, y: bubble.y + 1.8, z: bubble.z }, '#d9f0ff');
     }
   }
 
@@ -1827,6 +1830,15 @@ export class SchoolScene {
     this.spawnParticles({ x: exit.pos.x, y: 1.5, z: exit.pos.z }, '#57cc99');
   }
 
+  liftExitRails() {
+    const exit = this.refs?.exit;
+    if (!exit || !exit.railGroup.visible) return;
+    exit.railsOpen = true;
+    exit.railOpenAt = nowSec();
+    this.spawnHitRing({ x: exit.pos.x, y: 0.5, z: exit.pos.z }, '#e8e8f0');
+    this.spawnParticles({ x: exit.pos.x, y: 1.8, z: exit.pos.z }, '#e8e8f0');
+  }
+
   openExit() {
     const exit = this.refs?.exit;
     if (!exit || !exit.locked) return;
@@ -1838,8 +1850,10 @@ export class SchoolScene {
     exit.beam.visible = false;
     exit.lockText.visible = false;
     exit.beacon.visible = true;
-    exit.railsOpen = true;
-    exit.railOpenAt = nowSec();
+    if (exit.railGroup.visible) {
+      exit.railsOpen = true;
+      exit.railOpenAt = nowSec();
+    }
     this.events.emit('toast', { text: '出口开了！快跑！', ms: 2400 });
     this.events.emit('audio', { name: 'gate' });
   }
@@ -2165,6 +2179,12 @@ export class SchoolScene {
       b.sprite.material.opacity = 0.82 + Math.sin(beaconT * 2.4) * 0.18;
     }
     for (const bubble of this.refs?.bubbles || []) {
+      if (bubble.unlockedAt) {
+        const growT = Math.min(1, Math.max(0, (beaconT - bubble.unlockedAt) / 0.9));
+        const ease = growT * growT * (3 - 2 * growT);
+        bubble.group.scale.setScalar(0.2 + ease * 0.8);
+        if (growT >= 1) bubble.unlockedAt = 0;
+      }
       const pulse = 1 + Math.sin(beaconT * 2.2) * 0.12;
       bubble.sphere.scale.setScalar(pulse);
       const unlocked = !bubble.requireClue || game.hasClue(bubble.requireClue);
