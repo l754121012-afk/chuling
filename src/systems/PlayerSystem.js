@@ -2233,6 +2233,7 @@ export class PlayerSystem {
     this.events.emit('hitstop', { ms: heavy ? 80 : 45 });
     this.events.emit('camera.shake', { amount: heavy ? 0.3 : 0.15 });
     this.audio?.play('whip');
+    this.react(heavy ? 'heavy' : 'whip', { x: m.x, z: m.z });
     return true;
   }
 

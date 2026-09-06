@@ -165,6 +165,7 @@ let reviewPitch = 0.5;
 let exitCutscene = null;
 let bubbleCutscene = null;
 let bubbleIntroShown = false;
+let explainPauseUntil = 0;
 let companionCommentAt = 0;
 let pendingRecordGuide = null;
 const itemGuidesShown = new Set();
@@ -173,6 +174,7 @@ function beginExitCutscene(stage, autoOpen = false, afterText = null) {
   const exit = school.refs?.exit;
   if (!exit || !game.detentionMode) return;
   bubbleCutscene = null;
+  explainPauseUntil = 0;
   const now = nowSec();
   exitCutscene = {
     stage,
@@ -193,6 +195,7 @@ function beginExitCutscene(stage, autoOpen = false, afterText = null) {
 function beginBubbleReveal(afterText = null) {
   if (!game.detentionMode) return;
   exitCutscene = null;
+  explainPauseUntil = 0;
   school.unlockBubbles();
   const bubble = school.refs?.bubbles?.find(b => b.requireClue) || school.refs?.bubbles?.[0];
   if (!bubble) return;
@@ -460,6 +463,7 @@ events.on('game.start', () => {
   pendingRecordGuide = null;
   bubbleCutscene = null;
   bubbleIntroShown = false;
+  explainPauseUntil = 0;
   exitCutscene = null;
   school.clearWageSlips();
   game.detentionMode = DETENTION_MODE || RUN_STAGE === 2;
@@ -690,14 +694,21 @@ function tick() {
   let simDt = dt;
   if (nowSec() < game.hitstopUntil) simDt = 0;
   else if (nowSec() < game.slowmoUntil) simDt *= 0.35;
+  if (exitCutscene || bubbleCutscene || nowSec() < explainPauseUntil) simDt = 0;
 
   if (game.guideOpen) {
     renderer.render(scene, camera);
     input.update();
     return;
   }
+  if (nowSec() < explainPauseUntil) {
+    ui.sync(game);
+    renderer.render(scene, camera);
+    input.update();
+    return;
+  }
 
-  if (game.isPlaying()) {
+  if (game.isPlaying() && !exitCutscene && !bubbleCutscene) {
     const pp = player.getPos();
     player.update(simDt);
     const p2 = player.getPos();
@@ -859,6 +870,7 @@ function tick() {
       if (cut.afterText) {
         events.emit('act.card', cut.afterText.card);
         events.emit('toast', { text: cut.afterText.toast, ms: 2600 });
+        explainPauseUntil = nowSec() + 3.0;
       }
       flushPendingGuide();
       exitCutscene = null;
@@ -886,6 +898,7 @@ function tick() {
       if (cut.afterText) {
         events.emit('act.card', cut.afterText.card);
         events.emit('toast', { text: cut.afterText.toast, ms: 2400 });
+        explainPauseUntil = nowSec() + 3.0;
       }
       flushPendingGuide();
       bubbleCutscene = null;
