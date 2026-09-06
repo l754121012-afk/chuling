@@ -144,6 +144,7 @@ export class GameState {
     this.runStaminaRegenBonus = 0;
     this.skillMode = false;
     this.skillStage = 0;
+    this.skillRoom = 0;
     this.runMode = false;
     this.runStage = 1;
     this.reviewMode = false;

@@ -416,6 +416,7 @@ export class PlayerSystem {
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
 
     this._handleMovement(dt, body);
+    this._updateSkillRoom();
     if (this._hookTarget) {
       this._updateHook(dt, body);
       this._syncPlayerMesh();
@@ -581,6 +582,15 @@ export class PlayerSystem {
     } else {
       this.pawn.mesh.visible = true;
     }
+  }
+
+  _updateSkillRoom() {
+    if (!this.game.skillMode || !this.refs?.skillCourse) return;
+    const course = this.refs.skillCourse;
+    const z = this.getPos().z;
+    const b0 = course.roomBoundaries?.[0];
+    const b1 = course.roomBoundaries?.[1];
+    this.game.skillRoom = z < b0 ? 0 : z < b1 ? 1 : 2;
   }
 
   _syncPlayerMesh() {

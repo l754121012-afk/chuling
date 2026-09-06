@@ -1289,16 +1289,21 @@ export class SchoolScene {
       end: { x: sc.end.x, z: sc.end.z },
       portalTarget: { x: sc.portalTarget.x, z: sc.portalTarget.z },
       roofs: [],
+      roomBoundaries: [],
       roomCenters: [
-        { x: sc.floor.x, z: sc.floor.z - sc.floor.d * 0.375 },
-        { x: sc.floor.x, z: sc.floor.z + sc.floor.d * 0.065 },
-        { x: sc.floor.x, z: sc.floor.z + sc.floor.d * 0.375 }
+        { x: sc.floor.x, z: sc.floor.z - sc.floor.d / 2 + 8 },
+        { x: sc.floor.x, z: sc.floor.z - sc.floor.d / 2 + 23 },
+        { x: sc.floor.x, z: sc.floor.z - sc.floor.d / 2 + 38 }
       ]
     };
+    refs.skillCourse.roomBoundaries = [
+      sc.floor.z - sc.floor.d / 2 + 16,
+      sc.floor.z - sc.floor.d / 2 + 30
+    ];
     const roofDefs = [
-      { z: refs.skillCourse.roomCenters[0].z, d: sc.floor.d * 0.32 },
-      { z: refs.skillCourse.roomCenters[1].z, d: sc.floor.d * 0.25 },
-      { z: refs.skillCourse.roomCenters[2].z, d: sc.floor.d * 0.32 }
+      { z: refs.skillCourse.roomCenters[0].z, d: 16 },
+      { z: refs.skillCourse.roomCenters[1].z, d: 14 },
+      { z: refs.skillCourse.roomCenters[2].z, d: 16 }
     ];
     for (const roof of roofDefs) {
       const mesh = this._box(sc.floor.w + 1.6, 0.3, roof.d, {
@@ -1318,7 +1323,7 @@ export class SchoolScene {
       for (const roof of course.roofs) roof.visible = false;
       return;
     }
-    const active = Math.min(2, Math.max(0, game.skillStage));
+    const active = Math.min(2, Math.max(0, game.skillRoom ?? game.skillStage));
     course.roofs.forEach((roof, i) => {
       roof.visible = i !== active;
     });

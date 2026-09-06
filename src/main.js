@@ -873,10 +873,10 @@ function tick() {
   if (!game.reviewMode && game.skillMode && !exitCutscene && !bubbleCutscene) {
     const course = school.refs?.skillCourse;
     if (course) {
-      const center = course.roomCenters[Math.min(2, Math.max(0, game.skillStage))];
-      syncOrthoSize(camera, window.innerWidth, window.innerHeight, 13);
-      camera.position.set(center.x, 28, center.z + 20);
-      camera.lookAt(center.x, 0, center.z);
+      const center = course.roomCenters[Math.min(2, Math.max(0, game.skillRoom ?? game.skillStage))];
+      syncOrthoSize(camera, window.innerWidth, window.innerHeight, 15);
+      camera.position.set(center.x, 32, center.z + 4);
+      camera.lookAt(center.x, 0.5, center.z);
     }
   } else if (OVERVIEW_SHOT || game.reviewMode) {
     const yaw = -0.82;
