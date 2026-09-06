@@ -1287,8 +1287,41 @@ export class SchoolScene {
       bell: { x: sc.bell.x, z: sc.bell.z },
       hookPlate: { x: sc.hookPlate.x, z: sc.hookPlate.z },
       end: { x: sc.end.x, z: sc.end.z },
-      portalTarget: { x: sc.portalTarget.x, z: sc.portalTarget.z }
+      portalTarget: { x: sc.portalTarget.x, z: sc.portalTarget.z },
+      roofs: [],
+      roomCenters: [
+        { x: sc.floor.x, z: sc.floor.z - sc.floor.d * 0.375 },
+        { x: sc.floor.x, z: sc.floor.z + sc.floor.d * 0.065 },
+        { x: sc.floor.x, z: sc.floor.z + sc.floor.d * 0.375 }
+      ]
     };
+    const roofDefs = [
+      { z: refs.skillCourse.roomCenters[0].z, d: sc.floor.d * 0.32 },
+      { z: refs.skillCourse.roomCenters[1].z, d: sc.floor.d * 0.25 },
+      { z: refs.skillCourse.roomCenters[2].z, d: sc.floor.d * 0.32 }
+    ];
+    for (const roof of roofDefs) {
+      const mesh = this._box(sc.floor.w + 1.6, 0.3, roof.d, {
+        x: sc.floor.x,
+        y: 6.2,
+        z: roof.z
+      }, '#05070b', { body: false }).mesh;
+      refs.skillCourse.roofs.push(mesh);
+      mesh.visible = false;
+    }
+  }
+
+  _updateSkillRoomRoofs(game) {
+    const course = this.refs?.skillCourse;
+    if (!course) return;
+    if (!game.skillMode) {
+      for (const roof of course.roofs) roof.visible = false;
+      return;
+    }
+    const active = Math.min(2, Math.max(0, game.skillStage));
+    course.roofs.forEach((roof, i) => {
+      roof.visible = i !== active;
+    });
   }
 
   _applyDoorLock(door, locked) {
@@ -2239,6 +2272,7 @@ export class SchoolScene {
 
   update(dt, game) {
     this._updateExitRails();
+    this._updateSkillRoomRoofs(game);
     const currentStage = game.currentStage();
     const rampage = game.deskRampageUntil > nowSec();
     if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {

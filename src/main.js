@@ -40,7 +40,16 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(PALETTE.bg);
 scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 80);
+const camera = new THREE.OrthographicCamera(-10, 10, 8, -8, 0.1, 260);
+function syncOrthoSize(cam, width = window.innerWidth, height = window.innerHeight, halfH = 8) {
+  const aspect = width / Math.max(1, height);
+  cam.left = -halfH * aspect;
+  cam.right = halfH * aspect;
+  cam.top = halfH;
+  cam.bottom = -halfH;
+  cam.updateProjectionMatrix();
+}
+syncOrthoSize(camera);
 
 const events = new EventBus();
 const physics = new PhysicsWorld();
@@ -261,10 +270,8 @@ function capture4k() {
   const width = 3840;
   const height = 2160;
   const oldPixelRatio = renderer.getPixelRatio();
-  const oldAspect = camera.aspect;
   renderer.setPixelRatio(1);
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
+  syncOrthoSize(camera, width, height);
   renderer.setSize(width, height, false);
   renderer.render(scene, camera);
   const dataUrl = canvas.toDataURL('image/png');
@@ -274,8 +281,7 @@ function capture4k() {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  camera.aspect = oldAspect;
-  camera.updateProjectionMatrix();
+  syncOrthoSize(camera);
   renderer.setPixelRatio(oldPixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   events.emit('toast', { text: '4K 截图已保存', ms: 2200 });
@@ -714,8 +720,7 @@ window.addEventListener('keyup', e => {
 });
 
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  syncOrthoSize(camera);
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
@@ -865,7 +870,15 @@ function tick() {
   }
   ui.sync(game);
   ui.updateSealStatus(player, ghost);
-  if (OVERVIEW_SHOT || game.reviewMode) {
+  if (!game.reviewMode && game.skillMode && !exitCutscene && !bubbleCutscene) {
+    const course = school.refs?.skillCourse;
+    if (course) {
+      const center = course.roomCenters[Math.min(2, Math.max(0, game.skillStage))];
+      syncOrthoSize(camera, window.innerWidth, window.innerHeight, 13);
+      camera.position.set(center.x, 28, center.z + 20);
+      camera.lookAt(center.x, 0, center.z);
+    }
+  } else if (OVERVIEW_SHOT || game.reviewMode) {
     const yaw = -0.82;
     if (game.reviewMode && input.zoom !== 0) {
       reviewDist = Math.min(220, Math.max(32, reviewDist - input.zoom * 0.04));
@@ -965,6 +978,7 @@ function tick() {
       bubbleCutscene = null;
     }
   } else {
+    if (!game.skillMode) syncOrthoSize(camera, window.innerWidth, window.innerHeight, 8);
     if (scene.fog === null) scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
     scene.background = new THREE.Color(PALETTE.bg);
     cameraSys.update(input, player.getPos(), dt);
