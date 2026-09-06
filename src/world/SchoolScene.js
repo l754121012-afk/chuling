@@ -1344,11 +1344,16 @@ export class SchoolScene {
       { z: refs.skillCourse.roomCenters[2].z, d: 16 }
     ];
     for (const roof of roofDefs) {
-      const mesh = this._box(sc.floor.w + 1.6, 0.3, roof.d, {
-        x: sc.floor.x,
-        y: 6.2,
-        z: roof.z
-      }, '#05070b', { body: false }).mesh;
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(sc.floor.w + 1.6, 14, roof.d),
+        new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          side: THREE.DoubleSide,
+          depthWrite: true
+        })
+      );
+      mesh.position.set(sc.floor.x, 6.8, roof.z);
+      this.group.add(mesh);
       refs.skillCourse.roofs.push(mesh);
       mesh.visible = false;
     }
@@ -1374,11 +1379,16 @@ export class SchoolScene {
       // Each non-active room is enclosed by an opaque volume from below the
       // floor up past every prop and mezzanine, so an adjacent room cannot
       // leak into the current room's frame through walls, doors or windows.
-      const roof = this._box(zone.w, 14.2, zone.d, {
-        x: zone.x,
-        y: 6.8,
-        z: zone.z
-      }, '#05070b', { body: false }).mesh;
+      const roof = new THREE.Mesh(
+        new THREE.BoxGeometry(zone.w, 14.2, zone.d),
+        new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          side: THREE.DoubleSide,
+          depthWrite: true
+        })
+      );
+      roof.position.set(zone.x, 6.8, zone.z);
+      this.group.add(roof);
       roof.visible = false;
       refs.roomRoofs.push({ id: zone.id, mesh: roof });
       refs.roomZones.push({

@@ -179,6 +179,8 @@ let phoneRang = false;
 let firstScareAt = 0;
 let detentionBellStep = 0;
 let detentionBellAt = 0;
+let activeRoomHalfH = 12;
+let activeRoomHoriz = 4.2;
 let reviewDist = 120;
 let reviewPitch = 0.5;
 let exitCutscene = null;
@@ -191,6 +193,14 @@ let pendingRunSetup = null;
 const itemGuidesShown = new Set();
 const roomTypeCardsShown = new Set();
 let lastRoomForRoomSystem = null;
+
+function frameCutsceneCamera(cam, x, z, halfH, horiz = activeRoomHoriz) {
+  syncOrthoSize(cam, window.innerWidth, window.innerHeight, halfH);
+  const pitch = cameraSys.pitch;
+  const dist = horiz / Math.cos(pitch);
+  cam.position.set(x, 2 + Math.sin(pitch) * dist, z + horiz);
+  cam.lookAt(x, 0.8, z);
+}
 
 function beginExitCutscene(stage, autoOpen = false, afterText = null) {
   const exit = school.refs?.exit;
@@ -209,6 +219,8 @@ function beginExitCutscene(stage, autoOpen = false, afterText = null) {
     holdDuration: 4.0,
     duration: 6.2,
     done: false,
+    halfH: activeRoomHalfH,
+    horiz: activeRoomHoriz,
     pos: { x: exit.pos.x, z: exit.pos.z },
     from: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
   };
@@ -227,6 +239,8 @@ function beginBubbleReveal(afterText = null) {
     moveDuration: 1.8,
     holdDuration: 3.0,
     duration: 4.8,
+    halfH: activeRoomHalfH,
+    horiz: activeRoomHoriz,
     pos: { x: bubble.x, y: bubble.y, z: bubble.z },
     afterText
   };
@@ -942,15 +956,18 @@ function tick() {
     const elapsed = nowSec() - cut.startedAt;
     const k = Math.min(1, Math.max(0, elapsed / cut.moveDuration));
     const ease = k * k * (3 - 2 * k);
-    const toX = cut.pos.x + 5.5;
-    const toY = 4.2;
-    const toZ = cut.pos.z - 8.5;
+    const pitch = cameraSys.pitch;
+    const dist = cut.horiz / Math.cos(pitch);
+    const toX = cut.pos.x;
+    const toY = 2 + Math.sin(pitch) * dist;
+    const toZ = cut.pos.z + cut.horiz;
+    syncOrthoSize(camera, window.innerWidth, window.innerHeight, cut.halfH);
     camera.position.set(
       cut.from.x + (toX - cut.from.x) * ease,
       cut.from.y + (toY - cut.from.y) * ease,
       cut.from.z + (toZ - cut.from.z) * ease
     );
-    camera.lookAt(cut.pos.x, 1.8, cut.pos.z);
+    camera.lookAt(cut.pos.x, 0.8, cut.pos.z);
     if (nowSec() >= cut.unlockAt && !cut.done) {
       cut.done = true;
       if (cut.stage === 1) {
@@ -981,15 +998,18 @@ function tick() {
     const elapsed = nowSec() - cut.startedAt;
     const k = Math.min(1, Math.max(0, elapsed / cut.moveDuration));
     const ease = k * k * (3 - 2 * k);
-    const toX = cut.pos.x + 5.2;
-    const toY = 2.4 + Math.max(0, cut.pos.y);
-    const toZ = cut.pos.z - 4.8;
+    const pitch = cameraSys.pitch;
+    const dist = cut.horiz / Math.cos(pitch);
+    const toX = cut.pos.x;
+    const toY = 2 + Math.sin(pitch) * dist;
+    const toZ = cut.pos.z + cut.horiz;
+    syncOrthoSize(camera, window.innerWidth, window.innerHeight, cut.halfH);
     camera.position.set(
       cut.from.x + (toX - cut.from.x) * ease,
       cut.from.y + (toY - cut.from.y) * ease,
       cut.from.z + (toZ - cut.from.z) * ease
     );
-    camera.lookAt(cut.pos.x, 1.1 + cut.pos.y, cut.pos.z);
+    camera.lookAt(cut.pos.x, 0.8, cut.pos.z);
     if (elapsed >= cut.duration) {
       if (cut.afterText) {
         events.emit('act.card', cut.afterText.card);
@@ -1017,21 +1037,19 @@ function tick() {
       }
       const zx = (zone.minX + zone.maxX) / 2;
       const zz = (zone.minZ + zone.maxZ) / 2;
-      const halfH = 12;
-      syncOrthoSize(camera, window.innerWidth, window.innerHeight, halfH);
       const aspect = window.innerWidth / Math.max(1, window.innerHeight);
-      const halfW = halfH * aspect;
-      const roomW = zone.maxX - zone.minX;
-      const playerX = player.getPos().x;
-      const camX = roomW <= halfW * 2
-        ? zx
-        : Math.max(zone.minX + halfW, Math.min(zone.maxX - halfW, playerX));
       const pitch = cameraSys.pitch;
+      const widthHalf = (zone.maxX - zone.minX) / (2 * aspect);
+      const depthHalf = (zone.maxZ - zone.minZ) / 2 * Math.sin(pitch) + 0.8 * Math.cos(pitch);
+      const halfH = Math.max(8, Math.min(42, Math.max(widthHalf, depthHalf) * 1.12));
+      activeRoomHalfH = halfH;
+      syncOrthoSize(camera, window.innerWidth, window.innerHeight, halfH);
       const halfDepth = Math.min(zone.maxZ - zz, zz - zone.minZ);
       const horiz = Math.max(1.5, Math.min(5.5, halfDepth * 0.45));
+      activeRoomHoriz = horiz;
       const dist = horiz / Math.cos(pitch);
-      camera.position.set(camX, 2 + Math.sin(pitch) * dist, zz + horiz);
-      camera.lookAt(camX, 0.8, zz);
+      camera.position.set(zx, 2 + Math.sin(pitch) * dist, zz + horiz);
+      camera.lookAt(zx, 0.8, zz);
       cameraSys._updateOcclusion(player.getPos());
     } else {
       cameraSys.update(input, player.getPos(), dt);
