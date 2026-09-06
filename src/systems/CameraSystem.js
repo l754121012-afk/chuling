@@ -5,8 +5,8 @@ export class CameraSystem {
   constructor(camera, world) {
     this.camera = camera;
     this.world = world;
-    this.yaw = -Math.PI / 4;
-    this.pitch = 1.28;
+    this.yaw = 0;
+    this.pitch = 1.42;
     this.dist = 15;
     this.raycaster = new THREE.Raycaster();
     this.raycaster.camera = camera;

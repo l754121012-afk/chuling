@@ -416,6 +416,7 @@ export class PlayerSystem {
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
 
     this._handleMovement(dt, body);
+    this._updateCurrentRoom();
     this._updateSkillRoom();
     if (this._hookTarget) {
       this._updateHook(dt, body);
@@ -441,7 +442,7 @@ export class PlayerSystem {
     if (!this.game.reviewMode && this.input.zoom !== 0) {
       this._cycleItem(this.input.zoom > 0 ? 1 : -1);
     }
-    if (this.game.whipMode && (this.input.isLeftDown() || this.input.isDown('KeyJ'))) {
+    if (this.game.whipMode && (this.input.isLeftDown() || this.input.isDown('ArrowLeft'))) {
       if (!this._tryParry()) this._doWhip();
     }
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
@@ -591,6 +592,20 @@ export class PlayerSystem {
     const b0 = course.roomBoundaries?.[0];
     const b1 = course.roomBoundaries?.[1];
     this.game.skillRoom = z < b0 ? 0 : z < b1 ? 1 : 2;
+  }
+
+  _updateCurrentRoom() {
+    if (!this.game.detentionMode || this.game.skillMode || !this.refs?.roomZones?.length) return;
+    const pos = this.getPos();
+    for (const zone of this.refs.roomZones) {
+      if (
+        pos.x >= zone.minX && pos.x <= zone.maxX &&
+        pos.z >= zone.minZ && pos.z <= zone.maxZ
+      ) {
+        this.game.currentRoom = zone.id;
+        return;
+      }
+    }
   }
 
   _syncPlayerMesh() {
@@ -821,8 +836,8 @@ export class PlayerSystem {
     let moveZ = 0;
     if (this.input.isDown('KeyW') || this.input.isDown('ArrowUp')) moveZ += 1;
     if (this.input.isDown('KeyS') || this.input.isDown('ArrowDown')) moveZ -= 1;
-    if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
-    if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
+    if (this.input.isDown('KeyD') || (this.input.isDown('ArrowRight') && !this.game.whipMode)) moveX += 1;
+    if (this.input.isDown('KeyA') || (this.input.isDown('ArrowLeft') && !this.game.whipMode)) moveX -= 1;
 
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
@@ -2105,10 +2120,10 @@ export class PlayerSystem {
       this.events.emit('aim.changed', { aiming: false, combo: false });
     }
 
-    const click = this.input.consumeClick() || this.input.justPressed('KeyF') || this.input.justPressed('KeyJ');
-    const rightDown = this.input.isRightDown() || this.input.isDown('KeyK');
-    const rightPressed = this.input.justRightPressed() || this.input.justPressed('KeyK');
-    const rightReleased = this.input.justRightReleased() || this.input.justReleased('KeyK');
+    const click = this.input.consumeClick() || this.input.justPressed('KeyF') || (this.game.whipMode && this.input.justPressed('ArrowLeft'));
+    const rightDown = this.input.isRightDown() || (this.game.whipMode && this.input.isDown('ArrowRight'));
+    const rightPressed = this.input.justRightPressed() || (this.game.whipMode && this.input.justPressed('ArrowRight'));
+    const rightReleased = this.input.justRightReleased() || (this.game.whipMode && this.input.justReleased('ArrowRight'));
     const usable = !this.game.notebookOpen && !this.game.hiding;
 
     if (this.game.whipMode) {

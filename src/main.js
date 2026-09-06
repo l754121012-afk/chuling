@@ -875,7 +875,7 @@ function tick() {
     if (course) {
       const center = course.roomCenters[Math.min(2, Math.max(0, game.skillRoom ?? game.skillStage))];
       syncOrthoSize(camera, window.innerWidth, window.innerHeight, 15);
-      camera.position.set(center.x, 32, center.z + 4);
+      camera.position.set(center.x, 34, center.z + 2);
       camera.lookAt(center.x, 0.5, center.z);
     }
   } else if (OVERVIEW_SHOT || game.reviewMode) {

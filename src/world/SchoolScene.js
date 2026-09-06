@@ -81,6 +81,7 @@ export class SchoolScene {
     this._addDoors(refs);
     this._addWestWingGadgets(refs);
     this._addSkillCourse(refs);
+    this._addWestWingRoomRoofs(refs);
     this._addRegistrationNpc(refs);
 
     this.refs = refs;
@@ -1316,6 +1317,47 @@ export class SchoolScene {
     }
   }
 
+  _addWestWingRoomRoofs(refs) {
+    if (this.L.mode !== 'westwing') return;
+    const c = this.L.classroom;
+    const pX = -10;
+    const pZ = 2.5;
+    const pZ2 = 10;
+    const zones = [
+      { id: 'duty', x: (c.minX + pX) / 2, z: (c.minZ + pZ) / 2, w: pX - c.minX, d: pZ - c.minZ },
+      { id: 'health', x: (pX + c.maxX) / 2, z: (c.minZ + pZ) / 2, w: c.maxX - pX, d: pZ - c.minZ },
+      { id: 'corridor', x: (c.minX + c.maxX) / 2, z: (pZ + pZ2) / 2, w: c.maxX - c.minX, d: pZ2 - pZ },
+      { id: 'maze', x: (c.minX + pX) / 2, z: (pZ2 + c.maxZ) / 2, w: pX - c.minX, d: c.maxZ - pZ2 },
+      { id: 'office', x: (pX + c.maxX) / 2, z: (pZ2 + c.maxZ) / 2, w: c.maxX - pX, d: c.maxZ - pZ2 }
+    ];
+    refs.roomRoofs = [];
+    refs.roomZones = [];
+    for (const zone of zones) {
+      const roof = this._box(zone.w + 0.4, 0.4, zone.d + 0.4, {
+        x: zone.x,
+        y: 6.4,
+        z: zone.z
+      }, '#05070b', { body: false }).mesh;
+      roof.visible = false;
+      refs.roomRoofs.push({ id: zone.id, mesh: roof });
+      refs.roomZones.push({
+        id: zone.id,
+        minX: zone.x - zone.w / 2,
+        maxX: zone.x + zone.w / 2,
+        minZ: zone.z - zone.d / 2,
+        maxZ: zone.z + zone.d / 2
+      });
+    }
+  }
+
+  _updateWestWingRoofs(game) {
+    const roofs = this.refs?.roomRoofs;
+    if (!roofs) return;
+    for (const roof of roofs) {
+      roof.mesh.visible = roof.id !== game.currentRoom;
+    }
+  }
+
   _updateSkillRoomRoofs(game) {
     const course = this.refs?.skillCourse;
     if (!course) return;
@@ -2278,6 +2320,7 @@ export class SchoolScene {
   update(dt, game) {
     this._updateExitRails();
     this._updateSkillRoomRoofs(game);
+    this._updateWestWingRoofs(game);
     const currentStage = game.currentStage();
     const rampage = game.deskRampageUntil > nowSec();
     if (currentStage.id === 'angry' || currentStage.id === 'furious' || currentStage.id === 'insane') {

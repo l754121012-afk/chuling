@@ -145,6 +145,7 @@ export class GameState {
     this.skillMode = false;
     this.skillStage = 0;
     this.skillRoom = 0;
+    this.currentRoom = 'duty';
     this.runMode = false;
     this.runStage = 1;
     this.reviewMode = false;
