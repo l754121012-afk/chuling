@@ -146,6 +146,10 @@ export class GameState {
     this.skillStage = 0;
     this.skillRoom = 0;
     this.currentRoom = 'duty';
+    this.roomStates = {
+      health: 'idle',
+      maze: 'idle'
+    };
     this.runMode = false;
     this.runStage = 1;
     this.reviewMode = false;

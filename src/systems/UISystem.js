@@ -15,6 +15,7 @@ export class UISystem {
     this._speechTimer = null;
     this._flashTimer = null;
     this._actCardTimer = null;
+    this._roomTypeTimer = null;
     this._parryTimer = null;
     this._wheelAngle = -30;
     this._wheelSpinTimer = null;
@@ -136,7 +137,11 @@ export class UISystem {
       bestRecord: document.getElementById('best-record'),
       actCard: document.getElementById('act-card'),
       actTitle: document.getElementById('act-title'),
-      actLine: document.getElementById('act-line')
+      actLine: document.getElementById('act-line'),
+      roomTypeCard: document.getElementById('room-type-card'),
+      roomTypeIcon: document.getElementById('room-type-icon'),
+      roomTypeTitle: document.getElementById('room-type-title'),
+      roomTypeTag: document.getElementById('room-type-tag')
     };
     this._buildInventory();
     if (this.economy?.unlocks?.phone_face) {
@@ -1170,6 +1175,7 @@ export class UISystem {
       }, 340);
     });
     this.events.on('act.card', p => this.showActCard(p.title, p.line));
+    this.events.on('room.type', p => this.showRoomTypeCard(p));
     this.events.on('ghost.telegraph', () => this.showParryHint());
     this.events.on('danmaku', p => this.showDanmaku(p.text));
     this.events.on('danmaku.burst', () => this.showDanmakuBurst());
@@ -1254,5 +1260,17 @@ export class UISystem {
     this.el.actCard.classList.remove('hidden');
     clearTimeout(this._actCardTimer);
     this._actCardTimer = setTimeout(() => this.el.actCard.classList.add('hidden'), 2400);
+  }
+
+  showRoomTypeCard(p) {
+    if (!this.el.roomTypeCard || !p) return;
+    const color = p.color || '#f4d35e';
+    this.el.roomTypeCard.style.setProperty('--room-accent', color);
+    this.el.roomTypeIcon.textContent = p.icon || p.kind || '房';
+    this.el.roomTypeTitle.textContent = p.title || '未知房间';
+    this.el.roomTypeTag.textContent = p.tag || '';
+    this.el.roomTypeCard.classList.remove('hidden');
+    clearTimeout(this._roomTypeTimer);
+    this._roomTypeTimer = setTimeout(() => this.el.roomTypeCard.classList.add('hidden'), 3000);
   }
 }

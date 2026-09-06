@@ -22,6 +22,7 @@ import { UISystem } from './systems/UISystem.js';
 import { ChainDirector } from './systems/ChainDirector.js';
 import { EconomySystem } from './systems/EconomySystem.js';
 import { RandomEventSystem } from './systems/RandomEventSystem.js';
+import { RoomSystem } from './systems/RoomSystem.js';
 import { nowSec } from './core/Utils.js';
 
 const URL_PARAMS = new URLSearchParams(window.location.search);
@@ -165,6 +166,15 @@ const randomEvents = new RandomEventSystem({
   items,
   economy
 });
+const roomSystem = new RoomSystem({
+  scene: school,
+  events,
+  game,
+  ghost,
+  player,
+  items,
+  audio
+});
 let phoneRang = false;
 let firstScareAt = 0;
 let detentionBellStep = 0;
@@ -179,6 +189,8 @@ let companionCommentAt = 0;
 let pendingRecordGuide = null;
 let pendingRunSetup = null;
 const itemGuidesShown = new Set();
+const roomTypeCardsShown = new Set();
+let lastRoomForRoomSystem = null;
 
 function beginExitCutscene(stage, autoOpen = false, afterText = null) {
   const exit = school.refs?.exit;
@@ -374,6 +386,12 @@ events.on('guide.close', () => {
     }
   }
 });
+events.on('room.skill.enter', () => {
+  const type = school.L.roomTypes?.find(t => t.id === 'ability');
+  if (!type || roomTypeCardsShown.has('ability')) return;
+  roomTypeCardsShown.add('ability');
+  events.emit('room.type', { ...type });
+});
 events.on('npc.talk', () => {
   if (game.detentionComplete) {
     if (game.detentionExitDeviceDone) {
@@ -525,6 +543,9 @@ events.on('ghost.stage', p => {
 });
 events.on('game.start', () => {
   game.reset();
+  roomTypeCardsShown.clear();
+  lastRoomForRoomSystem = null;
+  roomSystem.reset();
   itemGuidesShown.clear();
   pendingRecordGuide = null;
   bubbleCutscene = null;
@@ -808,6 +829,7 @@ function tick() {
     randomEvents.update(simDt);
     rage.update(simDt, p2, ghost.getPos());
     school.update(simDt, game);
+    roomSystem.update(simDt);
 
     const drain = game.notebookOpen
       ? GAME_CONFIG.phoneOpenDrainPerSecond
@@ -985,6 +1007,14 @@ function tick() {
       ? (school.refs?.roomZones || []).find(z => z.id === game.currentRoom)
       : null;
     if (zone) {
+      if (game.isPlaying() && lastRoomForRoomSystem !== zone.id) {
+        lastRoomForRoomSystem = zone.id;
+        if (zone.type && !roomTypeCardsShown.has(zone.id)) {
+          roomTypeCardsShown.add(zone.id);
+          events.emit('room.type', { ...zone.type, roomId: zone.id });
+        }
+        roomSystem.onZoneEnter(zone);
+      }
       const zx = (zone.minX + zone.maxX) / 2;
       const zz = (zone.minZ + zone.maxZ) / 2;
       const halfH = 12;

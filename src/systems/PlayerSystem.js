@@ -1558,6 +1558,7 @@ export class PlayerSystem {
       this.pawn.body.aabbNeedsUpdate = true;
       this.game.skillMode = true;
       this.game.skillStage = 0;
+      this.events.emit('room.skill.enter');
       this.events.emit('toast', { text: '配件试炼开始：悠悠球敲开第一扇门。', ms: 2200 });
       this.scene.spawnHitRing({ x: course.portalTarget.x, y: 0.4, z: course.portalTarget.z }, '#8ef0c8');
     } else if (target.type === 'skillFinish') {

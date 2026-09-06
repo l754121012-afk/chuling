@@ -979,6 +979,41 @@ export class SchoolScene {
       const h = doorCfg.levelY ? 1.8 : 5.2;
       const centerY = doorCfg.levelY ? doorCfg.levelY + 0.8 : 2.6;
       const box = this._box(doorCfg.w, h, doorCfg.d, { x: doorCfg.x, y: centerY, z: doorCfg.z }, '#5d6f7a');
+      const typeDef = (this.L.roomTypes || []).find(t => t.id === doorCfg.roomType);
+      let typeRing = null;
+      if (typeDef) {
+        typeRing = new THREE.Mesh(
+          new THREE.RingGeometry(0.85, 1.22, 26),
+          new THREE.MeshBasicMaterial({
+            color: typeDef.color,
+            transparent: true,
+            opacity: 0.9,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          })
+        );
+        typeRing.rotation.x = -Math.PI / 2;
+        typeRing.position.set(doorCfg.x, 0.08, doorCfg.z);
+        this.group.add(typeRing);
+        const icon = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: textTexture(typeDef.icon, {
+              bg: '#1c242c',
+              fg: typeDef.color,
+              font: 'bold 42px "Microsoft YaHei", sans-serif',
+              width: 160,
+              height: 160,
+              lineHeight: 92,
+              pad: 6
+            }),
+            transparent: true,
+            depthWrite: false
+          })
+        );
+        icon.position.set(0, h / 2 + 1.18, 0);
+        icon.scale.set(0.66, 0.66, 1);
+        box.mesh.add(icon);
+      }
       const sign = new THREE.Sprite(
         new THREE.SpriteMaterial({
           map: textTexture(doorCfg.label || '门禁', {
@@ -1026,7 +1061,9 @@ export class SchoolScene {
         locked: !!doorCfg.locked,
         unlockEvent: doorCfg.unlockEvent || null,
         requireClue: doorCfg.requireClue || null,
-        openable: !!doorCfg.openable
+        openable: !!doorCfg.openable,
+        typeRing,
+        typeColor: typeDef?.color || null
       };
       this._applyDoorLock(doorRef, doorRef.locked);
       refs.doors.push(doorRef);
@@ -1330,6 +1367,7 @@ export class SchoolScene {
       { id: 'maze', x: (c.minX + pX) / 2, z: (pZ2 + c.maxZ) / 2, w: pX - c.minX, d: c.maxZ - pZ2 },
       { id: 'office', x: (pX + c.maxX) / 2, z: (pZ2 + c.maxZ) / 2, w: c.maxX - pX, d: c.maxZ - pZ2 }
     ];
+    const typeById = Object.fromEntries((this.L.roomTypes || []).map(t => [t.id, t]));
     refs.roomRoofs = [];
     refs.roomZones = [];
     for (const zone of zones) {
@@ -1348,7 +1386,58 @@ export class SchoolScene {
         minX: zone.x - zone.w / 2,
         maxX: zone.x + zone.w / 2,
         minZ: zone.z - zone.d / 2,
-        maxZ: zone.z + zone.d / 2
+        maxZ: zone.z + zone.d / 2,
+        type: typeById[zone.id] || null
+      });
+    }
+
+    refs.mazeLaunchers = [];
+    for (const launcher of this.L.mazeLaunchers || []) {
+      const group = new THREE.Group();
+      const horizontal = launcher.axis === 'x';
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(horizontal ? 1.4 : 0.8, 0.75, horizontal ? 0.8 : 1.4),
+        material('#6a4535', 0.9)
+      );
+      base.position.y = 0.42;
+      const barrel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.13, 0.2, 1.6, 9),
+        material('#ffd166', 0.95)
+      );
+      barrel.rotation.x = Math.PI / 2;
+      if (horizontal) barrel.rotation.z = -Math.PI / 2;
+      barrel.position.y = 0.92;
+      const tip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 10, 8),
+        new THREE.MeshBasicMaterial({ color: '#ff6b6b' })
+      );
+      tip.position.set(horizontal ? launcher.dir * 0.85 : 0, 0.95, horizontal ? 0 : launcher.dir * 0.85);
+      const sign = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture('纸卷发射口', {
+            bg: '#4a2410',
+            fg: '#ffe2b8',
+            font: 'bold 28px "Microsoft YaHei", sans-serif',
+            width: 340,
+            height: 78,
+            lineHeight: 34,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sign.position.y = 1.9;
+      sign.scale.set(1.55, 0.42, 1);
+      group.add(base, barrel, tip, sign);
+      group.position.set(launcher.x, 0, launcher.z);
+      this.group.add(group);
+      refs.mazeLaunchers.push({
+        x: launcher.x,
+        z: launcher.z,
+        axis: launcher.axis,
+        dir: launcher.dir,
+        group
       });
     }
   }

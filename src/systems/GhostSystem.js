@@ -347,6 +347,7 @@ export class GhostSystem {
 
   _maybeSpawnMinionWave() {
     if (this.game.phase !== 'investigate' || !this.game.isPlaying()) return;
+    if (this.game.detentionMode) return;
     const firstAt = this.scene.L.minionWaveFirstAt ?? GAME_CONFIG.minionWaveFirstAt;
     const intervalMin = this.scene.L.minionWaveIntervalMin ?? GAME_CONFIG.minionWaveIntervalMin;
     const intervalMax = this.scene.L.minionWaveIntervalMax ?? GAME_CONFIG.minionWaveIntervalMax;
@@ -367,14 +368,67 @@ export class GhostSystem {
     this.events.emit('danmaku', { text: '它们开始巡楼了！！' });
   }
 
-  _spawnMinion() {
+  _randomRectPoint(rect, margin = 1.6) {
+    return {
+      x: rand(rect.minX + margin, rect.maxX - margin),
+      z: rand(rect.minZ + margin, rect.maxZ - margin)
+    };
+  }
+
+  _nextMinionWaypoint(m) {
+    return m.roomRect
+      ? this._randomRectPoint(m.roomRect, 1.5)
+      : this._randomPlayablePoint(2);
+  }
+
+  spawnRoomMinions(rect, count = 2, opts = {}) {
+    for (let i = 0; i < count; i++) {
+      this._spawnMinion({
+        rect,
+        tag: opts.tag || 'health',
+        noExpire: true,
+        hp: opts.hp || 6,
+        color: opts.color || '#ff8fa3'
+      });
+    }
+    this.audio?.play('ghost');
+  }
+
+  getMinionCount(tag = null) {
+    if (!tag) return this._minions.length;
+    return this._minions.filter(m => m.tag === tag).length;
+  }
+
+  clearRoomMinions(tag = null) {
+    for (let i = this._minions.length - 1; i >= 0; i--) {
+      const m = this._minions[i];
+      if (tag && m.tag !== tag) continue;
+      this.scene.group.remove(m.group);
+      this._minions.splice(i, 1);
+    }
+  }
+
+  _spawnMinion(opts = {}) {
+    const rect = opts.rect || null;
     const p = this.playerPos();
-    let spot = this._randomPlayablePoint(2);
-    for (let i = 0; i < 24; i++) {
-      const c = this._randomPlayablePoint(2);
-      if (distance2D(c.x, c.z, p.x, p.z) > 5.5) {
-        spot = c;
-        break;
+    let spot = null;
+    if (rect) {
+      spot = this._randomRectPoint(rect, 2.4);
+      for (let i = 0; i < 22; i++) {
+        const c = this._randomRectPoint(rect, 2.4);
+        if (distance2D(c.x, c.z, p.x, p.z) > 4.5) {
+          spot = c;
+          break;
+        }
+      }
+    } else {
+      spot = this._randomPlayablePoint(2);
+      for (let i = 0; i < 24; i++) {
+        const c = this._randomPlayablePoint(2);
+        if (distance2D(c.x, c.z, p.x, p.z) > 5.5) {
+          spot = c;
+          break;
+        }
       }
     }
     const mesh = makeGhostMesh(false);
@@ -383,26 +437,30 @@ export class GhostSystem {
     this.scene.group.add(mesh);
     const ghostMat = mesh.userData?.ghostMat;
     if (ghostMat) {
-      ghostMat.color.setHex(0x73d5cf);
+      ghostMat.color.setHex(opts.color || 0x73d5cf);
       ghostMat.transparent = true;
       ghostMat.opacity = 0.88;
     }
     const aura = mesh.userData?.aura;
     if (aura) {
-      aura.material.color.setHex(0x46d5c5);
+      aura.material.color.setHex(opts.color || 0x46d5c5);
       aura.material.opacity = 0.22;
     }
     const minion = {
       group: mesh,
       x: spot.x,
       z: spot.z,
-      waypoint: this._randomPlayablePoint(2),
+      waypoint: rect ? this._randomRectPoint(rect, 1.8) : this._randomPlayablePoint(2),
       speed: GAME_CONFIG.minionPatrolSpeed,
       state: 'patrol',
       born: nowSec(),
       lifetime: GAME_CONFIG.minionLifetime,
+      noExpire: !!opts.noExpire,
+      tag: opts.tag || null,
+      roomRect: rect,
+      color: opts.color || 0x73d5cf,
       bob: Math.random() * Math.PI * 2,
-      hp: 6,
+      hp: opts.hp || 6,
       flashUntil: 0,
       hugDir: Math.random() < 0.5 ? -1 : 1,
       hugUntil: 0,
@@ -432,6 +490,7 @@ export class GhostSystem {
       this.scene.group.remove(m.group);
       this.scene.spawnParticles({ x: m.x, y: 1, z: m.z }, '#9b8cff');
       this._minions = this._minions.filter(x => x !== m);
+      this.events.emit('minion.killed', { tag: m.tag || null });
       this.audio?.play('slap');
       this.events.emit('toast', { text: '巡逻幽灵被打散了！', ms: 1300 });
       this.events.emit('danmaku', { text: choice(['幽灵护卫倒了一个！', '它又少了条腿！']) });
@@ -448,7 +507,7 @@ export class GhostSystem {
     for (let i = this._minions.length - 1; i >= 0; i--) {
       const m = this._minions[i];
       const age = nowSec() - m.born;
-      if (age >= m.lifetime || !this.game.isPlaying() || this.game.phase !== 'investigate') {
+      if ((!m.noExpire && age >= m.lifetime) || !this.game.isPlaying() || this.game.phase !== 'investigate') {
         this.scene.group.remove(m.group);
         this.scene.spawnParticles({ x: m.x, y: 1, z: m.z }, '#9b8cff');
         this._minions.splice(i, 1);
@@ -471,7 +530,7 @@ export class GhostSystem {
         speed = GAME_CONFIG.minionChaseSpeed;
       } else if (m.state === 'chase' && dist > GAME_CONFIG.minionDetectRadius + 4) {
         nextState = 'patrol';
-        m.waypoint = this._randomPlayablePoint(2);
+        m.waypoint = this._nextMinionWaypoint(m);
         target = m.waypoint;
         speed = GAME_CONFIG.minionPatrolSpeed;
       }
@@ -500,7 +559,7 @@ export class GhostSystem {
       }
       const arrived = this._minionSteer(m, target.x, target.z, speed, dt);
       if (arrived && m.state !== 'chase') {
-        m.waypoint = this._randomPlayablePoint(2);
+        m.waypoint = this._nextMinionWaypoint(m);
       }
       if (m.flashUntil > nowSec()) {
         const flashScale = 0.62 + Math.sin(nowSec() * 30) * 0.08;
@@ -521,24 +580,28 @@ export class GhostSystem {
   _paintMinion(m) {
     const ghostMat = m.group.userData?.ghostMat;
     const aura = m.group.userData?.aura;
+    const calm = m.color || 0x73d5cf;
+    const angry = m.color || 0xff8fa3;
+    const calmAura = m.color || 0x46d5c5;
+    const angryAura = m.color || 0xff5d7a;
     if (m.state === 'chase') {
       if (ghostMat) {
-        ghostMat.color.setHex(0xff8fa3);
+        ghostMat.color.setHex(angry);
         ghostMat.emissive.setHex(0x8f2233);
         ghostMat.emissiveIntensity = 0.6;
       }
       if (aura) {
-        aura.material.color.setHex(0xff5d7a);
+        aura.material.color.setHex(angryAura);
         aura.material.opacity = 0.5;
       }
     } else {
       if (ghostMat) {
-        ghostMat.color.setHex(0x73d5cf);
+        ghostMat.color.setHex(calm);
         ghostMat.emissive.setHex(0x0f5f5a);
         ghostMat.emissiveIntensity = 0.2;
       }
       if (aura) {
-        aura.material.color.setHex(0x46d5c5);
+        aura.material.color.setHex(calmAura);
         aura.material.opacity = 0.22;
       }
     }
@@ -571,7 +634,7 @@ export class GhostSystem {
     const nx = m.x + Math.sin(angle) * speed * dt;
     const nz = m.z + Math.cos(angle) * speed * dt;
     if (!this._isInsidePlayable(nx, nz, 0.2)) {
-      m.waypoint = this._randomPlayablePoint(2);
+      m.waypoint = this._nextMinionWaypoint(m);
       m.hugUntil = nowSec() + 0.8;
       return false;
     }

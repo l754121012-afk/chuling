@@ -5,6 +5,56 @@ function westWingConfig() {
   cfg.mode = 'westwing';
 
   cfg.classroom = { minX: -24, maxX: 24, minZ: -12, maxZ: 24 };
+  cfg.roomTypes = [
+    {
+      id: 'duty',
+      kind: 'safe',
+      icon: '休',
+      color: '#7bd88f',
+      title: '安全房 · 值班登记台',
+      tag: '充电、贴纸台和下一段路线都从这里开始。'
+    },
+    {
+      id: 'health',
+      kind: 'combat',
+      icon: '战',
+      color: '#ff6b6b',
+      title: '清场房 · 保健室点名区',
+      tag: '程老师把“问题学生”都关在这间屋里点名。'
+    },
+    {
+      id: 'corridor',
+      kind: 'clock',
+      icon: '钟',
+      color: '#f4d35e',
+      title: '钟表房 · 中央过道',
+      tag: '值日表、铃声和上下层的窗口都卡在这条道上。'
+    },
+    {
+      id: 'maze',
+      kind: 'trap',
+      icon: '险',
+      color: '#f4a261',
+      title: '陷阱房 · 禁闭隔间迷宫',
+      tag: '纸卷和粉笔灰会替程老师检查你走路够不够规矩。'
+    },
+    {
+      id: 'office',
+      kind: 'ritual',
+      icon: '判',
+      color: '#b388eb',
+      title: '仪式房 · 档案改判室',
+      tag: '三道档案锁里锁着同一份没写完的处分记录。'
+    },
+    {
+      id: 'ability',
+      kind: 'ability',
+      icon: '练',
+      color: '#4cc9f0',
+      title: '能力房 · 配件试炼',
+      tag: '悠悠球和卷尺钩爪在这里各自有一道开门的题。'
+    }
+  ];
   cfg.corridor = { minX: -24, maxX: 24, minZ: 2, maxZ: 8 };
   cfg.playerStart = { x: -19, z: -6 };
   cfg.ghostSpawn = { x: 15, z: -8 };
@@ -83,6 +133,11 @@ function westWingConfig() {
     { x: 0, z: 6.5, w: 2.4, d: 1.6, label: '洒落的修正带', rate: 12 },
     { x: -5, z: 15, w: 3, d: 2.2, label: '碎粉笔灰', rate: 12 }
   ];
+  cfg.mazeLaunchers = [
+    { x: -14, z: 15, axis: 'x', dir: 1 },
+    { x: -20, z: 19, axis: 'z', dir: -1 },
+    { x: -11, z: 23, axis: 'x', dir: 1 }
+  ];
   cfg.doors = [
     {
       id: 'start_door',
@@ -91,6 +146,7 @@ function westWingConfig() {
       w: 4,
       d: 0.3,
       label: '值班室大门',
+      roomType: 'corridor',
       locked: true,
       openable: true
     },
@@ -101,6 +157,7 @@ function westWingConfig() {
       w: 0.5,
       d: 4.35,
       label: '保健室隔断门',
+      roomType: 'health',
       locked: true,
       requireClue: 'note'
     },
@@ -111,6 +168,7 @@ function westWingConfig() {
       w: 4,
       d: 0.3,
       label: '右侧下层门',
+      roomType: 'health',
       locked: true,
       requireClue: 'note'
     },
@@ -121,6 +179,7 @@ function westWingConfig() {
       w: 4,
       d: 0.3,
       label: '迷宫侧门',
+      roomType: 'maze',
       locked: true,
       requireClue: 'note'
     },
@@ -131,6 +190,7 @@ function westWingConfig() {
       w: 4,
       d: 0.3,
       label: '档案阁东门',
+      roomType: 'office',
       locked: true,
       requireClue: 'note'
     },
@@ -141,6 +201,7 @@ function westWingConfig() {
       w: 8,
       d: 0.3,
       label: '试炼·悠悠门',
+      roomType: 'ability',
       locked: true,
       skillOnly: true
     },
@@ -151,6 +212,7 @@ function westWingConfig() {
       w: 8,
       d: 0.3,
       label: '试炼·钩爪门',
+      roomType: 'ability',
       locked: true,
       skillOnly: true
     }
