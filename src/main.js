@@ -987,13 +987,21 @@ function tick() {
     if (zone) {
       const zx = (zone.minX + zone.maxX) / 2;
       const zz = (zone.minZ + zone.maxZ) / 2;
-      syncOrthoSize(camera, window.innerWidth, window.innerHeight, 12);
+      const halfH = 12;
+      syncOrthoSize(camera, window.innerWidth, window.innerHeight, halfH);
+      const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+      const halfW = halfH * aspect;
+      const roomW = zone.maxX - zone.minX;
+      const playerX = player.getPos().x;
+      const camX = roomW <= halfW * 2
+        ? zx
+        : Math.max(zone.minX + halfW, Math.min(zone.maxX - halfW, playerX));
       const pitch = cameraSys.pitch;
       const halfDepth = Math.min(zone.maxZ - zz, zz - zone.minZ);
       const horiz = Math.max(1.5, Math.min(5.5, halfDepth * 0.45));
       const dist = horiz / Math.cos(pitch);
-      camera.position.set(zx, 2 + Math.sin(pitch) * dist, zz + horiz);
-      camera.lookAt(zx, 0.8, zz);
+      camera.position.set(camX, 2 + Math.sin(pitch) * dist, zz + horiz);
+      camera.lookAt(camX, 0.8, zz);
       cameraSys._updateOcclusion(player.getPos());
     } else {
       cameraSys.update(input, player.getPos(), dt);

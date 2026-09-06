@@ -717,8 +717,8 @@ export class PlayerSystem {
       let moveZ = 0;
       if (this.input.isDown('KeyW')) moveZ += 1;
       if (this.input.isDown('KeyS')) moveZ -= 1;
-      if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
-      if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
+      if (this.input.isDown('KeyD')) moveX += 1;
+      if (this.input.isDown('KeyA')) moveX -= 1;
       const yaw = this.camera.yaw;
       const fwdX = -Math.sin(yaw);
       const fwdZ = -Math.cos(yaw);
@@ -749,8 +749,8 @@ export class PlayerSystem {
       let moveZ = 0;
       if (this.input.isDown('KeyW')) moveZ += 1;
       if (this.input.isDown('KeyS')) moveZ -= 1;
-      if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
-      if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
+      if (this.input.isDown('KeyD')) moveX += 1;
+      if (this.input.isDown('KeyA')) moveX -= 1;
       const yaw = this.camera.yaw;
       const fwdX = -Math.sin(yaw);
       const fwdZ = -Math.cos(yaw);
@@ -836,8 +836,8 @@ export class PlayerSystem {
     let moveZ = 0;
     if (this.input.isDown('KeyW')) moveZ += 1;
     if (this.input.isDown('KeyS')) moveZ -= 1;
-    if (this.input.isDown('KeyD') || (this.input.isDown('ArrowRight') && !this.game.whipMode)) moveX += 1;
-    if (this.input.isDown('KeyA') || (this.input.isDown('ArrowLeft') && !this.game.whipMode)) moveX -= 1;
+    if (this.input.isDown('KeyD')) moveX += 1;
+    if (this.input.isDown('KeyA')) moveX -= 1;
 
     const yaw = this.camera.yaw;
     const fwdX = -Math.sin(yaw);
@@ -2671,8 +2671,8 @@ export class PlayerSystem {
     let moveZ = 0;
     if (this.input.isDown('KeyW')) moveZ += 1;
     if (this.input.isDown('KeyS')) moveZ -= 1;
-    if (this.input.isDown('KeyD') || this.input.isDown('ArrowRight')) moveX += 1;
-    if (this.input.isDown('KeyA') || this.input.isDown('ArrowLeft')) moveX -= 1;
+    if (this.input.isDown('KeyD')) moveX += 1;
+    if (this.input.isDown('KeyA')) moveX -= 1;
     const fwdX = -Math.sin(yaw);
     const fwdZ = -Math.cos(yaw);
     const rightX = Math.cos(yaw);

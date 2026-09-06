@@ -56,7 +56,7 @@ export class InputSystem {
   }
 
   _onKeyDown(e) {
-    if (['Tab', 'Space', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+    if (['Tab', 'Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
     if (e.repeat) return;
     if (!this.keys.has(e.code)) this._pressed.add(e.code);
     this.keys.add(e.code);
