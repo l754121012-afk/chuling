@@ -127,6 +127,15 @@ export class GameState {
     this.archiveSwitches = [false, false, false];
     this.archiveSwitchCount = 0;
     this.autoDeviceSeen = false;
+    this.runRiskId = null;
+    this.runStickers = [];
+    this.runPenBoost = 0;
+    this.runWhipBoost = 0;
+    this.runComboBonus = 0;
+    this.runLucky = 0;
+    this.runWalkPenalty = 1;
+    this.runSettlementPenalty = 1;
+    this.runStaminaRegenBonus = 0;
     this.runMode = false;
     this.runStage = 1;
     this.reviewMode = false;
@@ -159,6 +168,10 @@ export class GameState {
 
   hasClue(id) {
     return this.clues.has(id);
+  }
+
+  hasSticker(id) {
+    return Array.isArray(this.runStickers) && this.runStickers.includes(id);
   }
 
   addNote(id, category, title, text) {

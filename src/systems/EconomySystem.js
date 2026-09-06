@@ -131,6 +131,8 @@ export class EconomySystem {
     const ratingBonus = { S: 10, A: 6, B: 3, C: 1, D: 0 }[settlement.rating] || 0;
     let points = Math.max(0, Math.floor(settlement.total / 500)) + ratingBonus;
     if (game.doublePoints) points *= 2;
+    const penalty = game.runSettlementPenalty ?? 1;
+    points = Math.floor(points * penalty);
     let chance = 0.04 + ratingBonus * 0.02;
     if (game.finisherDone) chance += 0.25;
     if (game.parryCount >= 3) chance += 0.15;
@@ -139,7 +141,8 @@ export class EconomySystem {
     chance = Math.min(0.95, chance);
     const guaranteed = settlement.rating === 'S' && game.finisherDone;
     const relics = guaranteed ? 1 : Math.random() < chance ? 1 : 0;
-    const coins = Math.max(0, Math.floor(settlement.total / 100));
+    let coins = Math.max(0, Math.floor(settlement.total / 100));
+    coins = Math.floor(coins * penalty);
     this._lastRunCoins = Math.max(100, coins);
     this.state.coins += coins;
     this.state.points += points;

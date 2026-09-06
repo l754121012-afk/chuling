@@ -825,7 +825,8 @@ export class PlayerSystem {
     this.crouching = this.input.isDown('KeyC') || this.input.isDown('ControlLeft');
     const baseSpeed = canSprint ? GAME_CONFIG.sprintSpeed : GAME_CONFIG.walkSpeed;
     const speedBoost = this.game.speedBoostUntil > nowSec() ? 1.3 : 1;
-    const speed = baseSpeed * speedBoost * (sticky ? 0.6 : 1) * (this.crouching ? 0.55 : 1);
+    const runPenalty = this.game.runWalkPenalty ?? 1;
+    const speed = baseSpeed * speedBoost * (sticky ? 0.6 : 1) * (this.crouching ? 0.55 : 1) * runPenalty;
 
     body.velocity.set(dirX * speed, body.velocity.y, dirZ * speed);
     body.wakeUp();
@@ -901,7 +902,7 @@ export class PlayerSystem {
       );
     } else {
       this.game.stamina = clamp(
-        this.game.stamina + (GAME_CONFIG.staminaRegenPerSecond + this.game.staminaRegenBonus) * dt,
+        this.game.stamina + (GAME_CONFIG.staminaRegenPerSecond + this.game.staminaRegenBonus + (this.game.runStaminaRegenBonus || 0)) * dt,
         0,
         this.game.staminaMax
       );
@@ -2080,7 +2081,7 @@ export class PlayerSystem {
     this.ghost.knockback(hitX * kb, hitZ * kb, 0.55);
     this.ghost._spinTimer = 1.2;
     this.ghost._dashFlash = 0.4;
-    this.ghost.damage(3, { rage: 0 });
+    this.ghost.damage(3 + (this.game.runWhipBoost || 0), { rage: 0 });
     this.react('heavy');
     this.rage.add(10, 'heavy');
     this.events.emit('hitstop', { ms: 90 });
@@ -2329,7 +2330,7 @@ export class PlayerSystem {
     this.game.whipCombo += 1;
     this.game.whipHits += 1;
     this.game.maxWhipCombo = Math.max(this.game.maxWhipCombo, this.game.whipCombo);
-    this.game.whipComboUntil = nowSec() + GAME_CONFIG.whipComboWindow;
+    this.game.whipComboUntil = nowSec() + GAME_CONFIG.whipComboWindow + (this.game.runComboBonus || 0);
     const combo = this.game.whipCombo;
     const rageAmount = GAME_CONFIG.whipRageBase + (combo >= 10 ? 8 : combo >= 5 ? 5 : 0);
     this.rage.add(rageAmount, 'whip');
@@ -2344,7 +2345,7 @@ export class PlayerSystem {
     this.ghost._spinTimer = GAME_CONFIG.whipSpinDuration;
     this.ghost._spinDir = dx >= 0 ? 1 : -1;
     this.ghost._dashFlash = 0.25;
-    this.ghost.damage(1, { rage: 0 });
+    this.ghost.damage(1 + (this.game.runWhipBoost || 0), { rage: 0 });
     this.react('whip');
     this.audio?.play('whip');
     this.scene.spawnSlashTrail(

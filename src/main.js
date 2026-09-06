@@ -168,6 +168,7 @@ let bubbleIntroShown = false;
 let explainPauseUntil = 0;
 let companionCommentAt = 0;
 let pendingRecordGuide = null;
+let pendingRunSetup = null;
 const itemGuidesShown = new Set();
 
 function beginExitCutscene(stage, autoOpen = false, afterText = null) {
@@ -217,6 +218,32 @@ function flushPendingGuide() {
   input.allowLock = false;
   ui.showItemGuide(pendingRecordGuide);
   pendingRecordGuide = null;
+}
+
+function applyPendingRunSetup(g) {
+  if (!pendingRunSetup) return;
+  g.runRiskId = pendingRunSetup.riskId;
+  g.runStickers = pendingRunSetup.stickerIds || [];
+  pendingRunSetup = null;
+
+  const r = g.runRiskId;
+  const stickers = new Set(g.runStickers);
+  if (r === 'pen_case' || stickers.has('sticker_pen')) g.runPenBoost += 2;
+  if (r === 'bento_case') {
+    g.staminaMax += 15;
+    g.stamina = Math.min(g.staminaMax, g.stamina + 15);
+  }
+  if (r === 'charger_case') g.batteryMax += 30;
+  if (r === 'chalk_case') g.rage = Math.max(g.rage, 12);
+  if (r === 'slow_case') g.runWalkPenalty = 0.85;
+  if (r === 'wallet_case') g.runSettlementPenalty = 0.7;
+  if (r === 'scream_case') g.runStaminaRegenBonus += 4;
+  if (r === 'copy_case') g.runLucky = Math.max(g.runLucky, 0.12);
+  if (r === 'note_case') g.runLucky = Math.max(g.runLucky, 0.18);
+  if (stickers.has('sticker_regen')) g.runStaminaRegenBonus += 4;
+  if (stickers.has('sticker_whip')) g.runWhipBoost += 1;
+  if (stickers.has('sticker_combo')) g.runComboBonus += 1;
+  if (stickers.has('sticker_lucky')) g.runLucky += 0.12;
 }
 
 function capture4k() {
@@ -273,6 +300,13 @@ events.on('companion.react', p => {
     x: screen.x,
     y: screen.y - 30
   });
+});
+events.on('run.setup.confirm', p => {
+  pendingRunSetup = {
+    riskId: p?.riskId || null,
+    stickerIds: Array.isArray(p?.stickerIds) ? p.stickerIds : []
+  };
+  events.emit('game.start');
 });
 events.on('review.toggle', () => {
   game.reviewMode = !game.reviewMode;
@@ -487,6 +521,7 @@ events.on('game.start', () => {
   player.resetHiding();
   game.addItem('pen', 2);
   economy.applyRunMods(game);
+  applyPendingRunSetup(game);
   game.equipped = 'pen';
   items.resetBackup();
   items.syncHand();
@@ -920,7 +955,7 @@ try {
   allowAutoStart = false;
 }
 if ((DETENTION_MODE || RUN_MODE) && DETENTION_AUTO && allowAutoStart) {
-  setTimeout(() => events.emit('game.start'), 180);
+  setTimeout(() => ui.openRunSetup(), 180);
 }
 ui.sync(game);
 tick();

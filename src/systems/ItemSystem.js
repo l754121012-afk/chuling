@@ -200,7 +200,11 @@ export class ItemSystem {
   }
 
   _throwItem(def, combo) {
-    if (!this.game.consumeItem(def.id, 1)) return;
+    const luckyCopy = (this.game.runLucky || 0) > Math.random();
+    if (!luckyCopy && !this.game.consumeItem(def.id, 1)) return;
+    if (luckyCopy) {
+      this.events.emit('toast', { text: '便利贴悄悄复制了一份！', ms: 1200 });
+    }
     if (combo) {
       this.game.usedItems.push(def.id);
       this.events.emit('toast', { text: `${combo.name}！飞出去了！`, ms: 1400 });
@@ -331,13 +335,15 @@ export class ItemSystem {
       this._removeProjectile(proj);
       return;
     }
-    this.ghost.damage(proj.def.damage || 1, proj.def);
+    let amount = proj.def.damage || 1;
+    if (proj.def.id === 'pen') amount += this.game.runPenBoost || 0;
+    this.ghost.damage(amount, proj.def);
     this.events.emit('noise', { pos: hitPos, radius: 10, rage: 0 });
     this.events.emit('hitstop', { ms: 50 });
     this.scene.spawnParticles(hitPos, '#ffe08a');
     this.scene.spawnHitRing(hitPos, '#ffe08a');
     this.events.emit('toast', {
-      text: `${proj.def.name} 命中了！灵体值 -${proj.def.damage || 0}`,
+      text: `${proj.def.name} 命中了！灵体值 -${amount}`,
       ms: 1300
     });
     this._removeProjectile(proj);

@@ -2,6 +2,7 @@ import { ITEM_DEFS } from '../config/items.js';
 import { GAME_CONFIG } from '../config/game.js';
 import { CLUE_TEXT, DETENTION_CLUE_TEXT } from './ClueSystem.js';
 import { POINTS_SHOP, RELIC_SHOP } from './EconomySystem.js';
+import { RISK_TILES, STICKER_DEFS } from '../config/runSetup.js';
 
 export class UISystem {
   constructor(game, events, economy) {
@@ -20,6 +21,8 @@ export class UISystem {
     this._wheelSpinning = false;
     this._gachaBusy = false;
     this._gachaTimer = null;
+    this._selectedRiskId = null;
+    this._selectedStickerIds = [];
     this._registerEvents();
   }
 
@@ -96,6 +99,14 @@ export class UISystem {
       guideTitle: document.getElementById('guide-title'),
       guideSteps: document.getElementById('guide-steps'),
       guideClose: document.getElementById('guide-close'),
+      runSetupModal: document.getElementById('run-setup-modal'),
+      runSetupClose: document.querySelector('.run-setup-close'),
+      riskGrid: document.getElementById('risk-grid'),
+      riskSummary: document.getElementById('risk-summary'),
+      stickerGrid: document.getElementById('sticker-grid'),
+      stickerSummary: document.getElementById('sticker-summary'),
+      stickerSlotCount: document.getElementById('sticker-slot-count'),
+      runCommitBtn: document.getElementById('run-commit-btn'),
       settlementRows: document.getElementById('settlement-rows'),
       settlementTotal: document.getElementById('settlement-total'),
       settlementLine: document.getElementById('settlement-line'),
@@ -136,8 +147,10 @@ export class UISystem {
     }
 
     document.getElementById('start-btn').addEventListener('click', () => {
-      this.events.emit('game.start');
+      this.openRunSetup();
     });
+    this.el.runSetupClose?.addEventListener('click', () => this.closeRunSetup());
+    this.el.runCommitBtn?.addEventListener('click', () => this.confirmRunSetup());
     for (const id of ['restart-win', 'restart-lose']) {
       document.getElementById(id).addEventListener('click', () => location.reload());
     }
@@ -164,6 +177,87 @@ export class UISystem {
     this.showBest();
     this.renderEconomyBalance();
     this.renderCaseBoard();
+  }
+
+  openRunSetup() {
+    if (!this.el.runSetupModal) return;
+    this._selectedRiskId = null;
+    this._selectedStickerIds = [];
+    this._renderRiskGrid();
+    this._renderStickerGrid();
+    this.el.runSetupModal.classList.remove('hidden');
+  }
+
+  closeRunSetup() {
+    this.el.runSetupModal?.classList.add('hidden');
+  }
+
+  confirmRunSetup() {
+    this.events.emit('run.setup.confirm', {
+      riskId: this._selectedRiskId,
+      stickerIds: this._selectedStickerIds.slice()
+    });
+    this.closeRunSetup();
+  }
+
+  _renderRiskGrid() {
+    const grid = this.el.riskGrid;
+    const summary = this.el.riskSummary;
+    if (!grid) return;
+    grid.innerHTML = '';
+    const shuffled = RISK_TILES.slice().sort(() => Math.random() - 0.5);
+    for (const tile of shuffled) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'risk-tile';
+      btn.textContent = '?';
+      btn.addEventListener('click', () => {
+        if (this._selectedRiskId || btn.classList.contains('flipped')) return;
+        this._selectedRiskId = tile.id;
+        btn.classList.add('flipped');
+        btn.innerHTML = '';
+        const kind = document.createElement('span');
+        kind.className = 'risk-kind';
+        kind.textContent = `${tile.kind} · ${tile.name}`;
+        const desc = document.createElement('span');
+        desc.textContent = tile.desc;
+        btn.append(kind, desc);
+        if (summary) summary.textContent = `${tile.kind} · ${tile.name}：${tile.desc}`;
+      });
+      grid.appendChild(btn);
+    }
+  }
+
+  _renderStickerGrid() {
+    const grid = this.el.stickerGrid;
+    const summary = this.el.stickerSummary;
+    const count = this.el.stickerSlotCount;
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (const sticker of STICKER_DEFS) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'sticker-chip';
+      chip.innerHTML = `<span class="sticker-icon">${sticker.icon}</span>${sticker.name}`;
+      chip.addEventListener('click', () => {
+        const idx = this._selectedStickerIds.indexOf(sticker.id);
+        if (idx >= 0) {
+          this._selectedStickerIds.splice(idx, 1);
+        } else if (this._selectedStickerIds.length < 3) {
+          this._selectedStickerIds.push(sticker.id);
+        } else {
+          return;
+        }
+        chip.classList.toggle('selected', this._selectedStickerIds.includes(sticker.id));
+        if (count) count.textContent = `${this._selectedStickerIds.length}/3`;
+        if (summary) {
+          summary.textContent = this._selectedStickerIds.length
+            ? STICKER_DEFS.filter(s => this._selectedStickerIds.includes(s.id)).map(s => s.name).join('、')
+            : '还没贴贴纸';
+        }
+      });
+      grid.appendChild(chip);
+    }
   }
 
   saveBest(game, settlement) {

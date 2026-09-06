@@ -1714,6 +1714,108 @@ body.playing #shot-tools {
   animation: wheelJiggle 0.13s ease-in-out infinite;
 }
 
+#run-setup-modal .run-setup-card {
+  width: min(620px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+#run-setup-modal .setup-sub {
+  margin: 14px 4px 8px;
+  color: #d9e2ec;
+  font-size: 13px;
+}
+
+#run-setup-modal .setup-summary {
+  min-height: 18px;
+  margin: 8px 4px 2px;
+  color: #ffe08a;
+  font-size: 13px;
+}
+
+#risk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.risk-tile {
+  aspect-ratio: 1 / 1;
+  border: 1px solid #6a7480;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #26313c, #161d25);
+  color: #e9eef3;
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.risk-tile.flipped {
+  background: #1c342c;
+  border-color: #8ef0c8;
+  font-size: 14px;
+  line-height: 1.25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  gap: 4px;
+}
+
+.risk-tile.flipped .risk-kind {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.risk-tile.flipped .risk-name {
+  font-weight: 800;
+}
+
+#sticker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sticker-chip {
+  width: 108px;
+  padding: 8px 6px;
+  border: 1px solid #4f5b68;
+  border-radius: 8px;
+  background: #202832;
+  color: #f4efe4;
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sticker-chip .sticker-icon {
+  display: block;
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.sticker-chip.selected {
+  border-color: #ffe08a;
+  background: #4a3b1d;
+  box-shadow: 0 0 10px rgba(255, 224, 138, 0.25);
+}
+
+#run-commit-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 0;
+  border: 0;
+  border-radius: 8px;
+  background: #2f9e6e;
+  color: #f3fff8;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 @keyframes wheelJiggle {
   0%, 100% { transform: translate(0, 0); }
   20% { transform: translate(-2px, 1px); }
