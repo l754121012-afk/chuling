@@ -87,6 +87,9 @@ export class PlayerSystem {
     this._companionNextIdleAt = 0;
     this._companionAutoUntil = 0;
     this._companionAutoNextAt = 0;
+    this.accessoryIndex = 0;
+    this.accessoryCooldownUntil = 0;
+    this._hookTarget = null;
     this._bubbleStart = 0;
     this._bubbleDur = 0.52;
     this._bubbleFrom = null;
@@ -99,6 +102,9 @@ export class PlayerSystem {
     events.on('game.start', () => {
       this._companionAutoUntil = 0;
       this._companionAutoNextAt = 0;
+      this.accessoryIndex = 0;
+      this.accessoryCooldownUntil = 0;
+      this._hookTarget = null;
     });
     events.on('vote.choose', i => this._resolveVote(i));
   }
@@ -410,6 +416,11 @@ export class PlayerSystem {
     this._noiseTimer = Math.max(0, this._noiseTimer - dt);
 
     this._handleMovement(dt, body);
+    if (this._hookTarget) {
+      this._updateHook(dt, body);
+      this._syncPlayerMesh();
+      return;
+    }
     this._maybeCompanionIdle();
     this._updateCompanionAuto();
     if (this._bubbleActive) {
@@ -425,6 +436,7 @@ export class PlayerSystem {
     this._handleInteractions();
     this._updatePendingCrush();
     this._handleItemControls();
+    this._handleAccessoryControls();
     if (!this.game.reviewMode && this.input.zoom !== 0) {
       this._cycleItem(this.input.zoom > 0 ? 1 : -1);
     }
@@ -1911,6 +1923,98 @@ export class PlayerSystem {
     const hp = hit.hitPointWorld;
     const dist = Math.hypot(hp.x - from.x, hp.y - from.y, hp.z - from.z);
     return dist > 0.5;
+  }
+
+  _handleAccessoryControls() {
+    if (!this.game.isPlaying() || this.game.notebookOpen || this.game.hiding) return;
+    if (this.input.justPressed('KeyQ') && this.game.whipMode) {
+      this.accessoryIndex = this.accessoryIndex === 0 ? 1 : 0;
+      const names = ['卷尺钩爪', '悠悠球'];
+      this.game.activeAccessory = this.accessoryIndex === 0 ? 'hook' : 'yoyo';
+      this.events.emit('toast', { text: `配件切换：${names[this.accessoryIndex]}`, ms: 1400 });
+      this.audio?.play('click');
+    }
+    if (this.input.justPressed('KeyR')) {
+      if (!this.game.whipMode) {
+        this.events.emit('toast', { text: '配件要在鞭子模式下使用：先按 G', ms: 1600 });
+        return;
+      }
+      if (nowSec() < this.accessoryCooldownUntil) return;
+      if (this.accessoryIndex === 0) this._useHookAccessory();
+      else this._useYoyoAccessory();
+    }
+  }
+
+  _useHookAccessory() {
+    const pos = this.getPos();
+    const f = this.getFacing();
+    const from = new CANNON.Vec3(pos.x, pos.y, pos.z);
+    const to = new CANNON.Vec3(pos.x + f.x * 18, pos.y, pos.z + f.z * 18);
+    const hit = this.physics.raycastClosest(from, to, GROUPS.WORLD | GROUPS.PROP);
+    if (!hit) {
+      this.events.emit('toast', { text: '钩爪甩空了，前面没有能抓的墙。', ms: 1500 });
+      return;
+    }
+    const hp = hit.hitPointWorld;
+    const px = hp.x - f.x * 0.8;
+    const pz = hp.z - f.z * 0.8;
+    const end = { x: px, y: Math.max(pos.y, hp.y), z: pz };
+    this._hookTarget = {
+      beganAt: nowSec(),
+      duration: 0.34,
+      from: { x: pos.x, y: pos.y, z: pos.z },
+      end
+    };
+    this.accessoryCooldownUntil = nowSec() + 1.6;
+    this.scene.spawnLightWave(pos, { x: px, y: pos.y, z: pz }, '#ffe08a', 0.35);
+    this.audio?.play('whoosh');
+  }
+
+  _updateHook(dt, body) {
+    const t = Math.min(1, Math.max(0, (nowSec() - this._hookTarget.beganAt) / this._hookTarget.duration));
+    const ease = t * t * (3 - 2 * t);
+    body.position.set(
+      this._hookTarget.from.x + (this._hookTarget.end.x - this._hookTarget.from.x) * ease,
+      this._hookTarget.from.y + (this._hookTarget.end.y - this._hookTarget.from.y) * ease,
+      this._hookTarget.from.z + (this._hookTarget.end.z - this._hookTarget.from.z) * ease
+    );
+    body.velocity.set(0, 0, 0);
+    body.aabbNeedsUpdate = true;
+    if (t >= 1) {
+      this._hookTarget = null;
+      this.scene.spawnHitRing({ x: body.position.x, y: body.position.y - 0.4, z: body.position.z }, '#ffe08a');
+    }
+  }
+
+  _useYoyoAccessory() {
+    const pos = this.getPos();
+    const f = this.getFacing();
+    const end = { x: pos.x + f.x * 5.6, y: pos.y, z: pos.z + f.z * 5.6 };
+    this.accessoryCooldownUntil = nowSec() + 1.25;
+    this.scene.spawnLightWave(pos, end, '#f4d35e', 0.42);
+    this.scene.spawnSlashTrail(pos, end, '#f4d35e', 0.35);
+    this.audio?.play('whip');
+    this._yoyoHit(end);
+  }
+
+  _yoyoHit(end) {
+    const pp = this.getPos();
+    if (this.ghost) {
+      const gp = this.ghost.getPos();
+      const dist = Math.hypot(gp.x - pp.x, gp.z - pp.z);
+      const dot = ((gp.x - pp.x) * (end.x - pp.x) + (gp.z - pp.z) * (end.z - pp.z)) / Math.max(0.01, dist * Math.hypot(end.x - pp.x, end.z - pp.z));
+      if (dist < 6 && dot > 0.35) {
+        this.ghost.damage(2, { rage: 0 });
+        this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#f4d35e');
+      }
+    }
+    for (const m of this.ghost?._minions || []) {
+      const d = Math.hypot(m.x - pp.x, m.z - pp.z);
+      const dot = ((m.x - pp.x) * (end.x - pp.x) + (m.z - pp.z) * (end.z - pp.z)) / Math.max(0.01, d * Math.hypot(end.x - pp.x, end.z - pp.z));
+      if (d < 5.5 && dot > 0.35) {
+        this.ghost._damageMinion(m, 2);
+      }
+    }
   }
 
   _handleItemControls() {

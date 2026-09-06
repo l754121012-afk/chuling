@@ -112,6 +112,7 @@ export class GameState {
     this.whipCooldownUntil = 0;
     this.whipMode = false;
     this.whipCombo = 0;
+    this.activeAccessory = 'hook';
     this.maxWhipCombo = 0;
     this.whipHits = 0;
     this.whipMisses = 0;

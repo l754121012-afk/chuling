@@ -753,8 +753,9 @@ export class UISystem {
       this.el.whipHint.classList.toggle('combo', comboActive);
       this.el.whipHint.classList.toggle('active', game.whipMode);
       if (this.el.whipLabel) {
+        const acc = game.activeAccessory === 'yoyo' ? '悠悠球' : '卷尺钩爪';
         this.el.whipLabel.textContent = game.whipMode
-          ? '攻击模式·左键连抽'
+          ? `攻击·${acc} Q切换 R使用`
           : '开攻击模式·关=道具';
       }
       const keyBadge = this.el.whipHint?.querySelector('span');
