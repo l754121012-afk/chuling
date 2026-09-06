@@ -440,7 +440,7 @@ export class PlayerSystem {
     if (!this.game.reviewMode && this.input.zoom !== 0) {
       this._cycleItem(this.input.zoom > 0 ? 1 : -1);
     }
-    if (this.game.whipMode && this.input.isLeftDown()) {
+    if (this.game.whipMode && (this.input.isLeftDown() || this.input.isDown('KeyJ'))) {
       if (!this._tryParry()) this._doWhip();
     }
     this._flashCooldown = Math.max(0, this._flashCooldown - dt);
@@ -2095,22 +2095,25 @@ export class PlayerSystem {
       this.events.emit('aim.changed', { aiming: false, combo: false });
     }
 
-    const click = this.input.consumeClick() || this.input.justPressed('KeyF');
+    const click = this.input.consumeClick() || this.input.justPressed('KeyF') || this.input.justPressed('KeyJ');
+    const rightDown = this.input.isRightDown() || this.input.isDown('KeyK');
+    const rightPressed = this.input.justRightPressed() || this.input.justPressed('KeyK');
+    const rightReleased = this.input.justRightReleased() || this.input.justReleased('KeyK');
     const usable = !this.game.notebookOpen && !this.game.hiding;
 
     if (this.game.whipMode) {
-      if (this.input.isRightDown() && !this._heavyCharging && nowSec() >= this._tornadoUntil) {
+      if (rightDown && !this._heavyCharging && nowSec() >= this._tornadoUntil) {
         this._heavyCharging = true;
         this._heavyChargeAt = nowSec();
       }
-      if (this.input.justRightReleased() && this._heavyCharging) {
+      if (rightReleased && this._heavyCharging) {
         this._heavyCharging = false;
         const held = nowSec() - this._heavyChargeAt;
         this._resolveHeavyRelease(held);
       }
       if (click && usable && !this._tryParry()) this._doWhip();
     } else if (def.type === 'throw') {
-      if (this.input.justRightPressed()) {
+      if (rightPressed) {
         this.aiming = !this.aiming;
         if (!this.aiming) this._comboReady = false;
         this.audio?.play('click');
@@ -2129,7 +2132,7 @@ export class PlayerSystem {
           this.events.emit('toast', { text: '按右键瞄准后再投掷', ms: 1300 });
         }
       }
-    } else if ((click || this.input.justRightPressed()) && usable) {
+    } else if ((click || rightPressed) && usable) {
       this.playPose('use', 0.45);
       this.items.useEquipped();
     }

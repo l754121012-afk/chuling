@@ -3,6 +3,7 @@ export class InputSystem {
     this.canvas = canvas;
     this.keys = new Set();
     this._pressed = new Set();
+    this._released = new Set();
     this.look = { x: 0, y: 0 };
     this.zoom = 0;
     this.edgeLook = { x: 0, y: 0 };
@@ -63,6 +64,7 @@ export class InputSystem {
 
   _onKeyUp(e) {
     this.keys.delete(e.code);
+    this._released.add(e.code);
   }
 
   _onMouseDown(e) {
@@ -202,6 +204,12 @@ export class InputSystem {
     return true;
   }
 
+  justReleased(code) {
+    if (!this._released.has(code)) return false;
+    this._released.delete(code);
+    return true;
+  }
+
   consumeClick() {
     const value = this.clicked;
     this.clicked = false;
@@ -218,5 +226,6 @@ export class InputSystem {
     }
     this.zoom = 0;
     this.middleDragY = 0;
+    this._released.clear();
   }
 }

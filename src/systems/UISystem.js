@@ -792,7 +792,7 @@ export class UISystem {
       if (this.el.whipLabel) {
         const acc = game.activeAccessory === 'yoyo' ? '悠悠球' : '卷尺钩爪';
         this.el.whipLabel.textContent = game.whipMode
-          ? `攻击·${acc} Q切换 R使用`
+          ? `攻击·${acc} J抽 K重`
           : '开攻击模式·关=道具';
       }
       const keyBadge = this.el.whipHint?.querySelector('span');
