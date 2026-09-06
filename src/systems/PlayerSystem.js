@@ -282,8 +282,25 @@ export class PlayerSystem {
     };
     this.scene.spawnSlashTrail(start, end, '#8ef0ff', 0.42);
     this.scene.spawnAirSlash(start, end, '#c9f5ff', 0.4);
-    this.scene.spawnLightWave(start, end, '#9be9ff', 0.62);
+    this.scene.spawnLightWave(start, end, '#9be9ff', 0.62, hit => this._companionApplyHit(hit));
     this.scene.spawnParticles({ x: end.x, y: end.y - 0.6, z: end.z }, '#8ef0ff');
+  }
+
+  _companionApplyHit(pos) {
+    if (!this.ghost) return;
+    const gp = this.ghost.getPos();
+    const dx = gp.x - pos.x;
+    const dz = gp.z - pos.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 3.4) return;
+    const len = Math.max(0.3, dist);
+    this.ghost._flash = 0.24;
+    this.ghost.knockback((dx / len) * 2.6, (dz / len) * 2.6, 0.2);
+    this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#9be9ff');
+    this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#9be9ff');
+    this.audio?.play('hit');
+    this.events.emit('hitstop', { ms: 40 });
+    this.events.emit('camera.shake', { amount: 0.12 });
   }
 
   _maybeCompanionIdle() {

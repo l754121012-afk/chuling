@@ -182,8 +182,8 @@ function beginExitCutscene(stage, autoOpen = false, afterText = null) {
     pending: true,
     unlockAt: now + 1.4,
     moveDuration: 2.2,
-    holdDuration: 4.8,
-    duration: 7.0,
+    holdDuration: 4.0,
+    duration: 6.2,
     done: false,
     pos: { x: exit.pos.x, z: exit.pos.z },
     from: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
@@ -200,8 +200,8 @@ function beginBubbleReveal(afterText = null) {
     startedAt: nowSec(),
     pending: true,
     moveDuration: 1.8,
-    holdDuration: 1.6,
-    duration: 3.4,
+    holdDuration: 3.0,
+    duration: 4.8,
     pos: { x: bubble.x, y: bubble.y, z: bubble.z },
     afterText
   };

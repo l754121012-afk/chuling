@@ -2032,7 +2032,7 @@ export class SchoolScene {
     this.particles.push({ mesh, ttl: duration, maxTtl: duration, trail: true });
   }
 
-  spawnLightWave(from, to, color = '#9be9ff', duration = 0.62) {
+  spawnLightWave(from, to, color = '#9be9ff', duration = 0.62, onHit = null) {
     const dx = to.x - from.x;
     const dz = to.z - from.z;
     const len = Math.hypot(dx, dz) || 1;
@@ -2072,7 +2072,9 @@ export class SchoolScene {
       dirZ,
       speed: len / duration,
       orb,
-      trail
+      trail,
+      onHit,
+      doneHit: false
     });
   }
 
@@ -2172,6 +2174,10 @@ export class SchoolScene {
         const fade = Math.max(0, p.ttl / p.maxTtl);
         p.orb.material.opacity = fade;
         p.trail.material.opacity = fade * 0.75;
+        if (p.onHit && !p.doneHit && waveT >= 0.9) {
+          p.doneHit = true;
+          p.onHit({ x: p.mesh.position.x, y: 0.9, z: p.mesh.position.z });
+        }
       } else if (p.group) {
         for (const child of p.mesh.children) {
           child.material.opacity = Math.max(0, p.ttl / p.maxTtl);
