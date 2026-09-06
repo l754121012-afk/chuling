@@ -164,6 +164,7 @@ let reviewDist = 120;
 let reviewPitch = 0.5;
 let exitCutscene = null;
 let bubbleCutscene = null;
+let bubbleIntroShown = false;
 let companionCommentAt = 0;
 let pendingRecordGuide = null;
 const itemGuidesShown = new Set();
@@ -179,15 +180,17 @@ function beginExitCutscene(stage, autoOpen = false, afterText = null) {
     afterText,
     startedAt: now,
     pending: true,
-    unlockAt: now + 1.0,
-    duration: 6.2,
+    unlockAt: now + 1.4,
+    moveDuration: 2.2,
+    holdDuration: 4.8,
+    duration: 7.0,
     done: false,
     pos: { x: exit.pos.x, z: exit.pos.z },
     from: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
   };
 }
 
-function beginBubbleReveal() {
+function beginBubbleReveal(afterText = null) {
   if (!game.detentionMode) return;
   exitCutscene = null;
   school.unlockBubbles();
@@ -196,15 +199,11 @@ function beginBubbleReveal() {
   bubbleCutscene = {
     startedAt: nowSec(),
     pending: true,
-    duration: 4.2,
+    moveDuration: 1.8,
+    holdDuration: 1.6,
+    duration: 3.4,
     pos: { x: bubble.x, y: bubble.y, z: bubble.z },
-    afterText: {
-      card: {
-        title: '泡泡启动了',
-        line: '纸箱泡泡从纸堆里浮起来了，入口的泡泡现在能带你上档案区。'
-      },
-      toast: '泡泡解锁成功：入口泡泡可以上高架档案区。'
-    }
+    afterText
   };
 }
 
@@ -351,7 +350,19 @@ events.on('clue.found', p => {
 events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
   game.detentionScheduleRead = true;
-  beginBubbleReveal();
+  const firstIntro = !bubbleIntroShown;
+  bubbleIntroShown = true;
+  beginBubbleReveal(
+    firstIntro
+      ? {
+          card: {
+            title: '泡泡启动了',
+            line: '纸箱泡泡从纸堆里浮起来了，入口的泡泡现在能带你上档案区。'
+          },
+          toast: '泡泡解锁成功：入口泡泡可以上高架档案区。'
+        }
+      : null
+  );
 });
 events.on('detention.recordRead', () => {
   if (!game.detentionMode || game.detentionComplete) return;
@@ -445,6 +456,7 @@ events.on('game.start', () => {
   itemGuidesShown.clear();
   pendingRecordGuide = null;
   bubbleCutscene = null;
+  bubbleIntroShown = false;
   exitCutscene = null;
   school.clearWageSlips();
   game.detentionMode = DETENTION_MODE || RUN_STAGE === 2;
@@ -814,11 +826,11 @@ function tick() {
     if (cut.pending) {
       cut.pending = false;
       cut.startedAt = nowSec();
-      cut.unlockAt = cut.startedAt + 1.0;
+      cut.unlockAt = cut.startedAt + 1.4;
       cut.from = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
     }
     const elapsed = nowSec() - cut.startedAt;
-    const k = Math.min(1, Math.max(0, elapsed / cut.duration));
+    const k = Math.min(1, Math.max(0, elapsed / cut.moveDuration));
     const ease = k * k * (3 - 2 * k);
     const toX = cut.pos.x + 5.5;
     const toY = 4.2;
@@ -862,7 +874,7 @@ function tick() {
       cut.from = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
     }
     const elapsed = nowSec() - cut.startedAt;
-    const k = Math.min(1, Math.max(0, elapsed / cut.duration));
+    const k = Math.min(1, Math.max(0, elapsed / cut.moveDuration));
     const ease = k * k * (3 - 2 * k);
     const toX = cut.pos.x + 5.2;
     const toY = 2.4 + Math.max(0, cut.pos.y);

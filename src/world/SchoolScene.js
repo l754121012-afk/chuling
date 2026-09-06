@@ -2032,6 +2032,50 @@ export class SchoolScene {
     this.particles.push({ mesh, ttl: duration, maxTtl: duration, trail: true });
   }
 
+  spawnLightWave(from, to, color = '#9be9ff', duration = 0.62) {
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const dirX = dx / len;
+    const dirZ = dz / len;
+    const group = new THREE.Group();
+    const orb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 14, 12),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false
+      })
+    );
+    const trail = new THREE.Mesh(
+      new THREE.BoxGeometry(Math.min(1.1, len), 0.09, 0.09),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.72,
+        depthWrite: false
+      })
+    );
+    trail.rotation.y = Math.atan2(dirX, dirZ);
+    trail.position.set(-dirX * 0.45, 0, -dirZ * 0.45);
+    group.add(orb, trail);
+    group.position.set(from.x, from.y, from.z);
+    this.group.add(group);
+    this.particles.push({
+      mesh: group,
+      ttl: duration,
+      maxTtl: duration,
+      wave: true,
+      from: { x: from.x, z: from.z },
+      dirX,
+      dirZ,
+      speed: len / duration,
+      orb,
+      trail
+    });
+  }
+
   spawnClawSwipe(pos, yaw, color = '#9fc0a8', duration = 0.4) {
     const group = new THREE.Group();
     const mat = new THREE.MeshBasicMaterial({
@@ -2112,7 +2156,7 @@ export class SchoolScene {
       p.ttl -= dt;
       if (p.ttl <= 0) {
         this.group.remove(p.mesh);
-        if (p.group) {
+        if (p.group || p.wave) {
           for (const child of p.mesh.children) child.material?.dispose();
         } else {
           p.mesh.material?.dispose();
@@ -2121,6 +2165,13 @@ export class SchoolScene {
       } else if (p.ring) {
         p.mesh.scale.setScalar(1 + (0.45 - p.ttl) * 6);
         p.mesh.material.opacity = Math.max(0, p.ttl / 0.45);
+      } else if (p.wave) {
+        const waveT = 1 - p.ttl / p.maxTtl;
+        p.mesh.position.x = p.from.x + p.dirX * p.speed * waveT;
+        p.mesh.position.z = p.from.z + p.dirZ * p.speed * waveT;
+        const fade = Math.max(0, p.ttl / p.maxTtl);
+        p.orb.material.opacity = fade;
+        p.trail.material.opacity = fade * 0.75;
       } else if (p.group) {
         for (const child of p.mesh.children) {
           child.material.opacity = Math.max(0, p.ttl / p.maxTtl);
