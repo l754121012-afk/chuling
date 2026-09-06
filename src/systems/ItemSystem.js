@@ -212,6 +212,10 @@ export class ItemSystem {
       this.game.usedItems.push(def.id);
       this.events.emit('toast', { text: `${def.name} 飞出去了！`, ms: 900 });
     }
+    const projDef = {
+      ...def,
+      damage: (def.damage || 0) + (this.game.runPenBoost || 0)
+    };
 
     const dir = this._aimVector();
     const origin = this.playerPos();
@@ -243,7 +247,7 @@ export class ItemSystem {
 
     const proj = {
       id: def.id,
-      def,
+      def: projDef,
       combo,
       mesh,
       body,

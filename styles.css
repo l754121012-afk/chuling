@@ -1779,7 +1779,7 @@ body.playing #shot-tools {
 }
 
 .sticker-chip {
-  width: 108px;
+  width: 128px;
   padding: 8px 6px;
   border: 1px solid #4f5b68;
   border-radius: 8px;
@@ -1792,8 +1792,9 @@ body.playing #shot-tools {
 
 .sticker-chip .sticker-icon {
   display: block;
-  font-size: 22px;
-  margin-bottom: 4px;
+  font-size: 38px;
+  line-height: 1.15;
+  margin-bottom: 6px;
 }
 
 .sticker-chip.selected {

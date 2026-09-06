@@ -1,5 +1,5 @@
 export const RISK_TILES = [
-  { id: 'pen_case', kind: '福', name: '圆珠笔批发', desc: '本单圆珠笔伤害 +2，老板清库存很开心。' },
+  { id: 'pen_case', kind: '福', name: '清仓笔筒', desc: '本单投掷道具伤害 +2，老板清库存很开心。' },
   { id: 'bento_case', kind: '福', name: '加班便当', desc: '体力上限 +15，开工先吃口饭。' },
   { id: 'charger_case', kind: '福', name: '老板充电台', desc: '手机电量上限 +30。' },
   { id: 'chalk_case', kind: '祸', name: '碎粉笔灰', desc: '开局暴怒值 +12，鬼心情很差。' },
@@ -11,9 +11,9 @@ export const RISK_TILES = [
 ];
 
 export const STICKER_DEFS = [
-  { id: 'sticker_pen', name: '圆珠笔贴纸', icon: '✒', desc: '圆珠笔伤害 +2。' },
-  { id: 'sticker_regen', name: '能量修正贴', icon: '▤', desc: '体力回复 +4/秒。' },
-  { id: 'sticker_whip', name: '尖叫鞭花贴', icon: '鞭', desc: '鞭子命中伤害 +1。' },
-  { id: 'sticker_combo', name: '连击便利贴', icon: '连', desc: '连击窗口 +1 秒。' },
-  { id: 'sticker_lucky', name: '转运纪念贴', icon: '运', desc: '投掷道具有 12% 不消耗。' }
+  { id: 'sticker_pen', name: '老板的笔筒', icon: '📦', desc: '投掷道具伤害 +2。' },
+  { id: 'sticker_regen', name: '加班便当盒', icon: '🍱', desc: '体力回复 +4/秒。' },
+  { id: 'sticker_whip', name: '尖叫扩音器', icon: '📢', desc: '鞭子命中伤害 +1。' },
+  { id: 'sticker_combo', name: '连击跳绳', icon: '🪢', desc: '连击窗口 +1 秒。' },
+  { id: 'sticker_lucky', name: '幸运拖把', icon: '🧹', desc: '投掷道具有 12% 不消耗。' }
 ];
