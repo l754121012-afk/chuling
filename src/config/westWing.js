@@ -133,6 +133,26 @@ function westWingConfig() {
       label: '档案阁东门',
       locked: true,
       requireClue: 'note'
+    },
+    {
+      id: 'skill_door_ab',
+      x: 36,
+      z: 4,
+      w: 8,
+      d: 0.3,
+      label: '试炼·悠悠门',
+      locked: true,
+      skillOnly: true
+    },
+    {
+      id: 'skill_door_bc',
+      x: 36,
+      z: 15.2,
+      w: 8,
+      d: 0.3,
+      label: '试炼·钩爪门',
+      locked: true,
+      skillOnly: true
     }
   ];
   cfg.registrationNpc = { x: -22.5, z: -6, y: 1.1 };
@@ -220,6 +240,26 @@ function westWingConfig() {
     { id: 'pen', x: -8, y: 0.78, z: 14 },
     { id: 'mine', x: 0, y: 0.06, z: 5.5 }
   ];
+
+  cfg.skillCourse = {
+    floor: { x: 36, z: 9.6, w: 19.2, d: 36.8 },
+    walls: [
+      { x: 36, z: -8.8, w: 19.2, d: 0.24 },
+      { x: 36, z: 28, w: 19.2, d: 0.24 },
+      { x: 26.4, z: 9.6, w: 0.24, d: 36.8 },
+      { x: 45.6, z: 9.6, w: 0.24, d: 36.8 },
+      { x: 30.8, z: 4, w: 5.6, d: 0.24 },
+      { x: 42, z: 4, w: 4, d: 0.24 },
+      { x: 30.8, z: 15.2, w: 5.6, d: 0.24 },
+      { x: 42, z: 15.2, w: 4, d: 0.24 }
+    ],
+    start: { x: 35.2, z: -2.4 },
+    portal: { x: 22.4, z: 12 },
+    portalTarget: { x: 35.2, z: -2.4 },
+    bell: { x: 35.2, z: 0.8 },
+    hookPlate: { x: 35.2, z: 12 },
+    end: { x: 35.2, z: 33.6 }
+  };
 
   return cfg;
 }

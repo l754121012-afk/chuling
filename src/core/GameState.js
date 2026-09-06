@@ -142,6 +142,8 @@ export class GameState {
     this.runWalkPenalty = 1;
     this.runSettlementPenalty = 1;
     this.runStaminaRegenBonus = 0;
+    this.skillMode = false;
+    this.skillStage = 0;
     this.runMode = false;
     this.runStage = 1;
     this.reviewMode = false;

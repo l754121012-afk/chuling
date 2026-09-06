@@ -80,6 +80,7 @@ export class SchoolScene {
     this._addBubbles(refs);
     this._addDoors(refs);
     this._addWestWingGadgets(refs);
+    this._addSkillCourse(refs);
     this._addRegistrationNpc(refs);
 
     this.refs = refs;
@@ -1209,6 +1210,85 @@ export class SchoolScene {
         visible: false
       };
     }
+  }
+
+  _addSkillCourse(refs) {
+    const sc = this.L.skillCourse;
+    if (!sc || this.L.mode !== 'westwing') return;
+    this._box(sc.floor.w, 0.4, sc.floor.d, { x: sc.floor.x, y: -0.2, z: sc.floor.z }, PALETTE.floor);
+    for (const wall of sc.walls || []) {
+      this._box(wall.w, 5.2, wall.d, { x: wall.x, y: 2.6, z: wall.z }, '#e9e3d5');
+    }
+
+    const makeLabel = (text, x, y, z, bg = '#26303c', fg = '#fff2d8') => {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: textTexture(text, {
+            bg,
+            fg,
+            font: 'bold 30px "Microsoft YaHei", sans-serif',
+            width: 360,
+            height: 88,
+            lineHeight: 38,
+            pad: 6
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      sprite.position.set(x, y, z);
+      sprite.scale.set(1.9, 0.5, 1);
+      this.group.add(sprite);
+      return sprite;
+    };
+
+    const portalRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.7, 1.0, 28),
+      new THREE.MeshBasicMaterial({
+        color: 0x8ef0c8,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    portalRing.rotation.x = -Math.PI / 2;
+    portalRing.position.set(sc.portal.x, 0.08, sc.portal.z);
+    this.group.add(portalRing);
+    makeLabel('配件试炼 E', sc.portal.x, 2.2, sc.portal.z, '#123326', '#d9ffe8');
+
+    const bell = new THREE.Group();
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.36, 14, 10), material('#ffe08a', 0.9));
+    dome.position.y = 0.9;
+    const clapper = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), material('#b83a4b', 0.9));
+    clapper.position.y = 0.45;
+    bell.add(dome, clapper);
+    bell.position.set(sc.bell.x, 0, sc.bell.z);
+    this.group.add(bell);
+    makeLabel('悠悠球敲铃', sc.bell.x, 2.3, sc.bell.z, '#4a3510', '#ffe9b8');
+
+    const hookRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.55, 0.8, 28),
+      new THREE.MeshBasicMaterial({
+        color: 0x4cc9f0,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    hookRing.rotation.x = -Math.PI / 2;
+    hookRing.position.set(sc.hookPlate.x, 0.08, sc.hookPlate.z);
+    this.group.add(hookRing);
+    makeLabel('卷尺钩爪点', sc.hookPlate.x, 2.3, sc.hookPlate.z, '#102f42', '#d9f7ff');
+
+    refs.skillCourse = {
+      portal: { x: sc.portal.x, z: sc.portal.z },
+      bell: { x: sc.bell.x, z: sc.bell.z },
+      hookPlate: { x: sc.hookPlate.x, z: sc.hookPlate.z },
+      end: { x: sc.end.x, z: sc.end.z },
+      portalTarget: { x: sc.portalTarget.x, z: sc.portalTarget.z }
+    };
   }
 
   _applyDoorLock(door, locked) {

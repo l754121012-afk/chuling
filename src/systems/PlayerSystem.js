@@ -1382,6 +1382,27 @@ export class PlayerSystem {
         };
       }
     }
+    if (this.refs.skillCourse) {
+      const course = this.refs.skillCourse;
+      const dp = distance2D(pos.x, pos.z, course.portal.x, course.portal.z);
+      if (dp < 2.4 && 3.4 > bestPriority) {
+        bestPriority = 3.4;
+        best = {
+          type: 'skillPortal',
+          label: 'E 进入配件试炼',
+          pos: { x: course.portal.x, y: 1.2, z: course.portal.z }
+        };
+      }
+      const de = distance2D(pos.x, pos.z, course.end.x, course.end.z);
+      if (this.game.skillStage >= 2 && de < 2.4 && 3.6 > bestPriority) {
+        bestPriority = 3.6;
+        best = {
+          type: 'skillFinish',
+          label: 'E 完成试炼骨架',
+          pos: { x: course.end.x, y: 1.2, z: course.end.z }
+        };
+      }
+    }
 
     for (let i = this.refs.wageSlips?.length - 1; i >= 0; i--) {
       const slip = this.refs.wageSlips[i];
@@ -1415,6 +1436,7 @@ export class PlayerSystem {
         continue;
       }
       if (door.id === 'right_lower_door') continue;
+      if (door.skillOnly) continue;
       if (dd < 1.9 && verticalOk && 2.5 > bestPriority) {
         bestPriority = 2.5;
         best = {
@@ -1503,6 +1525,20 @@ export class PlayerSystem {
       this.events.emit('npc.talk');
     } else if (target.type === 'stickerRest') {
       this.events.emit('run.setup.open');
+    } else if (target.type === 'skillPortal') {
+      const course = this.refs.skillCourse;
+      if (!course) return;
+      this.pawn.body.position.set(course.portalTarget.x, 1.0, course.portalTarget.z);
+      this.pawn.body.velocity.set(0, 0, 0);
+      this.pawn.body.aabbNeedsUpdate = true;
+      this.game.skillMode = true;
+      this.game.skillStage = 0;
+      this.events.emit('toast', { text: '配件试炼开始：悠悠球敲开第一扇门。', ms: 2200 });
+      this.scene.spawnHitRing({ x: course.portalTarget.x, y: 0.4, z: course.portalTarget.z }, '#8ef0c8');
+    } else if (target.type === 'skillFinish') {
+      this.game.skillStage = 3;
+      this.game.skillMode = false;
+      this.events.emit('toast', { text: '试炼骨架完成：接下来接怪物与 Boss。', ms: 2400 });
     } else if (target.type === 'wageSlip') {
       const slip = target.slip;
       this.scene.group.remove(slip.mesh);
@@ -1982,6 +2018,15 @@ export class PlayerSystem {
     this.accessoryCooldownUntil = nowSec() + 1.6;
     this.scene.spawnLightWave(pos, { x: px, y: pos.y, z: pz }, '#ffe08a', 0.35);
     this.audio?.play('whoosh');
+    const course = this.refs.skillCourse;
+    if (course && this.game.skillMode && this.game.skillStage === 1) {
+      const d = distance2D(pos.x, pos.z, course.hookPlate.x, course.hookPlate.z);
+      if (d < 12) {
+        this.scene.setDoor('skill_door_bc', false);
+        this.game.skillStage = 2;
+        this.events.emit('toast', { text: '卷尺钩爪抓住了机关，第二扇门开了！', ms: 2000 });
+      }
+    }
   }
 
   _updateHook(dt, body) {
@@ -2009,6 +2054,15 @@ export class PlayerSystem {
     this.scene.spawnSlashTrail(pos, end, '#f4d35e', 0.35);
     this.audio?.play('whip');
     this._yoyoHit(end);
+    const course = this.refs.skillCourse;
+    if (course && this.game.skillMode && this.game.skillStage === 0) {
+      const d = distance2D(pos.x, pos.z, course.bell.x, course.bell.z);
+      if (d < 8) {
+        this.scene.setDoor('skill_door_ab', false);
+        this.game.skillStage = 1;
+        this.events.emit('toast', { text: '悠悠球敲响了墙铃，第一扇门开了！', ms: 2000 });
+      }
+    }
   }
 
   _yoyoHit(end) {
