@@ -81,6 +81,7 @@ export class UISystem {
       voteOptions: document.getElementById('vote-options'),
       toast: document.getElementById('toast'),
       speech: document.getElementById('speech'),
+      companionBubble: document.getElementById('companion-bubble'),
       dialogue: document.getElementById('dialogue'),
       dialogueName: document.getElementById('dialogue-name'),
       dialogueText: document.getElementById('dialogue-text'),
@@ -835,6 +836,21 @@ export class UISystem {
     this._speechTimer = setTimeout(() => this.el.dialogue.classList.add('hidden'), ms);
   }
 
+  showCompanionBubble(text, x, y, ms = 2200) {
+    const el = this.el.companionBubble;
+    if (!el) return;
+    clearTimeout(this._companionBubbleTimer);
+    const left = Math.max(70, Math.min(window.innerWidth - 70, x));
+    const top = Math.max(90, Math.min(window.innerHeight - 40, y));
+    el.textContent = text;
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    el.classList.add('show');
+    this._companionBubbleTimer = setTimeout(() => {
+      el.classList.remove('show');
+    }, ms);
+  }
+
   showPrompt(p) {
     const text = typeof p === 'string' ? p : (p?.text || '');
     if (!text) {
@@ -991,6 +1007,7 @@ export class UISystem {
     this.events.on('escape.start', () => this.sync(this.game));
     this.events.on('toast', p => this.showToast(p.text, p.ms));
     this.events.on('speech', p => this.showSpeech(p.text, p.ms, p.name));
+    this.events.on('companion.say', p => this.showCompanionBubble(p.text, p.x, p.y, p.ms));
     this.events.on('interact.prompt', p => this.showPrompt(p));
     this.events.on('ghost.visual', p => {
       this.el.vignette.style.setProperty('--danger', String(p.danger));

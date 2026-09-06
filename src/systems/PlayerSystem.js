@@ -85,6 +85,8 @@ export class PlayerSystem {
     this._companionReactUntil = 0;
     this._companionReactType = null;
     this._companionNextIdleAt = 0;
+    this._companionAutoUntil = 0;
+    this._companionAutoNextAt = 0;
     this._bubbleStart = 0;
     this._bubbleDur = 0.52;
     this._bubbleFrom = null;
@@ -93,6 +95,10 @@ export class PlayerSystem {
       this.playPose('hurt', 0.7);
       this._hurtFlash = 0.6;
       this.react?.('hurt');
+    });
+    events.on('game.start', () => {
+      this._companionAutoUntil = 0;
+      this._companionAutoNextAt = 0;
     });
     events.on('vote.choose', i => this._resolveVote(i));
   }
@@ -259,48 +265,86 @@ export class PlayerSystem {
     return { x: Math.sin(this.aimYaw), z: Math.cos(this.aimYaw) };
   }
 
-  react(type) {
+  companionScreen() {
+    if (!this.companion) return { x: window.innerWidth / 2, y: window.innerHeight * 0.3 };
+    const pos = this.companion.position;
+    const v = new THREE.Vector3(pos.x, pos.y + 0.9, pos.z);
+    if (this.camera?.camera) v.project(this.camera.camera);
+    return {
+      x: ((v.x + 1) / 2) * window.innerWidth,
+      y: ((1 - v.y) / 2) * window.innerHeight
+    };
+  }
+
+  react(type, target = null) {
     this._companionReactType = type;
     this._companionReactUntil = nowSec() + 0.9;
-    if (this.companion && ['whip', 'heavy', 'combo'].includes(type)) {
-      this._companionStrike();
+    if (this.companion) {
+      if (['whip', 'heavy', 'combo'].includes(type)) this._startCompanionAuto();
+      if (['whip', 'heavy', 'combo', 'auto'].includes(type)) {
+        this._companionStrike(target, type === 'auto');
+      }
     }
     this.events?.emit('companion.react', { type });
   }
 
-  _companionStrike() {
-    const f = this.getFacing();
+  _startCompanionAuto() {
+    this._companionAutoUntil = Math.max(this._companionAutoUntil, nowSec() + 4);
+    if (this._companionAutoNextAt <= nowSec()) {
+      this._companionAutoNextAt = nowSec() + 1.1;
+    }
+  }
+
+  _companionStrike(target = null, dealDamage = false) {
+    const f = target
+      ? {
+          x: target.x - this.companion.position.x,
+          z: target.z - this.companion.position.z
+        }
+      : this.getFacing();
+    const fLen = Math.hypot(f.x, f.z) || 1;
+    const reach = target ? fLen : 3.2;
     const start = {
       x: this.companion.position.x,
       y: this.companion.position.y,
       z: this.companion.position.z
     };
     const end = {
-      x: start.x + f.x * 3.2,
+      x: start.x + (f.x / fLen) * reach,
       y: start.y,
-      z: start.z + f.z * 3.2
+      z: start.z + (f.z / fLen) * reach
     };
     this.scene.spawnSlashTrail(start, end, '#8ef0ff', 0.42);
     this.scene.spawnAirSlash(start, end, '#c9f5ff', 0.4);
-    this.scene.spawnLightWave(start, end, '#9be9ff', 0.62, hit => this._companionApplyHit(hit));
+    this.scene.spawnLightWave(start, end, '#9be9ff', 0.62, hit => this._companionApplyHit(hit, dealDamage));
     this.scene.spawnParticles({ x: end.x, y: end.y - 0.6, z: end.z }, '#8ef0ff');
   }
 
-  _companionApplyHit(pos) {
+  _companionApplyHit(pos, dealDamage = false) {
     if (!this.ghost) return;
     const gp = this.ghost.getPos();
-    const dx = gp.x - pos.x;
-    const dz = gp.z - pos.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist > 3.4) return;
-    const len = Math.max(0.3, dist);
-    this.ghost._flash = 0.24;
-    this.ghost.knockback((dx / len) * 2.6, (dz / len) * 2.6, 0.2);
-    this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#9be9ff');
-    this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#9be9ff');
-    this.audio?.play('hit');
-    this.events.emit('hitstop', { ms: 40 });
-    this.events.emit('camera.shake', { amount: 0.12 });
+    const distGhost = Math.hypot(gp.x - pos.x, gp.z - pos.z);
+    if (distGhost <= 3.4) {
+      const dx = gp.x - pos.x;
+      const dz = gp.z - pos.z;
+      const len = Math.max(0.3, distGhost);
+      if (dealDamage) this.ghost.damage(1, { rage: 0 });
+      this.ghost._flash = 0.24;
+      this.ghost.knockback((dx / len) * 2.6, (dz / len) * 2.6, 0.2);
+      this.scene.spawnHitRing({ x: gp.x, y: gp.y, z: gp.z }, '#9be9ff');
+      this.scene.spawnParticles({ x: gp.x, y: gp.y, z: gp.z }, '#9be9ff');
+      this.audio?.play('hit');
+      this.events.emit('hitstop', { ms: 40 });
+      this.events.emit('camera.shake', { amount: 0.12 });
+      return;
+    }
+    for (const m of this.ghost._minions || []) {
+      const dm = Math.hypot(m.x - pos.x, m.z - pos.z);
+      if (dm > 1.5) continue;
+      this.ghost._damageMinion(m, 1);
+      this.scene.spawnHitRing({ x: m.x, y: 1, z: m.z }, '#9be9ff');
+      return;
+    }
   }
 
   _maybeCompanionIdle() {
@@ -318,6 +362,43 @@ export class PlayerSystem {
     this.react(type);
   }
 
+  _findCompanionTarget() {
+    if (!this.game.isPlaying() || this.game.hiding) return null;
+    const pp = this.getPos();
+    if (
+      this.ghost &&
+      !this.ghost._isPinned?.() &&
+      !this.game.broken &&
+      !this.game.chainStuck
+    ) {
+      const gp = this.ghost.getPos();
+      const d = Math.hypot(gp.x - pp.x, gp.z - pp.z);
+      if (d < 8.5) return { x: gp.x, z: gp.z };
+    }
+    const minions = this.ghost?._minions || [];
+    let best = null;
+    let bestDist = 8.5;
+    for (const m of minions) {
+      const d = Math.hypot(m.x - pp.x, m.z - pp.z);
+      if (d < bestDist) {
+        bestDist = d;
+        best = { x: m.x, z: m.z };
+      }
+    }
+    return best;
+  }
+
+  _updateCompanionAuto() {
+    if (!this.companion || !this.game.isPlaying() || this.game.hiding) return;
+    if (nowSec() >= this._companionAutoUntil) return;
+    const target = this._findCompanionTarget();
+    if (!target) return;
+    if (nowSec() >= this._companionAutoNextAt) {
+      this._companionAutoNextAt = nowSec() + 1.2;
+      this.react('auto', target);
+    }
+  }
+
   update(dt) {
     if (!this.pawn) return;
     if (!this.game.isPlaying()) {
@@ -330,6 +411,7 @@ export class PlayerSystem {
 
     this._handleMovement(dt, body);
     this._maybeCompanionIdle();
+    this._updateCompanionAuto();
     if (this._bubbleActive) {
       this._syncPlayerMesh();
       return;

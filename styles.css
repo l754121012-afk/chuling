@@ -870,6 +870,44 @@ body.playing canvas {
   opacity: 1;
 }
 
+#companion-bubble {
+  position: absolute;
+  left: 50%;
+  top: 120px;
+  max-width: 220px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(14, 24, 32, 0.92);
+  border: 1px solid rgba(159, 235, 255, 0.55);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.35);
+  color: #eafaff;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  transform: translate(-50%, -110%);
+  opacity: 0;
+  transition: opacity 0.16s;
+  pointer-events: none;
+  z-index: 45;
+}
+
+#companion-bubble.show {
+  opacity: 1;
+}
+
+#companion-bubble::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  background: rgba(14, 24, 32, 0.92);
+  border-right: 1px solid rgba(159, 235, 255, 0.55);
+  border-bottom: 1px solid rgba(159, 235, 255, 0.55);
+  transform: rotate(45deg);
+}
+
 #dialogue {
   position: absolute;
   left: 50%;

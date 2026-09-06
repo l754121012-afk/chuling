@@ -2237,7 +2237,7 @@ export class SchoolScene {
     }
     for (const bubble of this.refs?.bubbles || []) {
       if (bubble.unlockedAt) {
-        const growT = Math.min(1, Math.max(0, (beaconT - bubble.unlockedAt) / 0.9));
+        const growT = Math.min(1, Math.max(0, (beaconT - bubble.unlockedAt) / 2.2));
         const ease = growT * growT * (3 - 2 * growT);
         bubble.group.scale.setScalar(0.2 + ease * 0.8);
         if (growT >= 1) bubble.unlockedAt = 0;

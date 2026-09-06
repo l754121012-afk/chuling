@@ -207,6 +207,15 @@ function beginBubbleReveal(afterText = null) {
   };
 }
 
+function flushPendingGuide() {
+  if (!pendingRecordGuide) return;
+  game.guideOpen = true;
+  if (document.pointerLockElement) document.exitPointerLock();
+  input.allowLock = false;
+  ui.showItemGuide(pendingRecordGuide);
+  pendingRecordGuide = null;
+}
+
 function capture4k() {
   const width = 3840;
   const height = 2160;
@@ -245,6 +254,7 @@ events.on('companion.react', p => {
     whip: '这波打得好！我也来！',
     heavy: '哇，重击好帅！一起上！',
     combo: '连携成功！冲呀！',
+    auto: '我也来帮忙！',
     hurt: '小心背后啊！',
     task: '任务还没完成呢！',
     record: '先去找处分记录啦！',
@@ -253,7 +263,13 @@ events.on('companion.react', p => {
   };
   const text = quotes[p?.type] || idleQuotes[0];
   companionCommentAt = nowSec();
-  events.emit('speech', { text, ms: 1800, name: '小幽灵' });
+  const screen = player.companionScreen?.() || { x: window.innerWidth / 2, y: window.innerHeight * 0.3 };
+  events.emit('companion.say', {
+    text,
+    ms: 2200,
+    x: screen.x,
+    y: screen.y - 30
+  });
 });
 events.on('review.toggle', () => {
   game.reviewMode = !game.reviewMode;
@@ -333,36 +349,23 @@ events.on('clue.found', p => {
     return;
   }
   if (game.detentionMode && p.id === 'note' && !game.guideOpen) {
-    itemGuidesShown.add(`task_${p.id}`);
-    game.guideOpen = true;
-    if (document.pointerLockElement) document.exitPointerLock();
-    input.allowLock = false;
-    ui.showItemGuide({
+    itemGuidesShown.add('task_note');
+    pendingRecordGuide = {
       name: p.clue?.title || (p.id === 'note' ? '程老师值日表' : '程老师处分记录'),
       icon: '🗒',
       taskGuide: true,
       guide: {
         steps: [p.clue?.text || '先记录这条信息，再找下一个任务点。']
       }
-    });
+    };
+    return;
   }
 });
 events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
   game.detentionScheduleRead = true;
-  const firstIntro = !bubbleIntroShown;
   bubbleIntroShown = true;
-  beginBubbleReveal(
-    firstIntro
-      ? {
-          card: {
-            title: '泡泡启动了',
-            line: '纸箱泡泡从纸堆里浮起来了，入口的泡泡现在能带你上档案区。'
-          },
-          toast: '泡泡解锁成功：入口泡泡可以上高架档案区。'
-        }
-      : null
-  );
+  beginBubbleReveal(null);
 });
 events.on('detention.recordRead', () => {
   if (!game.detentionMode || game.detentionComplete) return;
@@ -857,13 +860,7 @@ function tick() {
         events.emit('act.card', cut.afterText.card);
         events.emit('toast', { text: cut.afterText.toast, ms: 2600 });
       }
-      if (pendingRecordGuide) {
-        game.guideOpen = true;
-        if (document.pointerLockElement) document.exitPointerLock();
-        input.allowLock = false;
-        ui.showItemGuide(pendingRecordGuide);
-        pendingRecordGuide = null;
-      }
+      flushPendingGuide();
       exitCutscene = null;
     }
   } else if (bubbleCutscene) {
@@ -890,6 +887,7 @@ function tick() {
         events.emit('act.card', cut.afterText.card);
         events.emit('toast', { text: cut.afterText.toast, ms: 2400 });
       }
+      flushPendingGuide();
       bubbleCutscene = null;
     }
   } else {
