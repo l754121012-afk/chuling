@@ -416,6 +416,18 @@ export class GhostSystem {
     if (!m || m.hp <= 0 || !this._minions.includes(m)) return false;
     m.hp -= damage;
     m.flashUntil = nowSec() + 0.45;
+    m.paintedFlash = true;
+    const gm = m.group.userData?.ghostMat;
+    if (gm) {
+      gm.color.setHex(0xffffff);
+      gm.emissive.setHex(0xffffff);
+      gm.emissiveIntensity = 1.1;
+    }
+    const ma = m.group.userData?.aura;
+    if (ma) {
+      ma.material.color.setHex(0xffffff);
+      ma.material.opacity = 0.7;
+    }
     if (m.hp <= 0) {
       this.scene.group.remove(m.group);
       this.scene.spawnParticles({ x: m.x, y: 1, z: m.z }, '#9b8cff');
@@ -494,6 +506,10 @@ export class GhostSystem {
         const flashScale = 0.62 + Math.sin(nowSec() * 30) * 0.08;
         m.group.scale.setScalar(flashScale);
       } else {
+        if (m.paintedFlash) {
+          m.paintedFlash = false;
+          this._paintMinion(m);
+        }
         m.group.scale.setScalar(0.48);
       }
       const bobY = 1.0 + Math.sin(nowSec() * 2.2 + m.bob) * 0.12;
@@ -754,6 +770,18 @@ export class GhostSystem {
     this._slapCooldown = Math.max(0, this._slapCooldown - dt);
     this._speechTimer = Math.max(0, this._speechTimer - dt);
     this._flash = Math.max(0, this._flash - dt);
+    if (this._flash > 0) {
+      const parts = this.pawn.mesh.userData;
+      if (parts?.ghostMat) {
+        parts.ghostMat.color.setHex(0xffffff);
+        parts.ghostMat.emissive.setHex(0xffffff);
+        parts.ghostMat.emissiveIntensity = 1.2;
+      }
+      if (parts?.aura?.material) {
+        parts.aura.material.color.setHex(0xffffff);
+        parts.aura.material.opacity = 0.7;
+      }
+    }
     const weakNow = this.game.weakUntil > nowSec();
     const baseScale = this._flash > 0 ? 1.22 : this._dashFlash > 0 ? 1.28 : 1;
     const squashed = this._isPinned();
@@ -2308,7 +2336,7 @@ export class GhostSystem {
   damage(amount, def = null) {
     if (this.game.phase !== 'investigate') return false;
     this.game.ghostHp -= amount;
-    this._flash = 0.14;
+    this._flash = 0.24;
     this.audio?.play('hit');
     if (def?.rage) this.rage.add(def.rage, 'hit');
     if (this.game.ghostHp <= 0) {

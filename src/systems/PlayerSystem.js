@@ -262,7 +262,27 @@ export class PlayerSystem {
   react(type) {
     this._companionReactType = type;
     this._companionReactUntil = nowSec() + 0.9;
+    if (this.companion && ['whip', 'heavy', 'combo'].includes(type)) {
+      this._companionStrike();
+    }
     this.events?.emit('companion.react', { type });
+  }
+
+  _companionStrike() {
+    const f = this.getFacing();
+    const start = {
+      x: this.companion.position.x,
+      y: this.companion.position.y,
+      z: this.companion.position.z
+    };
+    const end = {
+      x: start.x + f.x * 3.2,
+      y: start.y,
+      z: start.z + f.z * 3.2
+    };
+    this.scene.spawnSlashTrail(start, end, '#8ef0ff', 0.42);
+    this.scene.spawnAirSlash(start, end, '#c9f5ff', 0.4);
+    this.scene.spawnParticles({ x: end.x, y: end.y - 0.6, z: end.z }, '#8ef0ff');
   }
 
   _maybeCompanionIdle() {
@@ -477,7 +497,7 @@ export class PlayerSystem {
         this.companion.rotation.z = attack ? Math.sin(reactT * Math.PI) * -0.35 : 0;
       } else {
         this.companion.scale.setScalar(1);
-        this.companion.rotation.y = Math.sin(nowSec() * 0.7) * 0.55;
+        this.companion.rotation.y = this.aimYaw + Math.sin(nowSec() * 0.7) * 0.14;
         this.companion.rotation.z = 0;
       }
       this.companion.visible = !this.game.hiding && this.pawn.mesh.visible;

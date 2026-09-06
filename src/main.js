@@ -163,12 +163,15 @@ let detentionBellAt = 0;
 let reviewDist = 120;
 let reviewPitch = 0.5;
 let exitCutscene = null;
+let bubbleCutscene = null;
 let companionCommentAt = 0;
+let pendingRecordGuide = null;
 const itemGuidesShown = new Set();
 
 function beginExitCutscene(stage, autoOpen = false, afterText = null) {
   const exit = school.refs?.exit;
   if (!exit || !game.detentionMode) return;
+  bubbleCutscene = null;
   const now = nowSec();
   exitCutscene = {
     stage,
@@ -181,6 +184,27 @@ function beginExitCutscene(stage, autoOpen = false, afterText = null) {
     done: false,
     pos: { x: exit.pos.x, z: exit.pos.z },
     from: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
+  };
+}
+
+function beginBubbleReveal() {
+  if (!game.detentionMode) return;
+  exitCutscene = null;
+  school.unlockBubbles();
+  const bubble = school.refs?.bubbles?.find(b => b.requireClue) || school.refs?.bubbles?.[0];
+  if (!bubble) return;
+  bubbleCutscene = {
+    startedAt: nowSec(),
+    pending: true,
+    duration: 4.2,
+    pos: { x: bubble.x, y: bubble.y, z: bubble.z },
+    afterText: {
+      card: {
+        title: '泡泡启动了',
+        line: '纸箱泡泡从纸堆里浮起来了，入口的泡泡现在能带你上档案区。'
+      },
+      toast: '泡泡解锁成功：入口泡泡可以上高架档案区。'
+    }
   };
 }
 
@@ -297,7 +321,19 @@ events.on('npc.talk', () => {
 });
 events.on('clue.found', p => {
   school.markClueRead?.(p.id);
-  if (game.detentionMode && (p.id === 'note' || p.id === 'record') && !game.guideOpen) {
+  if (game.detentionMode && p.id === 'record' && !game.guideOpen) {
+    itemGuidesShown.add('task_record');
+    pendingRecordGuide = {
+      name: p.clue?.title || '程老师处分记录',
+      icon: '🗒',
+      taskGuide: true,
+      guide: {
+        steps: [p.clue?.text || '先记录这条信息，再找下一个任务点。']
+      }
+    };
+    return;
+  }
+  if (game.detentionMode && p.id === 'note' && !game.guideOpen) {
     itemGuidesShown.add(`task_${p.id}`);
     game.guideOpen = true;
     if (document.pointerLockElement) document.exitPointerLock();
@@ -315,12 +351,7 @@ events.on('clue.found', p => {
 events.on('detention.noteRead', () => {
   if (!game.detentionMode || game.detentionScheduleRead) return;
   game.detentionScheduleRead = true;
-  school.unlockBubbles();
-  events.emit('act.card', {
-    title: '值日表归档 · 迷宫与档案区开放',
-    line: '从右侧上层门进档案区，沿北侧绕进迷宫旧记录台；黑板旁响铃可以把程老师引开。'
-  });
-  events.emit('toast', { text: '值日表已归档：档案区北侧通向迷宫，黑板旁多了引鬼响铃。', ms: 2400 });
+  beginBubbleReveal();
 });
 events.on('detention.recordRead', () => {
   if (!game.detentionMode || game.detentionComplete) return;
@@ -412,6 +443,9 @@ events.on('ghost.stage', p => {
 events.on('game.start', () => {
   game.reset();
   itemGuidesShown.clear();
+  pendingRecordGuide = null;
+  bubbleCutscene = null;
+  exitCutscene = null;
   school.clearWageSlips();
   game.detentionMode = DETENTION_MODE || RUN_STAGE === 2;
   game.runMode = RUN_MODE;
@@ -661,7 +695,6 @@ function tick() {
         detentionBellStep = 1;
         ghost._lastSeen = null;
         ghost._lastNoise = { x: board.x, z: board.z };
-        if (game.detentionScheduleRead) school.setDoor('maze_door', true, { silent: true });
         events.emit('audio', { name: 'chalk' });
         events.emit('act.card', {
           title: '08:10 · 粉笔声',
@@ -671,7 +704,6 @@ function tick() {
         detentionBellStep = 2;
         ghost._lastSeen = null;
         ghost._lastNoise = { x: record.x, z: record.z };
-        if (game.detentionScheduleRead) school.setDoor('maze_door', false, { silent: true });
         events.emit('audio', { name: 'phone' });
         events.emit('act.card', {
           title: '08:40 · 电话响',
@@ -813,7 +845,40 @@ function tick() {
         events.emit('act.card', cut.afterText.card);
         events.emit('toast', { text: cut.afterText.toast, ms: 2600 });
       }
+      if (pendingRecordGuide) {
+        game.guideOpen = true;
+        if (document.pointerLockElement) document.exitPointerLock();
+        input.allowLock = false;
+        ui.showItemGuide(pendingRecordGuide);
+        pendingRecordGuide = null;
+      }
       exitCutscene = null;
+    }
+  } else if (bubbleCutscene) {
+    const cut = bubbleCutscene;
+    if (cut.pending) {
+      cut.pending = false;
+      cut.startedAt = nowSec();
+      cut.from = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+    }
+    const elapsed = nowSec() - cut.startedAt;
+    const k = Math.min(1, Math.max(0, elapsed / cut.duration));
+    const ease = k * k * (3 - 2 * k);
+    const toX = cut.pos.x + 5.2;
+    const toY = 2.4 + Math.max(0, cut.pos.y);
+    const toZ = cut.pos.z - 4.8;
+    camera.position.set(
+      cut.from.x + (toX - cut.from.x) * ease,
+      cut.from.y + (toY - cut.from.y) * ease,
+      cut.from.z + (toZ - cut.from.z) * ease
+    );
+    camera.lookAt(cut.pos.x, 1.1 + cut.pos.y, cut.pos.z);
+    if (elapsed >= cut.duration) {
+      if (cut.afterText) {
+        events.emit('act.card', cut.afterText.card);
+        events.emit('toast', { text: cut.afterText.toast, ms: 2400 });
+      }
+      bubbleCutscene = null;
     }
   } else {
     if (scene.fog === null) scene.fog = new THREE.Fog(PALETTE.bg, 7, 22);
