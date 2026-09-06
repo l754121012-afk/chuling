@@ -134,6 +134,11 @@ export class GameState {
     this.runWhipBoost = 0;
     this.runComboBonus = 0;
     this.runLucky = 0;
+    this.runStickerPenBoost = 0;
+    this.runStickerRegenBonus = 0;
+    this.runStickerWhip = 0;
+    this.runStickerCombo = 0;
+    this.runStickerLucky = 0;
     this.runWalkPenalty = 1;
     this.runSettlementPenalty = 1;
     this.runStaminaRegenBonus = 0;

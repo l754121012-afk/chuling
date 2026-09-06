@@ -23,6 +23,7 @@ export class UISystem {
     this._gachaTimer = null;
     this._selectedRiskId = null;
     this._selectedStickerIds = [];
+    this._stickerEditorInGame = false;
     this._registerEvents();
   }
 
@@ -104,6 +105,7 @@ export class UISystem {
       riskGrid: document.getElementById('risk-grid'),
       riskSummary: document.getElementById('risk-summary'),
       stickerGrid: document.getElementById('sticker-grid'),
+      stickerPanel: document.getElementById('sticker-panel'),
       stickerSummary: document.getElementById('sticker-summary'),
       stickerSlotCount: document.getElementById('sticker-slot-count'),
       runCommitBtn: document.getElementById('run-commit-btn'),
@@ -181,23 +183,62 @@ export class UISystem {
 
   openRunSetup() {
     if (!this.el.runSetupModal) return;
+    this._stickerEditorInGame = false;
     this._selectedRiskId = null;
     this._selectedStickerIds = [];
     this._renderRiskGrid();
-    this._renderStickerGrid();
+    this.el.stickerPanel?.classList.add('hidden');
+    this.el.riskGrid?.classList.remove('hidden');
+    this.el.riskSummary?.classList.remove('hidden');
+    if (this.el.runCommitBtn) this.el.runCommitBtn.textContent = '选好了，接单';
     this.el.runSetupModal.classList.remove('hidden');
+  }
+
+  openStickerEditor(stickerIds = []) {
+    if (!this.el.runSetupModal) return;
+    this._stickerEditorInGame = true;
+    if (this.game) {
+      this.game.guideOpen = true;
+      if (document.pointerLockElement) document.exitPointerLock();
+    }
+    this._selectedStickerIds = Array.isArray(stickerIds) ? stickerIds.slice() : [];
+    this._renderStickerGrid();
+    this.el.riskGrid?.classList.add('hidden');
+    this.el.riskSummary?.classList.add('hidden');
+    this.el.stickerPanel?.classList.remove('hidden');
+    if (this.el.runCommitBtn) this.el.runCommitBtn.textContent = '贴好了，开工';
+    this.el.runSetupModal.classList.remove('hidden');
+    this._updateStickerSummary();
   }
 
   closeRunSetup() {
     this.el.runSetupModal?.classList.add('hidden');
+    if (this._stickerEditorInGame && this.game) this.game.guideOpen = false;
+    this._stickerEditorInGame = false;
   }
 
   confirmRunSetup() {
-    this.events.emit('run.setup.confirm', {
-      riskId: this._selectedRiskId,
-      stickerIds: this._selectedStickerIds.slice()
-    });
+    if (this._stickerEditorInGame) {
+      this.events.emit('run.stickers.changed', this._selectedStickerIds.slice());
+      if (this.game) this.game.guideOpen = false;
+    } else {
+      this.events.emit('run.setup.confirm', {
+        riskId: this._selectedRiskId,
+        stickerIds: []
+      });
+    }
     this.closeRunSetup();
+  }
+
+  _updateStickerSummary() {
+    const summary = this.el.stickerSummary;
+    const count = this.el.stickerSlotCount;
+    if (count) count.textContent = `${this._selectedStickerIds.length}/3`;
+    if (summary) {
+      summary.textContent = this._selectedStickerIds.length
+        ? STICKER_DEFS.filter(s => this._selectedStickerIds.includes(s.id)).map(s => s.name).join('、')
+        : '还没贴贴纸';
+    }
   }
 
   _renderRiskGrid() {
@@ -239,6 +280,7 @@ export class UISystem {
       chip.type = 'button';
       chip.className = 'sticker-chip';
       chip.innerHTML = `<span class="sticker-icon">${sticker.icon}</span>${sticker.name}`;
+      chip.classList.toggle('selected', this._selectedStickerIds.includes(sticker.id));
       chip.addEventListener('click', () => {
         const idx = this._selectedStickerIds.indexOf(sticker.id);
         if (idx >= 0) {
@@ -249,12 +291,7 @@ export class UISystem {
           return;
         }
         chip.classList.toggle('selected', this._selectedStickerIds.includes(sticker.id));
-        if (count) count.textContent = `${this._selectedStickerIds.length}/3`;
-        if (summary) {
-          summary.textContent = this._selectedStickerIds.length
-            ? STICKER_DEFS.filter(s => this._selectedStickerIds.includes(s.id)).map(s => s.name).join('、')
-            : '还没贴贴纸';
-        }
+        this._updateStickerSummary();
       });
       grid.appendChild(chip);
     }

@@ -227,8 +227,7 @@ function applyPendingRunSetup(g) {
   pendingRunSetup = null;
 
   const r = g.runRiskId;
-  const stickers = new Set(g.runStickers);
-  if (r === 'pen_case' || stickers.has('sticker_pen')) g.runPenBoost += 2;
+  if (r === 'pen_case') g.runPenBoost += 2;
   if (r === 'bento_case') {
     g.staminaMax += 15;
     g.stamina = Math.min(g.staminaMax, g.stamina + 15);
@@ -240,10 +239,22 @@ function applyPendingRunSetup(g) {
   if (r === 'scream_case') g.runStaminaRegenBonus += 4;
   if (r === 'copy_case') g.runLucky = Math.max(g.runLucky, 0.12);
   if (r === 'note_case') g.runLucky = Math.max(g.runLucky, 0.18);
-  if (stickers.has('sticker_regen')) g.runStaminaRegenBonus += 4;
-  if (stickers.has('sticker_whip')) g.runWhipBoost += 1;
-  if (stickers.has('sticker_combo')) g.runComboBonus += 1;
-  if (stickers.has('sticker_lucky')) g.runLucky += 0.12;
+  applyStickerChanges(g, g.runStickers);
+}
+
+function applyStickerChanges(g, ids) {
+  g.runStickers = Array.isArray(ids) ? ids : [];
+  g.runStickerPenBoost = 0;
+  g.runStickerRegenBonus = 0;
+  g.runStickerWhip = 0;
+  g.runStickerCombo = 0;
+  g.runStickerLucky = 0;
+  const stickers = new Set(g.runStickers);
+  if (stickers.has('sticker_pen')) g.runStickerPenBoost += 2;
+  if (stickers.has('sticker_regen')) g.runStickerRegenBonus += 4;
+  if (stickers.has('sticker_whip')) g.runStickerWhip += 1;
+  if (stickers.has('sticker_combo')) g.runStickerCombo += 1;
+  if (stickers.has('sticker_lucky')) g.runStickerLucky += 0.12;
 }
 
 function capture4k() {
@@ -304,9 +315,24 @@ events.on('companion.react', p => {
 events.on('run.setup.confirm', p => {
   pendingRunSetup = {
     riskId: p?.riskId || null,
-    stickerIds: Array.isArray(p?.stickerIds) ? p.stickerIds : []
+    stickerIds: []
   };
   events.emit('game.start');
+});
+events.on('run.stickers.changed', ids => {
+  if (!game.isPlaying()) return;
+  applyStickerChanges(game, ids);
+  if (renderer.domElement.requestPointerLock) {
+    try { renderer.domElement.requestPointerLock(); } catch { /* retry on click */ }
+  }
+  events.emit('toast', {
+    text: ids.length ? `贴纸更换完成：${ids.join('、')}` : '贴纸已清空',
+    ms: 2000
+  });
+});
+events.on('run.setup.open', () => {
+  if (!game.isPlaying()) return;
+  ui.openStickerEditor(game.runStickers);
 });
 events.on('review.toggle', () => {
   game.reviewMode = !game.reviewMode;

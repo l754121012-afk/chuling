@@ -200,7 +200,7 @@ export class ItemSystem {
   }
 
   _throwItem(def, combo) {
-    const luckyCopy = (this.game.runLucky || 0) > Math.random();
+    const luckyCopy = ((this.game.runLucky || 0) + (this.game.runStickerLucky || 0)) > Math.random();
     if (!luckyCopy && !this.game.consumeItem(def.id, 1)) return;
     if (luckyCopy) {
       this.events.emit('toast', { text: '便利贴悄悄复制了一份！', ms: 1200 });
@@ -214,7 +214,7 @@ export class ItemSystem {
     }
     const projDef = {
       ...def,
-      damage: (def.damage || 0) + (this.game.runPenBoost || 0)
+      damage: (def.damage || 0) + (this.game.runPenBoost || 0) + (this.game.runStickerPenBoost || 0)
     };
 
     const dir = this._aimVector();

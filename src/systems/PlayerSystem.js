@@ -914,7 +914,7 @@ export class PlayerSystem {
       );
     } else {
       this.game.stamina = clamp(
-        this.game.stamina + (GAME_CONFIG.staminaRegenPerSecond + this.game.staminaRegenBonus + (this.game.runStaminaRegenBonus || 0)) * dt,
+        this.game.stamina + (GAME_CONFIG.staminaRegenPerSecond + this.game.staminaRegenBonus + (this.game.runStaminaRegenBonus || 0) + (this.game.runStickerRegenBonus || 0)) * dt,
         0,
         this.game.staminaMax
       );
@@ -1370,6 +1370,18 @@ export class PlayerSystem {
         };
       }
     }
+    if (this.refs.restPoint) {
+      const rp = this.refs.restPoint;
+      const dr = distance2D(pos.x, pos.z, rp.pos.x, rp.pos.z);
+      if (dr < 2.0 && 3.2 > bestPriority) {
+        bestPriority = 3.2;
+        best = {
+          type: 'stickerRest',
+          label: 'E 在贴纸台换贴纸',
+          pos: { x: rp.pos.x, y: 1.1, z: rp.pos.z }
+        };
+      }
+    }
 
     for (let i = this.refs.wageSlips?.length - 1; i >= 0; i--) {
       const slip = this.refs.wageSlips[i];
@@ -1489,6 +1501,8 @@ export class PlayerSystem {
       this.events.emit('toast', { text: '泡泡还没启动。', ms: 1600 });
     } else if (target.type === 'npc') {
       this.events.emit('npc.talk');
+    } else if (target.type === 'stickerRest') {
+      this.events.emit('run.setup.open');
     } else if (target.type === 'wageSlip') {
       const slip = target.slip;
       this.scene.group.remove(slip.mesh);
@@ -2185,7 +2199,7 @@ export class PlayerSystem {
     this.ghost.knockback(hitX * kb, hitZ * kb, 0.55);
     this.ghost._spinTimer = 1.2;
     this.ghost._dashFlash = 0.4;
-    this.ghost.damage(3 + (this.game.runWhipBoost || 0), { rage: 0 });
+    this.ghost.damage(3 + (this.game.runWhipBoost || 0) + (this.game.runStickerWhip || 0), { rage: 0 });
     this.react('heavy');
     this.rage.add(10, 'heavy');
     this.events.emit('hitstop', { ms: 90 });
@@ -2434,7 +2448,7 @@ export class PlayerSystem {
     this.game.whipCombo += 1;
     this.game.whipHits += 1;
     this.game.maxWhipCombo = Math.max(this.game.maxWhipCombo, this.game.whipCombo);
-    this.game.whipComboUntil = nowSec() + GAME_CONFIG.whipComboWindow + (this.game.runComboBonus || 0);
+    this.game.whipComboUntil = nowSec() + GAME_CONFIG.whipComboWindow + (this.game.runComboBonus || 0) + (this.game.runStickerCombo || 0);
     const combo = this.game.whipCombo;
     const rageAmount = GAME_CONFIG.whipRageBase + (combo >= 10 ? 8 : combo >= 5 ? 5 : 0);
     this.rage.add(rageAmount, 'whip');
@@ -2449,7 +2463,7 @@ export class PlayerSystem {
     this.ghost._spinTimer = GAME_CONFIG.whipSpinDuration;
     this.ghost._spinDir = dx >= 0 ? 1 : -1;
     this.ghost._dashFlash = 0.25;
-    this.ghost.damage(1 + (this.game.runWhipBoost || 0), { rage: 0 });
+    this.ghost.damage(1 + (this.game.runWhipBoost || 0) + (this.game.runStickerWhip || 0), { rage: 0 });
     this.react('whip');
     this.audio?.play('whip');
     this.scene.spawnSlashTrail(

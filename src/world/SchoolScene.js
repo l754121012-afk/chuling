@@ -1303,6 +1303,41 @@ export class SchoolScene {
       sprite,
       model: npcModel
     };
+    const rest = new THREE.Group();
+    const seat = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 0.45, 0.8),
+      material('#7a4a2d', 0.9)
+    );
+    seat.position.y = 0.3;
+    const pile = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.7, 0.7),
+      material('#d8c39a', 0.9)
+    );
+    pile.position.set(-0.4, 0.95, 0);
+    const restSprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: textTexture('贴纸台 E', {
+          bg: '#123326',
+          fg: '#d9ffe8',
+          font: 'bold 34px "Microsoft YaHei", sans-serif',
+          width: 360,
+          height: 88,
+          lineHeight: 38,
+          pad: 6
+        }),
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    restSprite.position.set(0, 1.5, 0);
+    restSprite.scale.set(1.7, 0.46, 1);
+    rest.add(seat, pile, restSprite);
+    rest.position.set(npcCfg.x + 1.8, 0, npcCfg.z + 1.2);
+    this.group.add(rest);
+    refs.restPoint = {
+      group: rest,
+      pos: { x: npcCfg.x + 1.8, z: npcCfg.z + 1.2 }
+    };
   }
 
   _addClues(refs) {
